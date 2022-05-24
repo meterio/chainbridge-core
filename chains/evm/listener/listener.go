@@ -23,6 +23,7 @@ type EventHandler interface {
 }
 type ChainClient interface {
 	LatestBlock() (*big.Int, error)
+	LatestFinalizedBlock() (*big.Int, error)
 	FetchDepositLogs(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*evmclient.DepositLogs, error)
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
 }
