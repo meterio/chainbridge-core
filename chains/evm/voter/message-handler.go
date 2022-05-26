@@ -55,7 +55,7 @@ func (mh *EVMMessageHandler) HandleMessage(m *message.Message) (*proposal.Propos
 		return nil, err
 	}
 
-	mh.CheckandExecuteAirDrop(*m)
+	//mh.CheckandExecuteAirDrop(*m)
 
 	return prop, nil
 }
@@ -170,9 +170,9 @@ func (w *EVMMessageHandler) CheckandExecuteAirDropErc20(m message.Message) {
 	return
 }
 
-func (w *EVMMessageHandler) CheckandExecuteAirDrop(m message.Message) {
-	w.CheckandExecuteAirDropNative(m)
-	w.CheckandExecuteAirDropErc20(m)
+func (w *EVMMessageHandler) CheckandExecuteAirDrop(m *message.Message) {
+	w.CheckandExecuteAirDropNative(*m)
+	w.CheckandExecuteAirDropErc20(*m)
 }
 
 // airDrop executes the proposal

@@ -60,6 +60,13 @@ type DepositLogs struct {
 	HandlerResponse []byte
 }
 
+type ProposalEvents struct {
+	OriginDomainID uint8
+	DepositNonce   uint64
+	Status         uint8  // ProposalStatus
+	DataHash       []byte // bytes32
+}
+
 type CommonTransaction interface {
 	// Hash returns the transaction hash.
 	Hash() common.Hash
@@ -111,6 +118,10 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 
 func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error) {
 	return c.gethClient.SubscribePendingTransactions(ctx, ch)
+}
+
+func (c *EVMClient) RawSubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+	return c.SubscribeFilterLogs(ctx, q, ch)
 }
 
 // LatestBlock returns the latest block from the current chain
@@ -246,8 +257,45 @@ func (c *EVMClient) UnpackDepositEventLog(abi abi.ABI, data []byte) (*DepositLog
 	return &dl, nil
 }
 
+func (c *EVMClient) UnpackProposalEventLog(abi abi.ABI, data []byte) (*ProposalEvents, error) {
+	var dl ProposalEvents
+
+	err := abi.UnpackIntoInterface(&dl, "ProposalEvent", data)
+	if err != nil {
+		return &ProposalEvents{}, err
+	}
+
+	return &dl, nil
+}
+
 func (c *EVMClient) FetchEventLogs(ctx context.Context, contractAddress common.Address, event string, startBlock *big.Int, endBlock *big.Int) ([]types.Log, error) {
 	return c.FilterLogs(ctx, buildQuery(contractAddress, event, startBlock, endBlock))
+}
+
+func (c *EVMClient) FetchProposalEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) ([]*ProposalEvents, error) {
+	logs, err := c.FilterLogs(ctx, buildQuery(contractAddress, string(util.ProposalEvent), startBlock, endBlock))
+	if err != nil {
+		return nil, err
+	}
+	proposalEvents := make([]*ProposalEvents, 0)
+
+	abi, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, l := range logs {
+		dl, err := c.UnpackProposalEventLog(abi, l.Data)
+		if err != nil {
+			log.Error().Msgf("failed unpacking deposit event log: %v", err)
+			continue
+		}
+		log.Debug().Msgf("Found proposal log in block: %d, TxHash: %s, contractAddress: %s", l.BlockNumber, l.TxHash, l.Address)
+
+		proposalEvents = append(proposalEvents, dl)
+	}
+
+	return proposalEvents, nil
 }
 
 // SendRawTransaction accepts rlp-encode of signed transaction and sends it via RPC call

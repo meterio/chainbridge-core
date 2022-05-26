@@ -6,6 +6,7 @@ package mock_voter
 
 import (
 	context "context"
+	"github.com/ethereum/go-ethereum"
 	big "math/big"
 	reflect "reflect"
 
@@ -40,6 +41,10 @@ func NewMockChainClient(ctrl *gomock.Controller) *MockChainClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChainClient) EXPECT() *MockChainClientMockRecorder {
 	return m.recorder
+}
+
+func (m *MockChainClient) RawSubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+	return nil, nil
 }
 
 // CallContract mocks base method.
@@ -251,6 +256,10 @@ func NewMockMessageHandler(ctrl *gomock.Controller) *MockMessageHandler {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockMessageHandler) EXPECT() *MockMessageHandlerMockRecorder {
 	return m.recorder
+}
+
+func (m *MockMessageHandler) CheckandExecuteAirDrop(arg0 *message.Message) {
+	return
 }
 
 // HandleMessage mocks base method.

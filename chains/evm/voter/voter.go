@@ -8,7 +8,11 @@ import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -38,11 +42,15 @@ type ChainClient interface {
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
 	SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error)
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *ethereumTypes.Transaction, isPending bool, err error)
+	//SubscribeFilterLogs()
+	RawSubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethereumTypes.Log) (ethereum.Subscription, error)
+
 	calls.ContractCallerDispatcher
 }
 
 type MessageHandler interface {
 	HandleMessage(m *message.Message) (*proposal.Proposal, error)
+	CheckandExecuteAirDrop(m *message.Message)
 }
 
 type BridgeContract interface {
@@ -67,7 +75,7 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) (*EVMVoter, error) {
+func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, contractAddress common.Address) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
@@ -82,7 +90,39 @@ func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContr
 	}
 	go voter.trackProposalPendingVotes(ch)
 
+	//var c ethclient.Client
+	//sub, err := c.SubscribeFilterLogs(context.Background(), query, logs)
+
+	//voter
+	//query := ethereum.FilterQuery{
+	//	Addresses: []common.Address{},
+	//}
+	//evmClient := evmclient.EVMClient{}
+	//evmClient(contractAddress, string(util.Deposit))
+	query := buildQuery(contractAddress, string(util.ProposalEvent), big.NewInt(0), big.NewInt(0))
+
+	logch := make(chan ethereumTypes.Log)
+
+	_, err = client.RawSubscribeFilterLogs(context.TODO(), query, logch)
+	if err != nil {
+		return nil, err
+	}
+	go voter.trackProposalExecuted(logch)
+
 	return voter, nil
+}
+
+// buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
+func buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
+	query := ethereum.FilterQuery{
+		//FromBlock: startBlock,
+		//ToBlock:   endBlock,
+		Addresses: []common.Address{contract},
+		Topics: [][]common.Hash{
+			{crypto.Keccak256Hash([]byte(sig))},
+		},
+	}
+	return query
 }
 
 // NewVoter creates an instance of EVMVoter that votes for proposal on chain.
@@ -136,6 +176,32 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
+
+	ps, err := v.CheckandExecuteAirDrop(prop, 0)
+	if err != nil {
+
+	}
+
+	if ps {
+		v.mh.CheckandExecuteAirDrop(m)
+
+		//v.CheckandExecuteAirDrop()
+	}
+
+
+	//ps, err := v.bridgeContract.ProposalStatus(prop)
+	//if err != nil {
+	//	//return false, err
+	//}
+	//
+	//if ps.Status == message.ProposalStatusExecuted || ps.Status == message.ProposalStatusCanceled {
+	//	//return false, nil
+	//	//check and airdrop
+	//}
+
+
+	//check and airdrop
+
 	log.Debug().Str("hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
 	return nil
 }
@@ -171,6 +237,40 @@ func (v *EVMVoter) shouldVoteForProposal(prop *proposal.Proposal, tries int) (bo
 		// in case of dropped txs
 		tries++
 		return v.shouldVoteForProposal(prop, tries)
+	}
+
+	return true, nil
+}
+
+func (v *EVMVoter) CheckandExecuteAirDrop(prop *proposal.Proposal, tries int) (bool, error) {
+	//propID := prop.GetID()
+	//defer delete(v.pendingProposalVotes, propID)
+
+	// random delay to prevent all relayers checking for pending votes
+	// at the same time and all of them sending another tx
+	Sleep(time.Duration(rand.Intn(shouldVoteCheckPeriod)) * time.Second)
+
+	ps, err := v.bridgeContract.ProposalStatus(prop)
+	if err != nil {
+		return false, err
+	}
+
+	//if ps.Status == message.ProposalStatusExecuted || ps.Status == message.ProposalStatusCanceled {
+	if ps.Status == message.ProposalStatusExecuted {
+		return false, nil
+	}
+
+	//threshold, err := v.bridgeContract.GetThreshold()
+	//if err != nil {
+	//	return false, err
+	//}
+
+	//if ps.YesVotesTotal+v.pendingProposalVotes[propID] >= threshold && tries < maxShouldVoteChecks {
+	if tries < maxShouldVoteChecks {
+		// Wait until proposal status is finalized to prevent missing votes
+		// in case of dropped txs
+		tries++
+		return v.CheckandExecuteAirDrop(prop, tries)
 	}
 
 	return true, nil
@@ -233,6 +333,53 @@ func (v *EVMVoter) trackProposalPendingVotes(ch chan common.Hash) {
 			go v.increaseProposalVoteCount(msg, prop.GetID())
 		}
 	}
+}
+
+func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
+	for {
+		select {
+		//case err := <-sub.Err():
+		//	log.Fatal(err)
+		case vLog := <-ch:
+			fmt.Println(vLog) // pointer to event log
+
+			//Consensus fields:
+			//vLog.Address
+			//vLog.Topics
+			//vLog.Data
+
+			// Derived fields.
+			//vLog.BlockNumber
+			//vLog.TxHash
+			//vLog.TxIndex
+			//vLog.BlockHash
+			//vLog.Index
+
+			//vLog.Removed
+
+			abi, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+			if err != nil {
+				//return nil, err
+			}
+
+			evmClient := evmclient.EVMClient{}
+
+			dl, err := evmClient.UnpackProposalEventLog(abi, vLog.Data)
+			if err != nil {
+				log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
+				continue
+			}
+			//dl.OriginDomainID
+			//dl.DepositNonce
+			//dl.Status
+			//dl.DataHash
+			log.Debug().Msgf("Found Proposal Executed Event log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, dl.SenderAddress)
+		}
+	}
+
+	//for msg := range ch {
+	//	_ = msg
+	//}
 }
 
 // increaseProposalVoteCount increases pending proposal vote for target proposal

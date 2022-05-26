@@ -25,6 +25,7 @@ type ChainClient interface {
 	LatestBlock() (*big.Int, error)
 	LatestFinalizedBlock() (*big.Int, error)
 	FetchDepositLogs(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*evmclient.DepositLogs, error)
+	FetchProposalEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) ([]*evmclient.ProposalEvents, error)
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
 }
 
@@ -70,6 +71,21 @@ func (l *EVMListener) ListenToEvents(
 				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
 					time.Sleep(blockRetryInterval)
 					continue
+				}
+
+				events, err := l.chainReader.FetchProposalEvents(context.Background(), l.bridgeAddress, startBlock, startBlock)
+				_ = events
+				for _, eventLog := range events {
+					_ = eventLog
+					//log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
+					//m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
+					var m *message.Message
+					if err != nil {
+						log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
+					} else {
+						log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
+						ch <- m
+					}
 				}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
