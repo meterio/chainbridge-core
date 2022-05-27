@@ -5,11 +5,14 @@ package voter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/lvldb"
+	"github.com/ChainSafe/chainbridge-core/store"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -66,6 +69,9 @@ type EVMVoter struct {
 	client               ChainClient
 	bridgeContract       BridgeContract
 	pendingProposalVotes map[common.Hash]uint8
+
+	id             *uint8
+	db store.KeyValueReaderWriter
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -75,12 +81,13 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, contractAddress common.Address) (*EVMVoter, error) {
+func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, contractAddress common.Address, domainID *uint8) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		id: domainID,
 	}
 
 	ch := make(chan common.Hash)
@@ -109,6 +116,8 @@ func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContr
 	}
 	go voter.trackProposalExecuted(logch)
 
+	//voter.
+
 	return voter, nil
 }
 
@@ -130,12 +139,13 @@ func buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlo
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) *EVMVoter {
+func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, domainID *uint8) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		id: domainID,
 	}
 }
 
@@ -146,6 +156,9 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO: check
+	//m.Type
 
 	votedByTheRelayer, err := v.bridgeContract.IsProposalVotedBy(v.client.RelayerAddress(), prop)
 	if err != nil {
@@ -336,6 +349,8 @@ func (v *EVMVoter) trackProposalPendingVotes(ch chan common.Hash) {
 }
 
 func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
+	//v.Id =~ destinationDomainId
+
 	for {
 		select {
 		//case err := <-sub.Err():
@@ -369,17 +384,30 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 				log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
 				continue
 			}
+			_ = dl
 			//dl.OriginDomainID
 			//dl.DepositNonce
-			//dl.Status
+			if dl.Status != message.ProposalStatusExecuted {
+				continue
+			}
 			//dl.DataHash
-			log.Debug().Msgf("Found Proposal Executed Event log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, dl.SenderAddress)
+			//log.Debug().Msgf("Found Proposal Executed Event log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, dl.SenderAddress)
+
+			db, err := lvldb.NewLvlDB("proposal")
+			if err != nil {
+				panic(err)
+			}
+			var m *message.Message
+			key := []byte{dl.OriginDomainID, *v.id, byte(dl.DepositNonce)}
+			data, err := db.GetByKey(key)
+			err = json.Unmarshal(data, &m)
+			if err != nil {
+				panic(err)
+			}
+
+			v.mh.CheckandExecuteAirDrop(m)
 		}
 	}
-
-	//for msg := range ch {
-	//	_ = msg
-	//}
 }
 
 // increaseProposalVoteCount increases pending proposal vote for target proposal

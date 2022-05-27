@@ -33,12 +33,14 @@ type EVMListener struct {
 	chainReader   ChainClient
 	eventHandler  EventHandler
 	bridgeAddress common.Address
+	id *uint8
+	db store.KeyValueReaderWriter
 }
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address) *EVMListener {
-	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress}
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, id *uint8) *EVMListener {
+	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, id: id}
 }
 
 func (l *EVMListener) ListenToEvents(
@@ -96,6 +98,8 @@ func (l *EVMListener) ListenToEvents(
 					continue
 				}
 				for _, eventLog := range logs {
+					//l.Id =~ originDomainId
+
 					log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
 					m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
 					if err != nil {

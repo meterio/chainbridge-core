@@ -2,6 +2,7 @@ package voter
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
@@ -9,7 +10,9 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
 	"github.com/ChainSafe/chainbridge-core/config/chain"
+	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ChainSafe/chainbridge-core/store"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"math/big"
@@ -36,6 +39,8 @@ type EVMMessageHandler struct {
 	airDropErc20Contract erc20.ERC20Contract
 	cfg                  chain.EVMConfig
 	t                    transactor.Transactor
+
+	db store.KeyValueReaderWriter
 }
 
 func (mh *EVMMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
@@ -99,6 +104,20 @@ func ERC20MessageHandler(m *message.Message, handlerAddr, bridgeAddress common.A
 	recipientLen := big.NewInt(int64(len(recipient))).Bytes()
 	data = append(data, common.LeftPadBytes(recipientLen, 32)...) // length of recipient (uint256)
 	data = append(data, recipient...)                             // recipient ([]byte)
+	//m.Destination
+	//lvldb.NewLvlDB("proposal")
+
+	db, err := lvldb.NewLvlDB("proposal")
+	if err != nil {
+		panic(err)
+	}
+	key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+	value, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+	db.SetByKey(key, value)
+
 	return proposal.NewProposal(m.Source, m.DepositNonce, m.ResourceId, data, handlerAddr, bridgeAddress), nil
 }
 
@@ -143,6 +162,7 @@ func GenericMessageHandler(msg *message.Message, handlerAddr, bridgeAddress comm
 	data.Write(metadata)
 	return proposal.NewProposal(msg.Source, msg.DepositNonce, msg.ResourceId, data.Bytes(), handlerAddr, bridgeAddress), nil
 }
+
 
 func (w *EVMMessageHandler) CheckandExecuteAirDropNative(m message.Message) {
 	ok, _, to, amount := w.shouldAirDropNative(m)
