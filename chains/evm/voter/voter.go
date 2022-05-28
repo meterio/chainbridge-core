@@ -160,6 +160,17 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	// TODO: check
 	//m.Type
 
+	//db, err := lvldb.NewLvlDB("proposal")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+	//value, err := json.Marshal(m)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//db.SetByKey(key, value)
+
 	votedByTheRelayer, err := v.bridgeContract.IsProposalVotedBy(v.client.RelayerAddress(), prop)
 	if err != nil {
 		return err
@@ -189,17 +200,31 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
+	// TODO: check
+	//m.Type
 
-	ps, err := v.CheckandExecuteAirDrop(prop, 0)
+	//TODO: 0528
+	db, err := lvldb.NewLvlDB("proposal")
 	if err != nil {
-
+		panic(err)
 	}
-
-	if ps {
-		v.mh.CheckandExecuteAirDrop(m)
-
-		//v.CheckandExecuteAirDrop()
+	key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+	value, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
 	}
+	db.SetByKey(key, value)
+	//
+	//ps, err := v.CheckandExecuteAirDrop(prop, 0)
+	//if err != nil {
+	//
+	//}
+	//
+	//if ps {
+	//	v.mh.CheckandExecuteAirDrop(m)
+	//
+	//	//v.CheckandExecuteAirDrop()
+	//}
 
 
 	//ps, err := v.bridgeContract.ProposalStatus(prop)
@@ -387,6 +412,9 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 			_ = dl
 			//dl.OriginDomainID
 			//dl.DepositNonce
+			if dl.Status == message.ProposalStatusCanceled {
+			//	TODO: delete proposal
+			}
 			if dl.Status != message.ProposalStatusExecuted {
 				continue
 			}
@@ -404,6 +432,8 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 			if err != nil {
 				panic(err)
 			}
+
+			//TODO: delete proposal
 
 			v.mh.CheckandExecuteAirDrop(m)
 		}
