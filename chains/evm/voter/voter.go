@@ -4,18 +4,22 @@
 package voter
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"math/big"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
@@ -38,6 +42,9 @@ type ChainClient interface {
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
 	SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error)
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *ethereumTypes.Transaction, isPending bool, err error)
+	SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethereumTypes.Log) (ethereum.Subscription, error)
+	LatestBlock() (*big.Int, error)
+
 	calls.ContractCallerDispatcher
 }
 
@@ -51,6 +58,7 @@ type BridgeContract interface {
 	SimulateVoteProposal(proposal *proposal.Proposal) error
 	ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
 	GetThreshold() (uint8, error)
+	ContractAddress() *common.Address
 }
 
 type EVMVoter struct {
@@ -58,6 +66,8 @@ type EVMVoter struct {
 	client               ChainClient
 	bridgeContract       BridgeContract
 	pendingProposalVotes map[common.Hash]uint8
+	id                   uint8
+	db                   *lvldb.LVLDB
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -67,15 +77,18 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		id:                   id,
+		db:                   db,
 	}
 
 	ch := make(chan common.Hash)
+
 	_, err := client.SubscribePendingTransactions(context.TODO(), ch)
 	if err != nil {
 		return nil, err
@@ -90,12 +103,14 @@ func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContr
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) *EVMVoter {
+func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		id:                   id,
+		db:                   db,
 	}
 }
 
@@ -136,7 +151,36 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
+	err = v.checkAndSaveProposal(*m)
+	if err != nil {
+		return err
+	}
+
 	log.Debug().Str("hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
+	return nil
+}
+
+func (v *EVMVoter) checkAndSaveProposal(m message.Message) error {
+	// only ERC20 allow to airdrop
+	if m.Type == message.FungibleTransfer {
+		var network bytes.Buffer // Stand-in for the network.
+
+		// Create an encoder and send a value.
+		enc := gob.NewEncoder(&network)
+		err := enc.Encode(m)
+		if err != nil {
+			log.Fatal().Err(err)
+			return err
+		}
+
+		key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+
+		err = v.db.SetByKey(key, network.Bytes())
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

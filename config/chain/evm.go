@@ -2,6 +2,7 @@ package chain
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
 
@@ -21,6 +22,11 @@ type EVMConfig struct {
 	StartBlock         *big.Int
 	BlockConfirmations *big.Int
 	BlockRetryInterval time.Duration
+
+	AirDropAmount        *big.Int
+	AirDropErc20Contract common.Address
+	AirDropErc20Amount   *big.Int
+	MoonbeamFinality     bool // blocks are needed to implicitly confirm the finality
 }
 
 type RawEVMConfig struct {
@@ -35,6 +41,11 @@ type RawEVMConfig struct {
 	StartBlock         int64   `mapstructure:"startBlock"`
 	BlockConfirmations int64   `mapstructure:"blockConfirmations"`
 	BlockRetryInterval uint64  `mapstructure:"blockRetryInterval"`
+
+	AirDropAmountOpt        int64  `mapstructure:"airDropAmount"`
+	AirDropErc20ContractOpt string `mapstructure:"airDropErc20Contract"`
+	AirDropErc20AmountOpt   int64  `mapstructure:"airDropErc20Amount"`
+	MoonbeamFinalityOpt     bool   `mapstructure:"moonbeamFinality"`
 }
 
 func (c *RawEVMConfig) Validate() error {
@@ -77,6 +88,11 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(c.StartBlock),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
+
+		AirDropAmount:        big.NewInt(0),
+		AirDropErc20Contract: common.Address{},
+		AirDropErc20Amount:   big.NewInt(0),
+		MoonbeamFinality:     false,
 	}
 
 	if c.GasLimit != 0 {
@@ -97,6 +113,22 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.BlockRetryInterval != 0 {
 		config.BlockRetryInterval = time.Duration(c.BlockRetryInterval) * time.Second
+	}
+
+	if c.AirDropAmountOpt != 0 {
+		config.AirDropAmount = big.NewInt(c.AirDropAmountOpt)
+	}
+
+	if c.AirDropErc20ContractOpt != "" {
+		config.AirDropErc20Contract = common.HexToAddress(c.AirDropErc20ContractOpt)
+	}
+
+	if c.AirDropErc20AmountOpt != 0 {
+		config.AirDropErc20Amount = big.NewInt(c.AirDropErc20AmountOpt)
+	}
+
+	if c.MoonbeamFinalityOpt {
+		config.MoonbeamFinality = c.MoonbeamFinalityOpt
 	}
 
 	return config, nil

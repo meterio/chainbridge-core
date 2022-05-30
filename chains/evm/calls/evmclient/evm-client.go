@@ -37,6 +37,8 @@ type EVMClient struct {
 	rpClient   *rpc.Client
 	nonce      *big.Int
 	nonceLock  sync.Mutex
+
+	moonbeamFinality bool
 }
 
 // DepositLogs struct holds event data with all necessary parameters and a handler response
@@ -56,6 +58,13 @@ type DepositLogs struct {
 	// ERC721Handler: responds with deposited token metadata acquired by calling a tokenURI method in the token contract
 	// GenericHandler: responds with the raw bytes returned from the call to the target contract
 	HandlerResponse []byte
+}
+
+type ProposalEvents struct {
+	OriginDomainID uint8
+	DepositNonce   uint64
+	Status         uint8 // ProposalStatus
+	DataHash       [32]byte
 }
 
 type CommonTransaction interface {
@@ -102,6 +111,8 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 	c.rpClient = rpcClient
 	c.gethClient = gethclient.New(rpcClient)
 
+	c.moonbeamFinality = cfg.MoonbeamFinality
+
 	return c, nil
 }
 
@@ -111,6 +122,10 @@ func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- 
 
 // LatestBlock returns the latest block from the current chain
 func (c *EVMClient) LatestBlock() (*big.Int, error) {
+	if c.moonbeamFinality == true {
+		return c.LatestFinalizedBlock()
+	}
+
 	var head *headerNumber
 	err := c.rpClient.CallContext(context.Background(), &head, "eth_getBlockByNumber", toBlockNumArg(nil), false)
 	if err == nil && head == nil {
@@ -120,6 +135,45 @@ func (c *EVMClient) LatestBlock() (*big.Int, error) {
 		return nil, err
 	}
 	return head.Number, nil
+}
+
+func (c *EVMClient) LatestFinalizedBlock() (*big.Int, error) {
+	var raw json.RawMessage
+	err := c.rpClient.CallContext(context.Background(), &raw, "chain_getFinalizedHead")
+	if err != nil {
+		return nil, err
+	}
+
+	// The hash is with double quote "", should remove
+	var blockHash string = string(raw)
+	blockHash = blockHash[1 : len(blockHash)-1]
+	//fmt.Println(blockHash)
+	err = c.rpClient.CallContext(context.Background(), &raw, "chain_getHeader", blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]interface{}
+	if err = json.Unmarshal(raw, &m); err != nil {
+		return nil, err
+	}
+	if m == nil {
+		return nil, errors.New("body: empty body")
+	}
+
+	/***
+	for k, v := range m {
+		fmt.Println("decoding", k, v)
+	}
+	***/
+	number := m["number"].(string)
+	// remove 0x
+	number = number[2:]
+	num, ok := new(big.Int).SetString(number, 16)
+	if ok != true {
+		return nil, err
+	}
+	return num, nil
 }
 
 type headerNumber struct {
@@ -320,4 +374,17 @@ func buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlo
 		},
 	}
 	return query
+}
+
+// EnsureHasBytecode asserts if contract code exists at the specified address
+func (c *EVMClient) EnsureHasBytecode(addr common.Address) error {
+	code, err := c.CodeAt(context.Background(), addr, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(code) == 0 {
+		return fmt.Errorf("no bytecode found at %s", addr.Hex())
+	}
+	return nil
 }

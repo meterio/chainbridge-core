@@ -28,6 +28,10 @@ func (db *LVLDB) SetByKey(key []byte, value []byte) error {
 	return db.db.Put(key, value, nil)
 }
 
+func (db *LVLDB) Delete(key []byte) error {
+	return db.db.Delete(key, nil)
+}
+
 func (db *LVLDB) Close() error {
 	return db.db.Close()
 }
