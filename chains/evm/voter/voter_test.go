@@ -37,6 +37,7 @@ func (s *VoterTestSuite) SetupTest() {
 		s.mockMessageHandler,
 		s.mockClient,
 		s.mockBridgeContract,
+		0,
 	)
 	voter.Sleep = func(d time.Duration) {}
 }

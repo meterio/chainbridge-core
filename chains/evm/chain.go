@@ -5,10 +5,12 @@ package evm
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"math/big"
 	"time"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/signAndSend"
@@ -55,22 +57,33 @@ func SetupDefaultEVMChain(rawConfig map[string]interface{}, txFabric calls.TxFab
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
 	bridgeContract := bridge.NewBridgeContract(client, common.HexToAddress(config.Bridge), t)
 
+	var airDropErc20Contract erc20.ERC20Contract
+	if config.AirDropErc20Contract != util.ZeroAddress {
+		err = client.EnsureHasBytecode(config.AirDropErc20Contract)
+		if err != nil {
+			return nil, err
+		}
+
+		airDropErc20Contract = *erc20.NewERC20Contract(client, config.AirDropErc20Contract, t)
+	}
+
 	eventHandler := listener.NewETHEventHandler(*bridgeContract)
 	eventHandler.RegisterEventHandler(config.Erc20Handler, listener.Erc20EventHandler)
 	eventHandler.RegisterEventHandler(config.Erc721Handler, listener.Erc721EventHandler)
 	eventHandler.RegisterEventHandler(config.GenericHandler, listener.GenericEventHandler)
 	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge))
 
-	mh := voter.NewEVMMessageHandler(*bridgeContract)
+	mh := voter.NewEVMMessageHandler(*bridgeContract, *config, airDropErc20Contract, t)
 	mh.RegisterMessageHandler(config.Erc20Handler, voter.ERC20MessageHandler)
 	mh.RegisterMessageHandler(config.Erc721Handler, voter.ERC721MessageHandler)
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
+	domainId := config.GeneralChainConfig.Id
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(mh, client, bridgeContract)
+	evmVoter, err = voter.NewVoterWithSubscription(mh, client, bridgeContract, *domainId)
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(mh, client, bridgeContract)
+		evmVoter = voter.NewVoter(mh, client, bridgeContract, *domainId)
 	}
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil
