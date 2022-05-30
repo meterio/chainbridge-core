@@ -63,8 +63,8 @@ type DepositLogs struct {
 type ProposalEvents struct {
 	OriginDomainID uint8
 	DepositNonce   uint64
-	Status         uint8  // ProposalStatus
-	DataHash       []byte // bytes32
+	Status         uint8 // ProposalStatus
+	DataHash       [32]byte
 }
 
 type CommonTransaction interface {

@@ -320,12 +320,12 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 
 		//vLog.Removed
 
-		abi, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
 		if err != nil {
 			return
 		}
 
-		pel, err := unpackProposalEventLog(abi, vLog.Data)
+		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
 
 		if err != nil {
 			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
@@ -361,10 +361,10 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 	}
 }
 
-func unpackProposalEventLog(abi abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
+func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
 	var pe evmclient.ProposalEvents
 
-	err := abi.UnpackIntoInterface(&pe, "ProposalEvent", data)
+	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
 	if err != nil {
 		return &evmclient.ProposalEvents{}, err
 	}
