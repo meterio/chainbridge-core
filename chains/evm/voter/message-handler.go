@@ -150,7 +150,8 @@ func (w *EVMMessageHandler) CheckAndExecuteAirDropNative(m message.Message) {
 
 	gasLimit := uint64(21000)
 
-	w.t.Transact(to, nil, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
+	var airData []byte
+	w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
 
 	return
 }
