@@ -6,6 +6,7 @@ package app
 import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,12 +34,17 @@ func Run() error {
 	}
 	blockstore := store.NewBlockStore(db)
 
+	proposalDB, err := lvldb.NewLvlDB(util.PROPOSAL)
+	if err != nil {
+		panic(err)
+	}
+
 	chains := []relayer.RelayedChain{}
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				chain, err := evm.SetupDefaultEVMChain(chainConfig, evmtransaction.NewTransaction, blockstore)
+				chain, err := evm.SetupDefaultEVMChain(proposalDB, chainConfig, evmtransaction.NewTransaction, blockstore)
 				if err != nil {
 					panic(err)
 				}

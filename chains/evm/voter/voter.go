@@ -69,6 +69,7 @@ type EVMVoter struct {
 	bridgeContract       BridgeContract
 	pendingProposalVotes map[common.Hash]uint8
 	id                   uint8
+	db                   *lvldb.LVLDB
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -78,30 +79,36 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
+		db:                   db,
 	}
 
 	ch := make(chan common.Hash)
-	_, err := client.SubscribePendingTransactions(context.TODO(), ch)
-	if err != nil {
-		return nil, err
-	}
-	go voter.trackProposalPendingVotes(ch)
+
+	//go func() {
+		_, err := client.SubscribePendingTransactions(context.TODO(), ch)
+		if err != nil {
+			return nil, err
+		}
+		go voter.trackProposalPendingVotes(ch)
+	//}()
 
 	query := buildQuery(*bridgeContract.ContractAddress(), string(util.ProposalEvent))
 	logch := make(chan ethereumTypes.Log)
 
-	_, err = client.SubscribeFilterLogs(context.TODO(), query, logch)
-	if err != nil {
-		return nil, err
-	}
-	go voter.trackProposalExecuted(logch)
+	//go func() {
+		_, err = client.SubscribeFilterLogs(context.TODO(), query, logch)
+		if err != nil {
+			return nil, err
+		}
+		go voter.trackProposalExecuted(logch)
+	//}()
 
 	return voter, nil
 }
@@ -122,13 +129,14 @@ func buildQuery(contract common.Address, sig string) ethereum.FilterQuery {
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
+func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
+		db:                   db,
 	}
 }
 
@@ -169,7 +177,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
-	err = checkAndSaveProposal(m)
+	err = v.checkAndSaveProposal(m)
 	if err != nil {
 		return err
 	}
@@ -178,21 +186,15 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	return nil
 }
 
-func checkAndSaveProposal(m *message.Message) error {
+func (v *EVMVoter) checkAndSaveProposal(m *message.Message) error {
 	// only ERC20 allow to airdrop
 	if m.Type == message.FungibleTransfer {
-		db, err := lvldb.NewLvlDB(util.PROPOSAL)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-
 		key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
 		value, err := json.Marshal(m)
 		if err != nil {
 			return err
 		}
-		err = db.SetByKey(key, value)
+		err = v.db.SetByKey(key, value)
 		if err != nil {
 			return err
 		}
@@ -297,12 +299,6 @@ func (v *EVMVoter) trackProposalPendingVotes(ch chan common.Hash) {
 }
 
 func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
-	db, err := lvldb.NewLvlDB(util.PROPOSAL)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
 	for vLog := range ch {
 		//	fmt.Println(vLog) // pointer to event log
 
@@ -337,13 +333,13 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 		//dl.DepositNonce
 
 		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
-		data, err := db.GetByKey(key)
+		data, err := v.db.GetByKey(key)
 		if err != nil {
 			return
 		}
 
 		if pel.Status == message.ProposalStatusCanceled {
-			db.Delete(key)
+			v.db.Delete(key)
 		}
 		if pel.Status != message.ProposalStatusExecuted {
 			continue
@@ -357,7 +353,7 @@ func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
 		}
 
 		v.mh.CheckAndExecuteAirDrop(m)
-		db.Delete(key)
+		v.db.Delete(key)
 	}
 }
 

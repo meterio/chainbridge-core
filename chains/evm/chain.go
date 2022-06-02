@@ -5,6 +5,7 @@ package evm
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"math/big"
 	"time"
@@ -42,7 +43,7 @@ type EVMChain struct {
 }
 
 // SetupDefaultEVMChain sets up an EVMChain with all supported handlers configured
-func SetupDefaultEVMChain(rawConfig map[string]interface{}, txFabric calls.TxFabric, blockstore *store.BlockStore) (*EVMChain, error) {
+func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txFabric calls.TxFabric, blockstore *store.BlockStore) (*EVMChain, error) {
 	config, err := chain.NewEVMConfig(rawConfig)
 	if err != nil {
 		return nil, err
@@ -80,10 +81,10 @@ func SetupDefaultEVMChain(rawConfig map[string]interface{}, txFabric calls.TxFab
 
 	domainId := config.GeneralChainConfig.Id
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(mh, client, bridgeContract, *domainId)
+	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, *domainId)
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(mh, client, bridgeContract, *domainId)
+		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, *domainId)
 	}
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil

@@ -210,10 +210,18 @@ func (c *BridgeContract) VoteProposal(
 	proposal *proposal.Proposal,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().
+	log.Warn().
 		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).
 		Str("resourceID", hexutil.Encode(proposal.ResourceId[:])).
 		Str("handler", proposal.HandlerAddress.String()).
+		Str("Source", string(proposal.Source)).
+		Str("opts.GasLimit", string(opts.GasLimit)).
+		Str("opts.GasPrice", opts.GasPrice.String()).
+		Str("opts.Value", opts.Value.String()).
+		Str("opts.Nonce", opts.Nonce.String()).
+		Str("opts.ChainID", opts.ChainID.String()).
+		Str("opts.Priority", opts.Priority).
+		Str("proposal.Data", hexutil.Encode(proposal.Data[:])).
 		Msgf("Vote proposal")
 	return c.ExecuteTransaction(
 		"voteProposal",
@@ -232,6 +240,10 @@ func (c *BridgeContract) SimulateVoteProposal(proposal *proposal.Proposal) error
 		"voteProposal",
 		proposal.Source, proposal.DepositNonce, proposal.ResourceId, proposal.Data,
 	)
+	if err != nil {
+		log.Debug().Str("SimulateVoteProposal err?", err.Error())
+	}
+
 	return err
 }
 

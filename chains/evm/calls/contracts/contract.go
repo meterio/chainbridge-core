@@ -68,11 +68,18 @@ func (c *Contract) ExecuteTransaction(method string, opts transactor.TransactOpt
 	if err != nil {
 		log.Error().
 			Str("contract", c.contractAddress.String()).
+			Str("input", string(input)).
+			Str("opts.GasLimit", string(opts.GasLimit)).
+			Str("opts.GasPrice", opts.GasPrice.String()).
+			Str("opts.Value", opts.Value.String()).
+			Str("opts.Nonce", opts.Nonce.String()).
+			Str("opts.ChainID", opts.ChainID.String()).
+			Str("opts.Priority", opts.Priority).
 			Err(err).
 			Msgf("error on executing %s", method)
 		return nil, err
 	}
-	log.Debug().
+	log.Info().
 		Str("txHash", h.String()).
 		Str("contract", c.contractAddress.String()).
 		Msgf("method %s executed", method)
