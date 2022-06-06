@@ -38,12 +38,12 @@ var (
 )
 
 type Message struct {
-	Source       uint8            `json:"source"`        // Source where message was initiated
-	Destination  uint8            `json:"destination"`   // Destination chain of message
-	DepositNonce uint64           `json:"deposit_nonce"` // Nonce for the deposit
-	ResourceId   types.ResourceID `json:"resource_id"`
-	Payload      []interface{}    `json:"payload"` // data associated with event sequence
-	Type         TransferType     `json:"type"`
+	Source       uint8            //`json:"source"`        // Source where message was initiated
+	Destination  uint8            //`json:"destination"`   // Destination chain of message
+	DepositNonce uint64           //`json:"deposit_nonce"` // Nonce for the deposit
+	ResourceId   types.ResourceID //`json:"resource_id"`
+	Payload      []interface{}    //`json:"payload"` // data associated with event sequence
+	Type         TransferType     //`json:"type"`
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount

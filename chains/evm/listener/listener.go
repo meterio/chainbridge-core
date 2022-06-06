@@ -4,16 +4,25 @@
 package listener
 
 import (
+	"bytes"
+	"encoding/gob"
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-
+	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/store"
 	"github.com/ChainSafe/chainbridge-core/types"
+	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rs/zerolog/log"
 )
@@ -26,18 +35,23 @@ type ChainClient interface {
 	LatestFinalizedBlock() (*big.Int, error)
 	FetchDepositLogs(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*evmclient.DepositLogs, error)
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
+	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]ethereumTypes.Log, error)
 }
 
 type EVMListener struct {
 	chainReader   ChainClient
 	eventHandler  EventHandler
 	bridgeAddress common.Address
+
+	mh EVMMessageHandler
+	id uint8
+	db *lvldb.LVLDB
 }
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address) *EVMListener {
-	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress}
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, mh EVMMessageHandler, id uint8, db *lvldb.LVLDB) *EVMListener {
+	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, mh: mh, id: id, db: db}
 }
 
 func (l *EVMListener) ListenToEvents(
@@ -72,6 +86,15 @@ func (l *EVMListener) ListenToEvents(
 					continue
 				}
 
+				query := l.buildQuery(l.bridgeAddress, string(util.ProposalEvent), startBlock, startBlock)
+				logch, err := l.chainReader.FilterLogs(context.TODO(), query)
+				if err != nil {
+					//return nil, err
+					//panic(err)
+				}
+
+				l.trackProposalExecuted(logch)
+
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
 					// Filtering logs error really can appear only on wrong configuration or temporary network problem
@@ -105,4 +128,133 @@ func (l *EVMListener) ListenToEvents(
 		}
 	}()
 	return ch
+}
+
+// buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
+func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
+	//head, err := l.chainReader.LatestBlock()
+	//if err != nil {
+	//	log.Error().Err(err).Msg("Unable to get latest block")
+	//	time.Sleep(blockRetryInterval)
+	//	continue
+	//}
+	//
+	//if startBlock == nil {
+	//	startBlock = head
+	//}
+	//
+	//// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
+	//if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
+	//	time.Sleep(blockRetryInterval)
+	//	continue
+	//}
+
+	//fromBlock, err := v.chainReader.LatestBlock()
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{contract},
+		Topics: [][]common.Hash{
+			{crypto.Keccak256Hash([]byte(sig))},
+		},
+		FromBlock: startBlock,
+		ToBlock: endBlock,
+	}
+
+	//fmt.Sprintf("%x", query.Topics[0][:])
+	//fmt.Sprintf("%x", query.Topics[0][:])
+	//log.Info().Msgf("FromBlock %v, Addresses %v, Topics %v", fromBlock, query.Addresses, query.Topics)
+	return query
+}
+
+func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
+	//log.Info().Msgf("event ProposalEvent", vLogs)
+
+	for _, vLog := range vLogs {
+		//Consensus fields:
+		//vLog.Address
+		//vLog.Topics
+		//vLog.Data
+
+		// Derived fields.
+		//vLog.BlockNumber
+		//vLog.TxHash
+		//vLog.TxIndex
+		//vLog.BlockHash
+		//vLog.Index
+
+		//vLog.Removed
+
+		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+		if err != nil {
+			//return
+			continue
+		}
+
+		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
+
+		if err != nil {
+			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
+			continue
+		}
+
+		//_ = pel
+		//dl.OriginDomainID
+		//dl.DepositNonce
+
+		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
+		data, err := v.db.GetByKey(key)
+		if err != nil {
+			continue
+			//return
+		}
+
+		if pel.Status == message.ProposalStatusCanceled {
+			v.db.Delete(key)
+			continue
+		}
+
+		log.Debug().Msgf("Found Proposal Executed Event log in BlockNumber: %d, BlockHash %v, TxHash: %s, TxIndex: %v, Index: %v; Address %v, Topics %v, Data %v", vLog.BlockNumber, vLog.BlockHash, vLog.TxHash, vLog.TxIndex, vLog.Index, vLog.Address, vLog.Topics, vLog.Data)
+
+		if pel.Status != message.ProposalStatusExecuted {
+			//return
+			continue
+		}
+
+		m := message.Message{}
+		//err = json.Unmarshal(data, &m)
+		//if err != nil {
+		//	panic(err)
+		//}
+
+
+		var nnetwork bytes.Buffer
+		// Create a decoder and receive a value.
+		dec := gob.NewDecoder(&nnetwork)
+		nnetwork.Write(data)
+		//var v Vector
+		err = dec.Decode(&m)
+		if err != nil {
+			//log.Fatal("decode:", err)
+			//panic(err)
+			//return
+			continue
+		}
+
+		v.mh.CheckAndExecuteAirDrop(m)
+		v.db.Delete(key)
+	}
+}
+
+func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
+	var pe evmclient.ProposalEvents
+
+	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
+	if err != nil {
+		return &evmclient.ProposalEvents{}, err
+	}
+
+	return &pe, nil
 }

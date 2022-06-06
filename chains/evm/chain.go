@@ -68,18 +68,20 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 		airDropErc20Contract = *erc20.NewERC20Contract(client, config.AirDropErc20Contract, t)
 	}
 
+	domainId := config.GeneralChainConfig.Id
+
+	emh := listener.NewEVMMessageHandler(*config, airDropErc20Contract, t)
 	eventHandler := listener.NewETHEventHandler(*bridgeContract)
 	eventHandler.RegisterEventHandler(config.Erc20Handler, listener.Erc20EventHandler)
 	eventHandler.RegisterEventHandler(config.Erc721Handler, listener.Erc721EventHandler)
 	eventHandler.RegisterEventHandler(config.GenericHandler, listener.GenericEventHandler)
-	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge))
+	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge), *emh, *domainId, db)
 
 	mh := voter.NewEVMMessageHandler(*bridgeContract, *config, airDropErc20Contract, t)
 	mh.RegisterMessageHandler(config.Erc20Handler, voter.ERC20MessageHandler)
 	mh.RegisterMessageHandler(config.Erc721Handler, voter.ERC721MessageHandler)
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
-	domainId := config.GeneralChainConfig.Id
 	var evmVoter *voter.EVMVoter
 	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, *domainId)
 	if err != nil {

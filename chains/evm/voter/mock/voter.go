@@ -47,6 +47,10 @@ func (m *MockChainClient) SubscribeFilterLogs(ctx context.Context, q ethereum.Fi
 	return nil, nil
 }
 
+func (m *MockChainClient) LatestBlock() (*big.Int, error) {
+	return big.NewInt(0), nil
+}
+
 // CallContract mocks base method.
 func (m *MockChainClient) CallContract(arg0 context.Context, arg1 map[string]interface{}, arg2 *big.Int) ([]byte, error) {
 	m.ctrl.T.Helper()
