@@ -46,6 +46,15 @@ func (c *ERC20Contract) MintTokens(
 	return c.ExecuteTransaction("mint", opts, to, amount)
 }
 
+func (c *ERC20Contract) Transfer(
+	to common.Address,
+	amount *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Transfer %s tokens to %s", amount.String(), to.String())
+	return c.ExecuteTransaction("transfer", opts, to, amount)
+}
+
 func (c *ERC20Contract) ApproveTokens(
 	target common.Address,
 	amount *big.Int,

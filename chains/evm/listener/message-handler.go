@@ -54,8 +54,7 @@ func (w *EVMMessageHandler) CheckAndExecuteAirDropErc20(m message.Message) {
 		return
 	}
 
-	var airData []byte
-	w.airDropErc20Contract.Transact(to, airData, transactor.TransactOptions{Value: amount})
+	w.airDropErc20Contract.Transfer(*to, amount, transactor.TransactOptions{})
 
 	return
 }
