@@ -5,18 +5,19 @@ package app
 
 import (
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/flags"
 	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/opentelemetry"
 	"github.com/ChainSafe/chainbridge-core/relayer"
 	"github.com/ChainSafe/chainbridge-core/store"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -33,12 +34,17 @@ func Run() error {
 	}
 	blockstore := store.NewBlockStore(db)
 
+	proposalDB, err := lvldb.NewLvlDB(util.PROPOSAL)
+	if err != nil {
+		panic(err)
+	}
+
 	chains := []relayer.RelayedChain{}
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				chain, err := evm.SetupDefaultEVMChain(chainConfig, evmtransaction.NewTransaction, blockstore)
+				chain, err := evm.SetupDefaultEVMChain(proposalDB, chainConfig, evmtransaction.NewTransaction, blockstore)
 				if err != nil {
 					panic(err)
 				}

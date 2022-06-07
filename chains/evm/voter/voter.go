@@ -4,24 +4,22 @@
 package voter
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/gob"
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/lvldb"
-	"github.com/ChainSafe/chainbridge-core/util"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
@@ -45,13 +43,13 @@ type ChainClient interface {
 	SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error)
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *ethereumTypes.Transaction, isPending bool, err error)
 	SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethereumTypes.Log) (ethereum.Subscription, error)
+	LatestBlock() (*big.Int, error)
 
 	calls.ContractCallerDispatcher
 }
 
 type MessageHandler interface {
 	HandleMessage(m *message.Message) (*proposal.Proposal, error)
-	CheckAndExecuteAirDrop(m message.Message)
 }
 
 type BridgeContract interface {
@@ -69,6 +67,7 @@ type EVMVoter struct {
 	bridgeContract       BridgeContract
 	pendingProposalVotes map[common.Hash]uint8
 	id                   uint8
+	db                   *lvldb.LVLDB
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -78,43 +77,25 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
+		db:                   db,
 	}
 
 	ch := make(chan common.Hash)
+
 	_, err := client.SubscribePendingTransactions(context.TODO(), ch)
 	if err != nil {
 		return nil, err
 	}
 	go voter.trackProposalPendingVotes(ch)
 
-	query := buildQuery(*bridgeContract.ContractAddress(), string(util.ProposalEvent))
-	logch := make(chan ethereumTypes.Log)
-
-	_, err = client.SubscribeFilterLogs(context.TODO(), query, logch)
-	if err != nil {
-		return nil, err
-	}
-	go voter.trackProposalExecuted(logch)
-
 	return voter, nil
-}
-
-// buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
-func buildQuery(contract common.Address, sig string) ethereum.FilterQuery {
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{contract},
-		Topics: [][]common.Hash{
-			{crypto.Keccak256Hash([]byte(sig))},
-		},
-	}
-	return query
 }
 
 // NewVoter creates an instance of EVMVoter that votes for proposal on chain.
@@ -122,13 +103,14 @@ func buildQuery(contract common.Address, sig string) ethereum.FilterQuery {
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
+func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
+		db:                   db,
 	}
 }
 
@@ -169,7 +151,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
-	err = checkAndSaveProposal(m)
+	err = v.checkAndSaveProposal(*m)
 	if err != nil {
 		return err
 	}
@@ -178,21 +160,22 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	return nil
 }
 
-func checkAndSaveProposal(m *message.Message) error {
+func (v *EVMVoter) checkAndSaveProposal(m message.Message) error {
 	// only ERC20 allow to airdrop
 	if m.Type == message.FungibleTransfer {
-		db, err := lvldb.NewLvlDB(util.PROPOSAL)
+		var network bytes.Buffer // Stand-in for the network.
+
+		// Create an encoder and send a value.
+		enc := gob.NewEncoder(&network)
+		err := enc.Encode(m)
 		if err != nil {
+			log.Fatal().Err(err)
 			return err
 		}
-		defer db.Close()
 
 		key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
-		value, err := json.Marshal(m)
-		if err != nil {
-			return err
-		}
-		err = db.SetByKey(key, value)
+
+		err = v.db.SetByKey(key, network.Bytes())
 		if err != nil {
 			return err
 		}
@@ -294,82 +277,6 @@ func (v *EVMVoter) trackProposalPendingVotes(ch chan common.Hash) {
 			go v.increaseProposalVoteCount(msg, prop.GetID())
 		}
 	}
-}
-
-func (v *EVMVoter) trackProposalExecuted(ch chan ethereumTypes.Log) {
-	db, err := lvldb.NewLvlDB(util.PROPOSAL)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	for vLog := range ch {
-		//	fmt.Println(vLog) // pointer to event log
-
-		//Consensus fields:
-		//vLog.Address
-		//vLog.Topics
-		//vLog.Data
-
-		// Derived fields.
-		//vLog.BlockNumber
-		//vLog.TxHash
-		//vLog.TxIndex
-		//vLog.BlockHash
-		//vLog.Index
-
-		//vLog.Removed
-
-		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
-		if err != nil {
-			return
-		}
-
-		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
-
-		if err != nil {
-			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
-			continue
-		}
-
-		//_ = pel
-		//dl.OriginDomainID
-		//dl.DepositNonce
-
-		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
-		data, err := db.GetByKey(key)
-		if err != nil {
-			return
-		}
-
-		if pel.Status == message.ProposalStatusCanceled {
-			db.Delete(key)
-		}
-		if pel.Status != message.ProposalStatusExecuted {
-			continue
-		}
-		//log.Debug().Msgf("Found Proposal Executed Event log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, dl.SenderAddress)
-
-		m := message.Message{}
-		err = json.Unmarshal(data, &m)
-		if err != nil {
-			panic(err)
-		}
-
-		v.mh.CheckAndExecuteAirDrop(m)
-		db.Delete(key)
-	}
-}
-
-func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
-	var pe evmclient.ProposalEvents
-
-	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
-	if err != nil {
-		return &evmclient.ProposalEvents{}, err
-	}
-
-	return &pe, nil
 }
 
 // increaseProposalVoteCount increases pending proposal vote for target proposal
