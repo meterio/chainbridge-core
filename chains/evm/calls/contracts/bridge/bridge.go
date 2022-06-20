@@ -64,6 +64,23 @@ func (c *BridgeContract) AdminSetGenericResource(
 	)
 }
 
+func (c *BridgeContract) AdminSetNativeResource(
+	handler common.Address,
+	rID types.ResourceID,
+	addr common.Address,
+	depositFunctionSig [4]byte,
+	depositerOffset *big.Int,
+	executeFunctionSig [4]byte,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting native resource %s", hexutil.Encode(rID[:]))
+	return c.ExecuteTransaction(
+		"adminSetNativeResource",
+		opts,
+		handler, rID, addr, depositFunctionSig, depositerOffset, executeFunctionSig,
+	)
+}
+
 func (c *BridgeContract) AdminSetResource(
 	handlerAddr common.Address,
 	rID types.ResourceID,
@@ -75,6 +92,19 @@ func (c *BridgeContract) AdminSetResource(
 		"adminSetResource",
 		opts,
 		handlerAddr, rID, targetContractAddr,
+	)
+}
+
+func (c *BridgeContract) AdminSetWtoken(
+	rID types.ResourceID,
+	targetContractAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting wtoken %s", hexutil.Encode(rID[:]))
+	return c.ExecuteTransaction(
+		"adminSetWtoken",
+		opts,
+		rID, targetContractAddr, true,
 	)
 }
 
@@ -277,6 +307,16 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 		return 0, err
 	}
 	out := *abi.ConvertType(res[0], new(uint8)).(*uint8)
+	return out, nil
+}
+
+func (c *BridgeContract) GetFeeHandler() (common.Address, error) {
+	log.Debug().Msg("Getting FeeHandler")
+	res, err := c.CallContract("_feeHandler")
+	if err != nil {
+		return common.Address{}, err
+	}
+	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
 	return out, nil
 }
 

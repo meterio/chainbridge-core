@@ -2,6 +2,12 @@ package admin
 
 import (
 	"fmt"
+	callsUtil "github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
+	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
@@ -21,7 +27,18 @@ var setFeeCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	RunE: setFee,
+	//RunE: setFee,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := initialize.InitializeClient(url, senderKeyPair)
+		if err != nil {
+			return err
+		}
+		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+		if err != nil {
+			return err
+		}
+		return SetFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateSetFeeFlags(cmd, args)
 		if err != nil {
@@ -34,6 +51,7 @@ var setFeeCmd = &cobra.Command{
 func BindSetFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
+	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
 	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
 }
 
@@ -47,11 +65,36 @@ func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func setFee(cmd *cobra.Command, args []string) error {
+func SetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
 Setting new fee
 Fee amount: %s
 Bridge address: %s`, Fee, Bridge)
+
+	feeHandlerAddr, err := contract.GetFeeHandler()
+	if err != nil {
+		return err
+	}
+
+	c, err := initialize.InitializeClient(url, senderKeyPair)
+	if err != nil {
+		return err
+	}
+	t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+	if err != nil {
+		return err
+	}
+
+	feeHandlerContract := bridge.NewFeeHandlerContract(c, feeHandlerAddr, t)
+
+	decimals := big.NewInt(int64(Decimals))
+	RealAmount, err = callsUtil.UserAmountToWei(Fee, decimals)
+	if DomainID != 0 {
+		feeHandlerContract.SetSpecialFee(DomainID, RealAmount, transactor.TransactOptions{GasLimit: gasLimit})
+	} else {
+		feeHandlerContract.ChangeFee(RealAmount, transactor.TransactOptions{GasLimit: gasLimit})
+	}
+
 	return nil
 }
 
