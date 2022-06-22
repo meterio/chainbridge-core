@@ -334,6 +334,7 @@ Available Commands:
   query-proposal            Query an inbound proposal
   query-resource            Query the resource ID for a handler contract
   register-generic-resource Register a generic resource ID
+  register-native-resource  Register a native resource ID
   register-resource         Register a resource ID
   set-burn                  Set a token contract as mintable/burnable
 
@@ -393,6 +394,24 @@ Usage:
 
 Flags:
       --bridge string     Bridge contract address
+      --deposit string    Deposit function signature (default "0x00000000")
+      --execute string    Execute proposal function signature (default "0x00000000")
+      --handler string    Handler contract address
+      --hash              Treat signature inputs as function prototype strings, hash and take the first 4 bytes
+  -h, --help              help for register-generic-resource
+      --resource string   Resource ID to query
+      --target string     Contract address or hash storage to be registered
+```
+
+#### `register-native-resource`
+The register-native-resource subcommand registers a resource ID with a contract address for a native handler.
+
+```bash
+Usage:
+   evm-cli bridge register-native-resource [flags]
+
+Flags:
+      --bridge  string    Bridge contract address
       --deposit string    Deposit function signature (default "0x00000000")
       --execute string    Execute proposal function signature (default "0x00000000")
       --handler string    Handler contract address
