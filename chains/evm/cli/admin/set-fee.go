@@ -44,6 +44,8 @@ var setFeeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		ProcessSetFeeFlags(cmd, args)
 		return nil
 	},
 }
@@ -63,6 +65,10 @@ func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid bridge address %s", Bridge)
 	}
 	return nil
+}
+
+func ProcessSetFeeFlags(cmd *cobra.Command, args []string) {
+	BridgeAddr = common.HexToAddress(Bridge)
 }
 
 func SetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
