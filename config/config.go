@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/flags"
+	"github.com/rs/zerolog"
 
 	"github.com/ChainSafe/chainbridge-core/config/relayer"
 	"github.com/spf13/viper"
@@ -49,5 +51,29 @@ func GetConfig(path string) (Config, error) {
 	config.RelayerConfig = relayerConfig
 	config.ChainConfigs = rawConfig.ChainConfigs
 
+	logLevel := viper.GetString(flags.LogLevelFlagName)
+	setGlobalLevel(logLevel)
+
 	return config, nil
+}
+
+func setGlobalLevel(logLevel string) {
+	switch logLevel {
+	case "panic":
+		zerolog.SetGlobalLevel(zerolog.PanicLevel) // 5
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel) // 4
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel) // 3
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel) // 2
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel) // 1
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel) // 0
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel) // -1
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 }

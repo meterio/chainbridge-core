@@ -13,6 +13,7 @@ var (
 	FreshStartFlagName  = "fresh"
 	LatestBlockFlagName = "latest"
 	TestKeyFlagName     = "testkey"
+	LogLevelFlagName    = "loglevel"
 )
 
 func BindFlags(rootCMD *cobra.Command) {
@@ -33,4 +34,7 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().String(TestKeyFlagName, "", "Applies a predetermined test keystore to the chains.")
 	_ = viper.BindPFlag(TestKeyFlagName, rootCMD.PersistentFlags().Lookup(TestKeyFlagName))
+
+	rootCMD.PersistentFlags().String(LogLevelFlagName, "info", "Set global logging level")
+	_ = viper.BindPFlag(LogLevelFlagName, rootCMD.PersistentFlags().Lookup(LogLevelFlagName))
 }
