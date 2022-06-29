@@ -6,6 +6,8 @@ package mock_listener
 
 import (
 	context "context"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	big "math/big"
 	reflect "reflect"
@@ -105,6 +107,14 @@ func NewMockEventHandler(ctrl *gomock.Controller) *MockEventHandler {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockEventHandler) EXPECT() *MockEventHandlerMockRecorder {
 	return m.recorder
+}
+
+func (m *MockEventHandler) BridgeContract() bridge.BridgeContract {
+	return bridge.BridgeContract{}
+}
+
+func (m *MockEventHandler) SignaturesContract() signatures.SignaturesContract {
+	return signatures.SignaturesContract{}
 }
 
 // HandleEvent mocks base method.

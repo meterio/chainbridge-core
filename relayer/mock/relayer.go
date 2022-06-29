@@ -5,6 +5,7 @@
 package mock_relayer
 
 import (
+	"math/big"
 	reflect "reflect"
 
 	message "github.com/ChainSafe/chainbridge-core/relayer/message"
@@ -101,6 +102,37 @@ func (m *MockRelayedChain) Write(message *message.Message) error {
 	ret := m.ctrl.Call(m, "Write", message)
 	ret0, _ := ret[0].(error)
 	return ret0
+}
+
+
+// Write mocks base method.
+func (m *MockRelayedChain) Read(message *message.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+
+// Write mocks base method.
+func (m *MockRelayedChain) Submit(message *message.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Submit", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+
+// Write mocks base method.
+func (m *MockRelayedChain) Submits(message *message.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Submit", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (m *MockRelayedChain) MiddleId() *big.Int {
+	return nil
 }
 
 // Write indicates an expected call of Write.

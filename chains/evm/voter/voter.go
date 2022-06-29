@@ -61,10 +61,37 @@ type BridgeContract interface {
 	ContractAddress() *common.Address
 }
 
+type SignatureContract interface {
+	SubmitSignature(
+		originDomainID uint8,
+		destinationDomainID uint8,
+		destinationBridge common.Address,
+		depositNonce uint64,
+		resourceID [32]byte,
+		data []byte,
+		signature []byte,
+		opts transactor.TransactOptions,
+	) (*common.Hash, error)
+
+	GetSignatures(
+		domainID uint8,
+		depositNonce uint64,
+		resourceID [32]byte,
+		data []byte,
+	) ([][]byte, error)
+	//IsProposalVotedBy(by common.Address, p *proposal.Proposal) (bool, error)
+	//VoteProposal(proposal *proposal.Proposal, opts transactor.TransactOptions) (*common.Hash, error)
+	//SimulateVoteProposal(proposal *proposal.Proposal) error
+	//ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
+	//GetThreshold() (uint8, error)
+	//ContractAddress() *common.Address
+}
+
 type EVMVoter struct {
 	mh                   MessageHandler
 	client               ChainClient
 	bridgeContract       BridgeContract
+	signatureContract    SignatureContract
 	pendingProposalVotes map[common.Hash]uint8
 	id                   uint8
 	db                   *lvldb.LVLDB
@@ -157,6 +184,29 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	}
 
 	log.Debug().Str("hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
+	return nil
+}
+
+// VoteProposal checks if relayer already voted and is threshold
+// satisfied and casts a vote if it isn't.
+func (v *EVMVoter) SubmitSignature(m *message.Message) error {
+	prop, err := v.mh.HandleMessage(m)
+	if err != nil {
+		return err
+	}
+	_ = prop
+
+	v.signatureContract.SubmitSignature(0, 0, common.Address{}, 0, [32]byte{}, []byte(""), []byte(""), transactor.TransactOptions{})
+	return nil
+}
+
+func (v *EVMVoter) GetSignatures(m *message.Message) error {
+	v.signatureContract.GetSignatures(0, 0, [32]byte{}, []byte(""))
+	return nil
+}
+
+func (v *EVMVoter) VoteProposals(m *message.Message) error {
+	v.bridgeContract.VoteProposal(nil, transactor.TransactOptions{})
 	return nil
 }
 

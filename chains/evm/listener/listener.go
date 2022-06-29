@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"math/big"
 	"strings"
 	"time"
@@ -29,6 +31,8 @@ import (
 
 type EventHandler interface {
 	HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
+	BridgeContract() bridge.BridgeContract
+	SignaturesContract() signatures.SignaturesContract
 }
 type ChainClient interface {
 	LatestBlock() (*big.Int, error)
@@ -94,6 +98,11 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				l.trackProposalExecuted(logch)
+				m := l.trackProposalPassed(logch)
+				if m != nil {
+					m.FromDB = true
+					ch <- m
+				}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
@@ -144,6 +153,62 @@ func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock
 	return query
 }
 
+func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Message {
+	for _, vLog := range vLogs {
+		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+		if err != nil {
+			continue
+		}
+
+		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
+		if err != nil {
+			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
+			continue
+		}
+
+		//key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
+		//data, err := v.db.GetByKey(key)
+		//if err != nil {
+		//	continue
+		//}
+
+		//if pel.Status == message.ProposalStatusCanceled {
+		//	v.db.Delete(key)
+		//	continue
+		//}
+
+		if pel.Status != message.ProposalStatusPassed {
+			continue
+		}
+
+		m := message.Message{}
+
+		return &m
+		//
+		//var network bytes.Buffer
+		////Create a decoder and receive a value.
+		//dec := gob.NewDecoder(&network)
+		////network.Write(data)
+		//err = dec.Decode(&m)
+		//if err != nil {
+		//	log.Error().Msgf("failed Decode Message: %v", err)
+		//	continue
+		//}
+		//
+		//signaturesContract := v.eventHandler.SignaturesContract()
+		//signaturesContract.GetSignatures(0, 0, [32]byte{}, []byte(""))
+		//
+		////v.eventHandler.HandleEvent()
+		//bridgeContract := v.eventHandler.BridgeContract()
+		//pp := proposal.Proposal{}
+		//bridgeContract.VoteProposals(&pp, transactor.TransactOptions{})
+
+		//v.mh.CheckAndExecuteAirDrop(m)
+		//v.db.Delete(key)
+	}
+	return nil
+}
+
 func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
@@ -182,6 +247,10 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 		if err != nil {
 			log.Error().Msgf("failed Decode Message: %v", err)
 			continue
+		}
+
+		if m.Type != message.FungibleTransfer {
+			return
 		}
 
 		v.mh.CheckAndExecuteAirDrop(m)

@@ -44,6 +44,8 @@ type Message struct {
 	ResourceId   types.ResourceID
 	Payload      []interface{} // data associated with event sequence
 	Type         TransferType
+
+	FromDB bool
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount

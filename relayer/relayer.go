@@ -5,7 +5,6 @@ package relayer
 
 import (
 	"fmt"
-
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/rs/zerolog/log"
 )
@@ -16,8 +15,12 @@ type Metrics interface {
 
 type RelayedChain interface {
 	PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message)
-	Write(message *message.Message) error
 	DomainID() uint8
+	MiddleId() uint8
+	Read(message *message.Message) error
+	Write(message *message.Message) error
+	Submit(message *message.Message) error
+	Submits(message *message.Message) error
 }
 
 func NewRelayer(chains []RelayedChain, metrics Metrics, messageProcessors ...message.MessageProcessor) *Relayer {
@@ -58,6 +61,76 @@ func (r *Relayer) Start(stop <-chan struct{}, sysErr chan error) {
 func (r *Relayer) route(m *message.Message) {
 	r.metrics.TrackDepositMessage(m)
 
+	sourceChain, ok := r.registry[m.Source]
+	if !ok {
+		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+		//return false
+	}
+	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+
+	middleChain, ok := r.registry[middleId]
+	_ = middleChain
+
+	destChain, ok := r.registry[m.Destination]
+	_ = destChain
+
+	if m.FromDB {
+		middleChain.Read(m)
+		destChain.Submits(m)
+
+		return
+	}
+
+	if middleChain != nil {
+		middleChain.Submit(m)
+		return
+	}
+
+	destChain.Write(m)
+	return
+
+	//done := r.toMiddleChain(m) // middleChain.Submit
+	//if done {
+	//	return
+	//}
+
+	// old logic
+
+	//r.toDestChain(m) // destChain.Write
+}
+
+func (r *Relayer) toMiddleChain(m *message.Message) bool {
+	sourceChain, ok := r.registry[m.Source]
+	if !ok {
+		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+		return false
+	}
+	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+
+	middleChain, ok := r.registry[middleId]
+	if !ok {
+		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+		return false
+	}
+
+	for _, mp := range r.messageProcessors {
+		if err := mp(m); err != nil {
+			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
+			return false
+		}
+	}
+
+	log.Debug().Msgf("Sending message %+v to middle %v", m, sourceChain.MiddleId())
+
+	if err := middleChain.Submit(m); err != nil {
+		log.Error().Err(err).Msgf("writing message %+v", m)
+		return false
+	}
+
+	return true
+}
+
+func (r *Relayer) toDestChain(m *message.Message) {
 	destChain, ok := r.registry[m.Destination]
 	if !ok {
 		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)

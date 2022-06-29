@@ -10,6 +10,7 @@ import (
 type GeneralChainConfig struct {
 	Name           string `mapstructure:"name"`
 	Id             *uint8 `mapstructure:"id"`
+	MiddleId       *uint8 `mapstructure:"middleId"`
 	Endpoint       string `mapstructure:"endpoint"`
 	From           string `mapstructure:"from"`
 	Type           string `mapstructure:"type"`

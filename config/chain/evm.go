@@ -27,6 +27,8 @@ type EVMConfig struct {
 	AirDropErc20Contract common.Address
 	AirDropErc20Amount   *big.Int
 	MoonbeamFinality     bool // blocks are needed to implicitly confirm the finality
+
+	SignatureContract common.Address
 }
 
 type RawEVMConfig struct {

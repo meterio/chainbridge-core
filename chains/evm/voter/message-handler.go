@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
 	"github.com/ChainSafe/chainbridge-core/config/chain"
@@ -30,8 +31,9 @@ func NewEVMMessageHandler(bridgeContract bridge.BridgeContract, config chain.EVM
 }
 
 type EVMMessageHandler struct {
-	bridgeContract bridge.BridgeContract
-	handlers       map[common.Address]MessageHandlerFunc
+	bridgeContract     bridge.BridgeContract
+	signaturesContract signatures.SignaturesContract
+	handlers           map[common.Address]MessageHandlerFunc
 
 	airDropErc20Contract erc20.ERC20Contract
 	cfg                  chain.EVMConfig
@@ -96,7 +98,9 @@ func ERC20MessageHandler(m *message.Message, handlerAddr, bridgeAddress common.A
 	recipientLen := big.NewInt(int64(len(recipient))).Bytes()
 	data = append(data, common.LeftPadBytes(recipientLen, 32)...) // length of recipient (uint256)
 	data = append(data, recipient...)                             // recipient ([]byte)
-	return proposal.NewProposal(m.Source, m.DepositNonce, m.ResourceId, data, handlerAddr, bridgeAddress), nil
+	np := proposal.NewProposal(m.Source, m.DepositNonce, m.ResourceId, data, handlerAddr, bridgeAddress)
+	np.Destination = m.Destination
+	return np, nil
 }
 
 func ERC721MessageHandler(msg *message.Message, handlerAddr, bridgeAddress common.Address) (*proposal.Proposal, error) {
@@ -123,7 +127,9 @@ func ERC721MessageHandler(msg *message.Message, handlerAddr, bridgeAddress commo
 	metadataLen := big.NewInt(int64(len(metadata))).Bytes()
 	data.Write(common.LeftPadBytes(metadataLen, 32))
 	data.Write(metadata)
-	return proposal.NewProposal(msg.Source, msg.DepositNonce, msg.ResourceId, data.Bytes(), handlerAddr, bridgeAddress), nil
+	np := proposal.NewProposal(msg.Source, msg.DepositNonce, msg.ResourceId, data.Bytes(), handlerAddr, bridgeAddress)
+	np.Destination = msg.Destination
+	return np, nil
 }
 
 func GenericMessageHandler(msg *message.Message, handlerAddr, bridgeAddress common.Address) (*proposal.Proposal, error) {
@@ -138,5 +144,7 @@ func GenericMessageHandler(msg *message.Message, handlerAddr, bridgeAddress comm
 	metadataLen := big.NewInt(int64(len(metadata))).Bytes()
 	data.Write(common.LeftPadBytes(metadataLen, 32)) // length of metadata (uint256)
 	data.Write(metadata)
-	return proposal.NewProposal(msg.Source, msg.DepositNonce, msg.ResourceId, data.Bytes(), handlerAddr, bridgeAddress), nil
+	np := proposal.NewProposal(msg.Source, msg.DepositNonce, msg.ResourceId, data.Bytes(), handlerAddr, bridgeAddress)
+	np.Destination = msg.Destination
+	return np, nil
 }

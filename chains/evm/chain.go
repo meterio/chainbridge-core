@@ -32,6 +32,10 @@ type EventListener interface {
 
 type ProposalVoter interface {
 	VoteProposal(message *message.Message) error
+
+	SubmitSignature(message *message.Message) error
+	GetSignatures(message *message.Message) error
+	VoteProposals(message *message.Message) error
 }
 
 // EVMChain is struct that aggregates all data required for
@@ -129,6 +133,22 @@ func (c *EVMChain) Write(msg *message.Message) error {
 	return c.writer.VoteProposal(msg)
 }
 
+func (c *EVMChain) Read(msg *message.Message) error {
+	return c.writer.GetSignatures(msg) // GetSignatures
+}
+
+func (c *EVMChain) Submit(msg *message.Message) error {
+	return c.writer.SubmitSignature(msg) // SubmitSignature
+}
+
+func (c *EVMChain) Submits(msg *message.Message) error {
+	return c.writer.VoteProposals(msg) // VoteProposals
+}
+
 func (c *EVMChain) DomainID() uint8 {
 	return *c.config.GeneralChainConfig.Id
+}
+
+func (c *EVMChain) MiddleId() uint8 {
+	return *c.config.GeneralChainConfig.MiddleId
 }
