@@ -17,10 +17,10 @@ type RelayedChain interface {
 	PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message)
 	DomainID() uint8
 	MiddleId() uint8
-	Read(message *message.Message) error
+	Read(message *message.Message) ([][]byte, error)
 	Write(message *message.Message) error
 	Submit(message *message.Message) error
-	Submits(message *message.Message) error
+	Submits(message *message.Message, data [][]byte) error
 }
 
 func NewRelayer(chains []RelayedChain, metrics Metrics, messageProcessors ...message.MessageProcessor) *Relayer {
@@ -64,39 +64,57 @@ func (r *Relayer) route(m *message.Message) {
 	sourceChain, ok := r.registry[m.Source]
 	if !ok {
 		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
-		//return false
+		return
 	}
 	middleId := sourceChain.MiddleId() // if zero?, use old logic.
 
-	middleChain, ok := r.registry[middleId]
-	_ = middleChain
+	var middleChain RelayedChain
+	if middleId != 0 {
+		middleChain, ok = r.registry[middleId]
+		if !ok {
+			log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+			return
+		}
+	}
 
 	destChain, ok := r.registry[m.Destination]
-	_ = destChain
+	if !ok {
+		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+		return
+	}
 
+	// case 1
 	if m.FromDB {
-		middleChain.Read(m)
-		destChain.Submits(m)
+		data, err := middleChain.Read(m)
+		if err != nil {
+			log.Error().Msgf(err.Error())
+		}
+		destChain.Submits(m, data)
 
 		return
 	}
 
+	// case 2
 	if middleChain != nil {
 		middleChain.Submit(m)
 		return
 	}
 
-	destChain.Write(m)
+	// case 3
+	for _, mp := range r.messageProcessors {
+		if err := mp(m); err != nil {
+			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
+			return
+		}
+	}
+
+	log.Debug().Msgf("Sending message %+v to destination %v", m, m.Destination)
+
+	if err := destChain.Write(m); err != nil {
+		log.Error().Err(err).Msgf("writing message %+v", m)
+		return
+	}
 	return
-
-	//done := r.toMiddleChain(m) // middleChain.Submit
-	//if done {
-	//	return
-	//}
-
-	// old logic
-
-	//r.toDestChain(m) // destChain.Write
 }
 
 func (r *Relayer) toMiddleChain(m *message.Message) bool {

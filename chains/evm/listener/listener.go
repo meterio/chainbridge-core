@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/gob"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"math/big"
 	"strings"
 	"time"
@@ -32,7 +31,7 @@ import (
 type EventHandler interface {
 	HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
 	BridgeContract() bridge.BridgeContract
-	SignaturesContract() signatures.SignaturesContract
+	//SignaturesContract() signatures.SignaturesContract
 }
 type ChainClient interface {
 	LatestBlock() (*big.Int, error)

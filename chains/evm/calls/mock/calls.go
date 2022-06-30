@@ -203,6 +203,12 @@ func (m *MockClientDispatcher) SignAndSendTransaction(ctx context.Context, tx ev
 	return ret0, ret1
 }
 
+
+func (mr *MockClientDispatcher) Sign(byteData []byte) ([]byte, error) {
+	return []byte{}, nil
+}
+
+
 // SignAndSendTransaction indicates an expected call of SignAndSendTransaction.
 func (mr *MockClientDispatcherMockRecorder) SignAndSendTransaction(ctx, tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -367,6 +373,10 @@ func (m *MockContractCallerDispatcher) SignAndSendTransaction(ctx context.Contex
 	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+func (mr *MockContractCallerDispatcher) Sign(byteData []byte) ([]byte, error) {
+	return []byte{}, nil
 }
 
 // SignAndSendTransaction indicates an expected call of SignAndSendTransaction.

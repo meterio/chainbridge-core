@@ -46,6 +46,7 @@ type Message struct {
 	Type         TransferType
 
 	FromDB bool
+	Data   []byte
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount

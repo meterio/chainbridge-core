@@ -48,6 +48,8 @@ type RawEVMConfig struct {
 	AirDropErc20ContractOpt string `mapstructure:"airDropErc20Contract"`
 	AirDropErc20AmountOpt   int64  `mapstructure:"airDropErc20Amount"`
 	MoonbeamFinalityOpt     bool   `mapstructure:"moonbeamFinality"`
+
+	SignatureContractOpt string `mapstructure:"signatureContract"`
 }
 
 func (c *RawEVMConfig) Validate() error {
@@ -95,6 +97,8 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		AirDropErc20Contract: common.Address{},
 		AirDropErc20Amount:   big.NewInt(0),
 		MoonbeamFinality:     false,
+
+		SignatureContract: common.Address{},
 	}
 
 	if c.GasLimit != 0 {
@@ -131,6 +135,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.MoonbeamFinalityOpt {
 		config.MoonbeamFinality = c.MoonbeamFinalityOpt
+	}
+
+	if c.SignatureContractOpt != "" {
+		config.SignatureContract = common.HexToAddress(c.SignatureContractOpt)
 	}
 
 	return config, nil

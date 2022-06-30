@@ -122,6 +122,14 @@ func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- 
 
 // LatestBlock returns the latest block from the current chain
 func (c *EVMClient) LatestBlock() (*big.Int, error) {
+	//c.SignTypedData
+	//c.rpClient.SignTypedData
+	//c.gethClient.SignTypedData
+	//c.SignAndSendTransaction()
+
+	//c.rpClient
+	//c.SignAndSendTransaction()
+
 	if c.moonbeamFinality == true {
 		return c.LatestFinalizedBlock()
 	}
@@ -308,6 +316,10 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 		return common.Hash{}, err
 	}
 	return tx.Hash(), nil
+}
+
+func (c *EVMClient) Sign(byteData []byte) ([]byte, error) {
+	return crypto.Sign(byteData, c.kp.PrivateKey())
 }
 
 func (c *EVMClient) RelayerAddress() common.Address {

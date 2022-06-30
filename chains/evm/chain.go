@@ -5,6 +5,7 @@ package evm
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"math/big"
@@ -34,8 +35,8 @@ type ProposalVoter interface {
 	VoteProposal(message *message.Message) error
 
 	SubmitSignature(message *message.Message) error
-	GetSignatures(message *message.Message) error
-	VoteProposals(message *message.Message) error
+	GetSignatures(message *message.Message) ([][]byte, error)
+	VoteProposals(message *message.Message, data [][]byte) error
 }
 
 // EVMChain is struct that aggregates all data required for
@@ -61,6 +62,7 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
 	bridgeContract := bridge.NewBridgeContract(client, common.HexToAddress(config.Bridge), t)
+	//signatureContract := signatures.NewSignaturesContract(client, config.SignatureContract)
 
 	var airDropErc20Contract erc20.ERC20Contract
 	if config.AirDropErc20Contract != util.ZeroAddress {
@@ -70,6 +72,16 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 		}
 
 		airDropErc20Contract = *erc20.NewERC20Contract(client, config.AirDropErc20Contract, t)
+	}
+
+	var signatureContract signatures.SignaturesContract
+	if config.SignatureContract != util.ZeroAddress {
+		err = client.EnsureHasBytecode(config.SignatureContract)
+		if err != nil {
+			return nil, err
+		}
+
+		signatureContract = *signatures.NewSignaturesContract(client, config.SignatureContract)
 	}
 
 	domainId := config.GeneralChainConfig.Id
@@ -87,10 +99,10 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, *domainId)
+	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId)
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, *domainId)
+		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId)
 	}
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil
@@ -133,7 +145,7 @@ func (c *EVMChain) Write(msg *message.Message) error {
 	return c.writer.VoteProposal(msg)
 }
 
-func (c *EVMChain) Read(msg *message.Message) error {
+func (c *EVMChain) Read(msg *message.Message) ([][]byte, error) {
 	return c.writer.GetSignatures(msg) // GetSignatures
 }
 
@@ -141,8 +153,8 @@ func (c *EVMChain) Submit(msg *message.Message) error {
 	return c.writer.SubmitSignature(msg) // SubmitSignature
 }
 
-func (c *EVMChain) Submits(msg *message.Message) error {
-	return c.writer.VoteProposals(msg) // VoteProposals
+func (c *EVMChain) Submits(msg *message.Message, data [][]byte) error {
+	return c.writer.VoteProposals(msg, data) // VoteProposals
 }
 
 func (c *EVMChain) DomainID() uint8 {

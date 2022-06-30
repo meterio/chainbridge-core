@@ -8,6 +8,9 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -44,6 +47,7 @@ type ChainClient interface {
 	TransactionByHash(ctx context.Context, hash common.Hash) (tx *ethereumTypes.Transaction, isPending bool, err error)
 	SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethereumTypes.Log) (ethereum.Subscription, error)
 	LatestBlock() (*big.Int, error)
+	ChainID(ctx context.Context) (*big.Int, error)
 
 	calls.ContractCallerDispatcher
 }
@@ -55,6 +59,7 @@ type MessageHandler interface {
 type BridgeContract interface {
 	IsProposalVotedBy(by common.Address, p *proposal.Proposal) (bool, error)
 	VoteProposal(proposal *proposal.Proposal, opts transactor.TransactOptions) (*common.Hash, error)
+	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, opts transactor.TransactOptions) (*common.Hash, error)
 	SimulateVoteProposal(proposal *proposal.Proposal) error
 	ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
 	GetThreshold() (uint8, error)
@@ -62,29 +67,8 @@ type BridgeContract interface {
 }
 
 type SignatureContract interface {
-	SubmitSignature(
-		originDomainID uint8,
-		destinationDomainID uint8,
-		destinationBridge common.Address,
-		depositNonce uint64,
-		resourceID [32]byte,
-		data []byte,
-		signature []byte,
-		opts transactor.TransactOptions,
-	) (*common.Hash, error)
-
-	GetSignatures(
-		domainID uint8,
-		depositNonce uint64,
-		resourceID [32]byte,
-		data []byte,
-	) ([][]byte, error)
-	//IsProposalVotedBy(by common.Address, p *proposal.Proposal) (bool, error)
-	//VoteProposal(proposal *proposal.Proposal, opts transactor.TransactOptions) (*common.Hash, error)
-	//SimulateVoteProposal(proposal *proposal.Proposal) error
-	//ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
-	//GetThreshold() (uint8, error)
-	//ContractAddress() *common.Address
+	SubmitSignature(originDomainID uint8, destinationDomainID uint8, destinationBridge common.Address, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
+	GetSignatures(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
 }
 
 type EVMVoter struct {
@@ -104,11 +88,12 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
+		signatureContract:    signatureContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
@@ -130,11 +115,12 @@ func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainCl
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, id uint8) *EVMVoter {
+func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
+		signatureContract:    signatureContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
@@ -187,26 +173,69 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	return nil
 }
 
-// VoteProposal checks if relayer already voted and is threshold
-// satisfied and casts a vote if it isn't.
 func (v *EVMVoter) SubmitSignature(m *message.Message) error {
-	prop, err := v.mh.HandleMessage(m)
+	chainId, err := v.client.ChainID(context.TODO())
+
+	typedData := core.TypedData{Types: core.Types{"PermitBridge": []core.Type{
+		{"domainID", "uint8"},
+		{"depositNonce", "uint64"},
+		{"resourceID", "bytes32"},
+		{"data", "bytes"}}},
+		PrimaryType: "PermitBridge",
+		Domain:      core.TypedDataDomain{Name: "name", Version: "version", ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: "verifyingContract"},
+		Message: core.TypedDataMessage{
+			"domainID":     m.Source,
+			"depositNonce": m.DepositNonce,
+			"resourceID":   m.ResourceId,
+			"data":         m.Data,
+		}}
+
+	rawData, err := EncodeForSigning(&typedData)
+	if err != nil {
+		return  err
+	}
+
+	hashData := crypto.Keccak256Hash(rawData)
+	signatureBytes, err := v.client.Sign(hashData.Bytes())
 	if err != nil {
 		return err
 	}
-	_ = prop
 
-	v.signatureContract.SubmitSignature(0, 0, common.Address{}, 0, [32]byte{}, []byte(""), []byte(""), transactor.TransactOptions{})
+	_, err = v.signatureContract.SubmitSignature(m.Source, m.Destination, *v.bridgeContract.ContractAddress(), m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (v *EVMVoter) GetSignatures(m *message.Message) error {
-	v.signatureContract.GetSignatures(0, 0, [32]byte{}, []byte(""))
-	return nil
+func EncodeForSigning(typedData *core.TypedData) ([]byte, error) {
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return nil, err
+	}
+
+	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	if err != nil {
+		return nil, err
+	}
+
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	return rawData, nil
 }
 
-func (v *EVMVoter) VoteProposals(m *message.Message) error {
-	v.bridgeContract.VoteProposal(nil, transactor.TransactOptions{})
+func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
+	data, err := v.signatureContract.GetSignatures(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	if err != nil {
+		return [][]byte{}, err
+	}
+	return data, nil
+}
+
+func (v *EVMVoter) VoteProposals(m *message.Message, data [][]byte) error {
+	_, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, data, transactor.TransactOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -152,6 +152,10 @@ func (mr *MockChainClientMockRecorder) SignAndSendTransaction(arg0, arg1 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignAndSendTransaction", reflect.TypeOf((*MockChainClient)(nil).SignAndSendTransaction), arg0, arg1)
 }
 
+func (mr *MockChainClientMockRecorder) Sign(byteData []byte) ([]byte, error) {
+	return []byte{}, nil
+}
+
 // SubscribePendingTransactions mocks base method.
 func (m *MockChainClient) SubscribePendingTransactions(arg0 context.Context, arg1 chan<- common.Hash) (*rpc.ClientSubscription, error) {
 	m.ctrl.T.Helper()
@@ -374,6 +378,17 @@ func (m *MockBridgeContract) VoteProposal(arg0 *proposal.Proposal, arg1 transact
 	ret0, _ := ret[0].(*common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+func (m *MockBridgeContract) VoteProposals(
+	domainID uint8,
+	depositNonce uint64,
+	resourceID [32]byte,
+	data []byte,
+	signatures [][]byte,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	return nil, nil
 }
 
 // VoteProposal indicates an expected call of VoteProposal.

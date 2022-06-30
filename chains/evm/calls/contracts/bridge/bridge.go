@@ -253,18 +253,17 @@ func (c *BridgeContract) VoteProposal(
 }
 
 func (c *BridgeContract) VoteProposals(
-	proposal *proposal.Proposal,
+	domainID uint8,
+	depositNonce uint64,
+	resourceID [32]byte,
+	data []byte,
+	signatures [][]byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().
-		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).
-		Str("resourceID", hexutil.Encode(proposal.ResourceId[:])).
-		Str("handler", proposal.HandlerAddress.String()).
-		Msgf("Vote proposal")
 	return c.ExecuteTransaction(
 		"voteProposals",
 		opts,
-		proposal.Source, proposal.DepositNonce, proposal.ResourceId, proposal.Data, proposal.Signatures,
+		domainID, depositNonce, resourceID, data, signatures,
 	)
 }
 

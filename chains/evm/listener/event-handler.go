@@ -105,6 +105,7 @@ func Erc20EventHandler(sourceID, destId uint8, nonce uint64, resourceID types.Re
 			amount,
 			recipientAddress,
 		},
+		Data: calldata,
 	}, nil
 }
 
@@ -127,6 +128,7 @@ func GenericEventHandler(sourceID, destId uint8, nonce uint64, resourceID types.
 		Payload: []interface{}{
 			metadata,
 		},
+		Data: calldata,
 	}, nil
 }
 
@@ -169,5 +171,6 @@ func Erc721EventHandler(sourceID, destId uint8, nonce uint64, resourceID types.R
 			recipientAddress,
 			metadata,
 		},
+		Data: calldata,
 	}, nil
 }
