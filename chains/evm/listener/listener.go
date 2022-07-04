@@ -168,10 +168,10 @@ func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Me
 			continue
 		}
 
-		//if pel.Status == message.ProposalStatusCanceled {
-		//	v.db.Delete(key)
-		//	continue
-		//}
+		if pel.Status == message.ProposalStatusCanceled {
+			v.db.Delete(key)
+			continue
+		}
 
 		if pel.Status != message.ProposalStatusPassed {
 			continue
@@ -179,10 +179,8 @@ func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Me
 
 		m := message.Message{}
 
-		//return &m
-		//
 		var network bytes.Buffer
-		////Create a decoder and receive a value.
+		//Create a decoder and receive a value.
 		dec := gob.NewDecoder(&network)
 		network.Write(data)
 		err = dec.Decode(&m)
@@ -192,17 +190,6 @@ func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Me
 		}
 
 		return &m
-
-		//signaturesContract := v.eventHandler.SignaturesContract()
-		//signaturesContract.GetSignatures(0, 0, [32]byte{}, []byte(""))
-		//
-		////v.eventHandler.HandleEvent()
-		//bridgeContract := v.eventHandler.BridgeContract()
-		//pp := proposal.Proposal{}
-		//bridgeContract.VoteProposals(&pp, transactor.TransactOptions{})
-
-		//v.mh.CheckAndExecuteAirDrop(m)
-		//v.db.Delete(key)
 	}
 	return nil
 }

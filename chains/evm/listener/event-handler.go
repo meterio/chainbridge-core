@@ -15,9 +15,8 @@ type EventHandlers map[common.Address]EventHandlerFunc
 type EventHandlerFunc func(sourceID, destId uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
 
 type ETHEventHandler struct {
-	bridgeContract     bridge.BridgeContract
-	//signaturesContract signatures.SignaturesContract
-	eventHandlers      EventHandlers
+	bridgeContract bridge.BridgeContract
+	eventHandlers  EventHandlers
 }
 
 // NewETHEventHandler creates an instance of ETHEventHandler that contains

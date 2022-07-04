@@ -35,6 +35,7 @@ type ProposalVoter interface {
 	VoteProposal(message *message.Message) error
 
 	SubmitSignature(message *message.Message) error
+
 	GetSignatures(message *message.Message) ([][]byte, error)
 	VoteProposals(message *message.Message, data [][]byte) error
 }
@@ -62,7 +63,6 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
 	bridgeContract := bridge.NewBridgeContract(client, common.HexToAddress(config.Bridge), t)
-	//signatureContract := signatures.NewSignaturesContract(client, config.SignatureContract)
 
 	var airDropErc20Contract erc20.ERC20Contract
 	if config.AirDropErc20Contract != util.ZeroAddress {

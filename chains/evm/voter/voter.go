@@ -164,9 +164,12 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
-	err = v.checkAndSaveProposal(*m)
-	if err != nil {
-		return err
+	// only ERC20 allow to airdrop
+	if m.Type == message.FungibleTransfer {
+		err = v.saveMessage(*m)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Debug().Str("hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
@@ -184,7 +187,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 		{"depositNonce", "uint64"},
 		{"resourceID", "bytes32"},
 		{"data", "bytes"}}},
-		PrimaryType: "PermitBridge",
+		PrimaryType: name,
 		Domain:      core.TypedDataDomain{Name: name, Version: version, ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: verifyingContract.String()},
 		Message: core.TypedDataMessage{
 			"domainID":     m.Source,
@@ -195,7 +198,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 
 	rawData, err := EncodeForSigning(&typedData)
 	if err != nil {
-		return  err
+		return err
 	}
 
 	hashData := crypto.Keccak256Hash(rawData)
@@ -204,10 +207,17 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 		return err
 	}
 
-	_, err = v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
+	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}
+	log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+
+	err = v.saveMessage(*m)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -235,32 +245,31 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, data [][]byte) error {
-	_, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, data, transactor.TransactOptions{})
+	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, data, transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}
+	log.Debug().Str("hash", hash.String()).Msgf("VoteProposals")
+
 	return nil
 }
 
-func (v *EVMVoter) checkAndSaveProposal(m message.Message) error {
-	// only ERC20 allow to airdrop
-	if m.Type == message.FungibleTransfer {
-		var network bytes.Buffer // Stand-in for the network.
+func (v *EVMVoter) saveMessage(m message.Message) error {
+	var network bytes.Buffer // Stand-in for the network.
 
-		// Create an encoder and send a value.
-		enc := gob.NewEncoder(&network)
-		err := enc.Encode(m)
-		if err != nil {
-			log.Fatal().Err(err)
-			return err
-		}
+	// Create an encoder and send a value.
+	enc := gob.NewEncoder(&network)
+	err := enc.Encode(m)
+	if err != nil {
+		log.Fatal().Err(err)
+		return err
+	}
 
-		key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+	key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
 
-		err = v.db.SetByKey(key, network.Bytes())
-		if err != nil {
-			return err
-		}
+	err = v.db.SetByKey(key, network.Bytes())
+	if err != nil {
+		return err
 	}
 
 	return nil

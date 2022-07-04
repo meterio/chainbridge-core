@@ -23,8 +23,6 @@ type Proposal struct {
 	ResourceId     types.ResourceID
 	Payload        []interface{} // data associated with event sequence
 	Data           []byte
-	Signatures     [][]byte
-	Destination    uint8
 	HandlerAddress common.Address
 	BridgeAddress  common.Address
 }
