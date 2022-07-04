@@ -109,10 +109,6 @@ func (m *MockEventHandler) EXPECT() *MockEventHandlerMockRecorder {
 	return m.recorder
 }
 
-func (m *MockEventHandler) BridgeContract() bridge.BridgeContract {
-	return bridge.BridgeContract{}
-}
-
 func (m *MockEventHandler) SignaturesContract() signatures.SignaturesContract {
 	return signatures.SignaturesContract{}
 }

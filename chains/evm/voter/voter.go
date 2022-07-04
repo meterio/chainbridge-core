@@ -174,7 +174,10 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 }
 
 func (v *EVMVoter) SubmitSignature(m *message.Message) error {
+	name := "PermitBridge"
+	version := "1.0"
 	chainId, err := v.client.ChainID(context.TODO())
+	verifyingContract := v.bridgeContract.ContractAddress()
 
 	typedData := core.TypedData{Types: core.Types{"PermitBridge": []core.Type{
 		{"domainID", "uint8"},
@@ -182,7 +185,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 		{"resourceID", "bytes32"},
 		{"data", "bytes"}}},
 		PrimaryType: "PermitBridge",
-		Domain:      core.TypedDataDomain{Name: "name", Version: "version", ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: "verifyingContract"},
+		Domain:      core.TypedDataDomain{Name: name, Version: version, ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: verifyingContract.String()},
 		Message: core.TypedDataMessage{
 			"domainID":     m.Source,
 			"depositNonce": m.DepositNonce,
@@ -201,7 +204,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 		return err
 	}
 
-	_, err = v.signatureContract.SubmitSignature(m.Source, m.Destination, *v.bridgeContract.ContractAddress(), m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
+	_, err = v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}

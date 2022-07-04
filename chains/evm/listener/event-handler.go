@@ -3,7 +3,6 @@ package listener
 import (
 	"errors"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,7 @@ type EventHandlerFunc func(sourceID, destId uint8, nonce uint64, resourceID type
 
 type ETHEventHandler struct {
 	bridgeContract     bridge.BridgeContract
-	signaturesContract signatures.SignaturesContract
+	//signaturesContract signatures.SignaturesContract
 	eventHandlers      EventHandlers
 }
 
@@ -27,14 +26,6 @@ func NewETHEventHandler(bridgeContract bridge.BridgeContract) *ETHEventHandler {
 	return &ETHEventHandler{
 		bridgeContract: bridgeContract,
 	}
-}
-
-func (e *ETHEventHandler) BridgeContract() bridge.BridgeContract {
-	return e.bridgeContract
-}
-
-func (e *ETHEventHandler) SignaturesContract() signatures.SignaturesContract {
-	return e.signaturesContract
 }
 
 func (e *ETHEventHandler) HandleEvent(sourceID, destID uint8, depositNonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error) {

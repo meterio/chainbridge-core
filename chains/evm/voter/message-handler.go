@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
 	"github.com/ChainSafe/chainbridge-core/config/chain"
@@ -32,7 +31,7 @@ func NewEVMMessageHandler(bridgeContract bridge.BridgeContract, config chain.EVM
 
 type EVMMessageHandler struct {
 	bridgeContract     bridge.BridgeContract
-	signaturesContract signatures.SignaturesContract
+	//signaturesContract signatures.SignaturesContract
 	handlers           map[common.Address]MessageHandlerFunc
 
 	airDropErc20Contract erc20.ERC20Contract

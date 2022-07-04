@@ -15,8 +15,10 @@ type Metrics interface {
 
 type RelayedChain interface {
 	PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message)
+
 	DomainID() uint8
 	MiddleId() uint8
+
 	Read(message *message.Message) ([][]byte, error)
 	Write(message *message.Message) error
 	Submit(message *message.Message) error

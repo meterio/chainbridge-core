@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"math/big"
 	"strings"
 	"time"
@@ -30,8 +29,6 @@ import (
 
 type EventHandler interface {
 	HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
-	BridgeContract() bridge.BridgeContract
-	//SignaturesContract() signatures.SignaturesContract
 }
 type ChainClient interface {
 	LatestBlock() (*big.Int, error)
@@ -165,11 +162,11 @@ func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Me
 			continue
 		}
 
-		//key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
-		//data, err := v.db.GetByKey(key)
-		//if err != nil {
-		//	continue
-		//}
+		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
+		data, err := v.db.GetByKey(key)
+		if err != nil {
+			continue
+		}
 
 		//if pel.Status == message.ProposalStatusCanceled {
 		//	v.db.Delete(key)
@@ -182,18 +179,20 @@ func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Me
 
 		m := message.Message{}
 
-		return &m
+		//return &m
 		//
-		//var network bytes.Buffer
+		var network bytes.Buffer
 		////Create a decoder and receive a value.
-		//dec := gob.NewDecoder(&network)
-		////network.Write(data)
-		//err = dec.Decode(&m)
-		//if err != nil {
-		//	log.Error().Msgf("failed Decode Message: %v", err)
-		//	continue
-		//}
-		//
+		dec := gob.NewDecoder(&network)
+		network.Write(data)
+		err = dec.Decode(&m)
+		if err != nil {
+			log.Error().Msgf("failed Decode Message: %v", err)
+			continue
+		}
+
+		return &m
+
 		//signaturesContract := v.eventHandler.SignaturesContract()
 		//signaturesContract.GetSignatures(0, 0, [32]byte{}, []byte(""))
 		//

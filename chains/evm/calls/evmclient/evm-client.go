@@ -122,14 +122,6 @@ func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- 
 
 // LatestBlock returns the latest block from the current chain
 func (c *EVMClient) LatestBlock() (*big.Int, error) {
-	//c.SignTypedData
-	//c.rpClient.SignTypedData
-	//c.gethClient.SignTypedData
-	//c.SignAndSendTransaction()
-
-	//c.rpClient
-	//c.SignAndSendTransaction()
-
 	if c.moonbeamFinality == true {
 		return c.LatestFinalizedBlock()
 	}
