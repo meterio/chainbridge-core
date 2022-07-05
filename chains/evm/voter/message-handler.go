@@ -5,10 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/config/chain"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
@@ -20,22 +17,15 @@ type MessageHandlerFunc func(m *message.Message, handlerAddr, bridgeAddress comm
 // NewEVMMessageHandler creates an instance of EVMMessageHandler that contains
 // message handler functions for converting deposit message into a chain specific
 // proposal
-func NewEVMMessageHandler(bridgeContract bridge.BridgeContract, config chain.EVMConfig, airDropErc20Contract erc20.ERC20Contract, t transactor.Transactor) *EVMMessageHandler {
+func NewEVMMessageHandler(bridgeContract bridge.BridgeContract) *EVMMessageHandler {
 	return &EVMMessageHandler{
 		bridgeContract:       bridgeContract,
-		cfg:                  config,
-		airDropErc20Contract: airDropErc20Contract,
-		t:                    t,
 	}
 }
 
 type EVMMessageHandler struct {
 	bridgeContract bridge.BridgeContract
 	handlers       map[common.Address]MessageHandlerFunc
-
-	airDropErc20Contract erc20.ERC20Contract
-	cfg                  chain.EVMConfig
-	t                    transactor.Transactor
 }
 
 func (mh *EVMMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
