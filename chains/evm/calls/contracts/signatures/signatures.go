@@ -7,6 +7,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rs/zerolog/log"
 	"strings"
 )
 
@@ -53,7 +54,7 @@ func (c *SignaturesContract) SubmitSignature(
 	signature []byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	//log.Debug().Msgf("Setting SpecialFee %d for %d", _specialFee, fromDomainID)
+	log.Debug().Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, destinationBridge %v, depositNonce %v, resourceID %v", originDomainID, destinationDomainID, destinationBridge, depositNonce, resourceID)
 	return c.ExecuteTransaction(
 		"submitSignature",
 		opts,
