@@ -152,7 +152,7 @@ func (c *BridgeContract) deposit(
 	data []byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	feeData := []byte("0x00")
+	feeData := []byte{0x00}
 
 	return c.ExecuteTransaction(
 		"deposit",
