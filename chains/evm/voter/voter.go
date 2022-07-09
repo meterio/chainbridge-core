@@ -177,6 +177,8 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 }
 
 func (v *EVMVoter) SubmitSignature(m *message.Message) error {
+	log.Info().Msgf("SubmitSignature message: %v", m)
+
 	name := "PermitBridge"
 	version := "1.0"
 	chainId, err := v.client.ChainID(context.TODO())
@@ -245,6 +247,8 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, data [][]byte) error {
+	log.Info().Msgf("VoteProposals message: %v", m)
+
 	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, data, transactor.TransactOptions{})
 	if err != nil {
 		return err

@@ -94,10 +94,10 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				l.trackProposalExecuted(logch)
-				m := l.trackProposalPassed(logch)
-				if m != nil {
-					m.FromDB = true
-					ch <- m
+				proposalPassedMessage := l.trackProposalPassed(logch)
+				if proposalPassedMessage != nil {
+					proposalPassedMessage.FromDB = true
+					ch <- proposalPassedMessage
 				}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
