@@ -182,6 +182,9 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 	name := "PermitBridge"
 	version := "1.0"
 	chainId, err := v.client.ChainID(context.TODO())
+	if err != nil {
+		return err
+	}
 	verifyingContract := v.bridgeContract.ContractAddress()
 
 	typedData := core.TypedData{Types: core.Types{"PermitBridge": []core.Type{
@@ -198,12 +201,14 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 			"data":         m.Data,
 		}}
 
+	log.Info().Msg("EncodeForSigning")
 	rawData, err := EncodeForSigning(&typedData)
 	if err != nil {
 		return err
 	}
 
 	hashData := crypto.Keccak256Hash(rawData)
+	log.Info().Msg("Sign")
 	signatureBytes, err := v.client.Sign(hashData.Bytes())
 	if err != nil {
 		return err
