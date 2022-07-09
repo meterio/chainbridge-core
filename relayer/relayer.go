@@ -86,21 +86,27 @@ func (r *Relayer) route(m *message.Message) {
 	}
 
 	// case 1
-	log.Info().Msgf("route case 1, message %v", m)
 	if m.FromDB {
+		log.Info().Msgf("route case 1, message %v", m)
 		data, err := middleChain.Read(m)
 		if err != nil {
 			log.Error().Msgf(err.Error())
 		}
-		destChain.Submits(m, data)
+		err = destChain.Submits(m, data)
+		if err != nil {
+			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
+		}
 
 		return
 	}
 
 	// case 2
-	log.Info().Msgf("route case 2, message %v", m)
 	if middleChain != nil {
-		middleChain.Submit(m)
+		log.Info().Msgf("route case 2, message %v", m)
+		err := middleChain.Submit(m)
+		if err != nil {
+			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
+		}
 		return
 	}
 
