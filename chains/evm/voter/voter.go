@@ -201,12 +201,13 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 			"data":         m.Data,
 		}}
 
-	log.Info().Msg("EncodeForSigning")
+	log.Info().Msgf("EncodeForSigning, typedData %v", typedData)
 	rawData, err := EncodeForSigning(&typedData)
 	if err != nil {
 		return err
 	}
 
+	log.Info().Msg("Keccak256Hash")
 	hashData := crypto.Keccak256Hash(rawData)
 	log.Info().Msg("Sign")
 	signatureBytes, err := v.client.Sign(hashData.Bytes())
