@@ -81,7 +81,7 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 			return nil, err
 		}
 
-		signatureContract = *signatures.NewSignaturesContract(client, config.SignatureContract)
+		signatureContract = *signatures.NewSignaturesContract(client, config.SignatureContract, t)
 	}
 
 	domainId := config.GeneralChainConfig.Id

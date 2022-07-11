@@ -18,11 +18,12 @@ type SignaturesContract struct {
 func NewSignaturesContract(
 	client calls.ContractCallerDispatcher,
 	contractAddress common.Address,
+	transactor transactor.Transactor,
 ) *SignaturesContract {
 	a, _ := abi.JSON(strings.NewReader(consts.SignaturesABI))
 	b := common.FromHex(consts.SignaturesBin)
 	return &SignaturesContract{
-		contracts.NewContract(contractAddress, a, b, client, nil),
+		contracts.NewContract(contractAddress, a, b, client, transactor),
 	}
 }
 
