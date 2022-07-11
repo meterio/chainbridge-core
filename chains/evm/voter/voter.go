@@ -6,6 +6,7 @@ package voter
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/gob"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -27,6 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	beecrypto "github.com/ethersphere/bee/pkg/crypto"
+	"github.com/ethersphere/bee/pkg/crypto/eip712"
 	"github.com/rs/zerolog/log"
 )
 
@@ -48,6 +51,7 @@ type ChainClient interface {
 	SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- ethereumTypes.Log) (ethereum.Subscription, error)
 	LatestBlock() (*big.Int, error)
 	ChainID(ctx context.Context) (*big.Int, error)
+	PrivateKey() *ecdsa.PrivateKey
 
 	calls.ContractCallerDispatcher
 }
@@ -177,6 +181,10 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 }
 
 func (v *EVMVoter) SubmitSignature(m *message.Message) error {
+	return v.BeeSubmitSignature(m)
+}
+
+func (v *EVMVoter) submitSignature(m *message.Message) error {
 	log.Info().Msgf("SubmitSignature message: %v", m)
 
 	name := "PermitBridge"
@@ -235,6 +243,119 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 	}
 
 	return nil
+}
+
+func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
+	log.Info().Msgf("BeeSubmitSignature message: %v", m)
+
+	privKey := v.client.PrivateKey()
+	signer := beecrypto.NewDefaultSigner(privKey)
+
+	name := "PermitBridge"
+	version := "1.0"
+	chainId, err := v.client.ChainID(context.TODO())
+	if err != nil {
+		return err
+	}
+	verifyingContract := v.bridgeContract.ContractAddress()
+
+	typedData := &eip712.TypedData{
+		Types: eip712.Types{
+			"EIP712Domain": {
+				{"name", "string"},
+				{"version", "string"},
+				{"chainId", "uint256"},
+				{"verifyingContract", "address"},
+			},
+			"PermitBridge": {
+				{"domainID", "uint256"},
+				{"depositNonce", "uint256"},
+				{"resourceID", "bytes32"},
+				{"data", "bytes"}}},
+		PrimaryType: "PermitBridge",
+		Domain:      eip712.TypedDataDomain{Name: name, Version: version, ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: verifyingContract.String()},
+		Message: eip712.TypedDataMessage{
+			"domainID":     math.NewHexOrDecimal256(int64(m.Source)),
+			"depositNonce": math.NewHexOrDecimal256(int64(m.DepositNonce)),
+			"resourceID":   m.ResourceId[:],
+			"data":         m.Data,
+		}}
+
+	//var testTypedData = &eip712.TypedData{
+	//	Domain: eip712.TypedDataDomain{
+	//		Name:    "test",
+	//		Version: "1.0",
+	//	},
+	//	Types: eip712.Types{
+	//		"EIP712Domain": {
+	//			{
+	//				Name: "name",
+	//				Type: "string",
+	//			},
+	//			{
+	//				Name: "version",
+	//				Type: "string",
+	//			},
+	//		},
+	//		"MyType": {
+	//			{
+	//				Name: "test",
+	//				Type: "string",
+	//			},
+	//		},
+	//	},
+	//	Message: eip712.TypedDataMessage{
+	//		"test": "abc",
+	//	},
+	//	PrimaryType: "MyType",
+	//}
+
+	sig, err := signer.SignTypedData(typedData)
+	if err != nil {
+		return err
+	}
+
+	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+	if err != nil {
+		return err
+	}
+	log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+
+	err = v.saveMessage(*m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+	//return err
+	//
+	//log.Info().Msgf("EncodeForSigning, typedData %v", typedData)
+	//rawData, err := EncodeForSigning(&typedData)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//log.Info().Msg("Keccak256Hash")
+	//hashData := crypto.Keccak256Hash(rawData)
+	//log.Info().Msg("Sign")
+	//signatureBytes, err := v.client.Sign(hashData.Bytes())
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, signatureBytes, transactor.TransactOptions{})
+	//if err != nil {
+	//	return err
+	//}
+	//log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+	//
+	//err = v.saveMessage(*m)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//return nil
 }
 
 func EncodeForSigning(typedData *core.TypedData) ([]byte, error) {

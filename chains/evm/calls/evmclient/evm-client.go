@@ -392,3 +392,7 @@ func (c *EVMClient) EnsureHasBytecode(addr common.Address) error {
 	}
 	return nil
 }
+
+func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
+	return c.kp.PrivateKey()
+}
