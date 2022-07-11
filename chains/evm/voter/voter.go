@@ -196,16 +196,16 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 				{"verifyingContract", "address"},
 			},
 			"PermitBridge": []core.Type{
-				{"domainID", "uint64"},
-				{"depositNonce", "uint64"},
+				{"domainID", "uint256"},
+				{"depositNonce", "uint256"},
 				{"resourceID", "bytes32"},
 				{"data", "bytes"}}},
 		PrimaryType: "PermitBridge",
 		Domain:      core.TypedDataDomain{Name: name, Version: version, ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: verifyingContract.String()},
 		Message: core.TypedDataMessage{
-			"domainID":     uint64(m.Source),
-			"depositNonce": m.DepositNonce,
-			"resourceID":   m.ResourceId,
+			"domainID":     math.NewHexOrDecimal256(int64(m.Source)),
+			"depositNonce": math.NewHexOrDecimal256(int64(m.DepositNonce)),
+			"resourceID":   m.ResourceId[:],
 			"data":         m.Data,
 		}}
 
