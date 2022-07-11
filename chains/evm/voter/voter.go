@@ -187,12 +187,20 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 	}
 	verifyingContract := v.bridgeContract.ContractAddress()
 
-	typedData := core.TypedData{Types: core.Types{"PermitBridge": []core.Type{
-		{"domainID", "uint8"},
-		{"depositNonce", "uint64"},
-		{"resourceID", "bytes32"},
-		{"data", "bytes"}}},
-		PrimaryType: name,
+	typedData := core.TypedData{
+		Types: core.Types{
+			"EIP712Domain": []core.Type{
+				{"name", "string"},
+				{"version", "string"},
+				{"chainId", "uint256"},
+				{"verifyingContract", "address"},
+			},
+			"PermitBridge": []core.Type{
+				{"domainID", "uint8"},
+				{"depositNonce", "uint64"},
+				{"resourceID", "bytes32"},
+				{"data", "bytes"}}},
+		PrimaryType: "PermitBridge",
 		Domain:      core.TypedDataDomain{Name: name, Version: version, ChainId: math.NewHexOrDecimal256(chainId.Int64()), VerifyingContract: verifyingContract.String()},
 		Message: core.TypedDataMessage{
 			"domainID":     m.Source,
@@ -232,11 +240,13 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 func EncodeForSigning(typedData *core.TypedData) ([]byte, error) {
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
+		//panic(err)
 		return nil, err
 	}
 
 	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
 	if err != nil {
+		//panic(err)
 		return nil, err
 	}
 
