@@ -310,6 +310,18 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	//	PrimaryType: "MyType",
 	//}
 
+	rawData, err := eip712.EncodeForSigning(typedData)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("EncodeForSigning get rawData %v", string(rawData[:]))
+
+	sighash, err := beecrypto.LegacyKeccak256(rawData)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("LegacyKeccak256 get sighash %v", string(sighash[:]))
+
 	sig, err := signer.SignTypedData(typedData)
 	if err != nil {
 		return err
