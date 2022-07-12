@@ -88,3 +88,22 @@ func (c *SignaturesContract) GetSignatures(
 	out := *abi.ConvertType(res[0], new([][]byte)).(*[][]byte)
 	return out, nil
 }
+
+func (c *SignaturesContract) CheckSignature(
+	domainID uint8,
+	destinationDomainID uint8,
+	destinationBridge common.Address,
+	depositNonce uint64,
+	resourceID [32]byte,
+	data []byte,
+	signature []byte,
+) (bool, error) {
+	res, err := c.CallContract("checkSignature", domainID, destinationDomainID, destinationBridge, depositNonce,
+		resourceID, data, signature)
+	if err != nil {
+		return false, err
+	}
+
+	out := abi.ConvertType(res[0], new(bool)).(*bool)
+	return *out, nil
+}
