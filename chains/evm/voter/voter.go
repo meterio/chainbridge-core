@@ -10,6 +10,8 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
+
 	//"github.com/ethereum/go-ethereum/crypto"
 	//"github.com/ethereum/go-ethereum/signer/core"
 	"math/big"
@@ -249,8 +251,9 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	log.Info().Msgf("BeeSubmitSignature message: %v", m)
 
 	privKey := v.client.PrivateKey()
-	log.Info().Msgf("privKey %x", privKey)
-	log.Info().Msgf("PublicKey %x", privKey.PublicKey)
+	//log.Info().Msgf("privKey %x", privKey)
+	//log.Info().Msgf("PublicKey %x", privKey.PublicKey)
+	log.Info().Msgf(fmt.Sprintf("client address %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex()))
 	signer := beecrypto.NewDefaultSigner(privKey)
 
 	name := "PermitBridge"
@@ -335,11 +338,14 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 		return err
 	}
 	log.Info().Msgf("p1 PublicKey %x", p1)
+	log.Info().Msgf(fmt.Sprintf("p1 address %v", crypto.PubkeyToAddress(*p1).Hex()))
+
 	p2, err := beecrypto.RecoverEIP712(sig, typedData)
 	if err != nil {
 		return err
 	}
 	log.Info().Msgf("p2 PublicKey %x", p2)
+	log.Info().Msgf(fmt.Sprintf("p2 address %v", crypto.PubkeyToAddress(*p2).Hex()))
 
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
