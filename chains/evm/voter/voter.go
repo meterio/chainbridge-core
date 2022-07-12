@@ -8,9 +8,14 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
+
+	ethereum "github.com/ethereum/go-ethereum"
+
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	//"github.com/ethereum/go-ethereum/crypto"
 	//"github.com/ethereum/go-ethereum/signer/core"
@@ -25,7 +30,6 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
 	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
@@ -73,7 +77,9 @@ type BridgeContract interface {
 }
 
 type SignatureContract interface {
+	ContractAddress() *common.Address
 	SubmitSignature(originDomainID uint8, destinationDomainID uint8, destinationBridge common.Address, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
+
 	GetSignatures(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
 }
 
@@ -182,8 +188,135 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	return nil
 }
 
+func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int64, resourceId []byte, data []byte) error {
+	privKey := v.client.PrivateKey()
+
+	cid, _ := v.client.ChainID(context.TODO())
+	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), cid.Int64())
+
+	name := "PermitBridge"
+	version := "1.0"
+	verifyingContract := v.bridgeContract.ContractAddress()
+
+	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, verifyingContract.String())
+
+	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId), hex.EncodeToString(data))
+
+	typedData := &apitypes.TypedData{
+		Types: apitypes.Types{
+			"EIP712Domain": {
+				apitypes.Type{Name: "name", Type: "string"},
+				apitypes.Type{Name: "version", Type: "string"},
+				apitypes.Type{Name: "chainId", Type: "uint256"},
+				apitypes.Type{Name: "verifyingContract", Type: "address"},
+			},
+			"PermitBridge": {
+				apitypes.Type{Name: "domainID", Type: "uint8"},
+				apitypes.Type{Name: "depositNonce", Type: "uint64"},
+				apitypes.Type{Name: "resourceID", Type: "bytes32"},
+				apitypes.Type{Name: "data", Type: "bytes"}}},
+		PrimaryType: "PermitBridge",
+		Domain: apitypes.TypedDataDomain{
+			Name:              name,
+			Version:           version,
+			ChainId:           math.NewHexOrDecimal256(chainId),
+			VerifyingContract: verifyingContract.String()},
+		Message: apitypes.TypedDataMessage{
+			"domainID":     math.NewHexOrDecimal256(domainId),
+			"depositNonce": math.NewHexOrDecimal256(depositNonce),
+			"resourceID":   resourceId,
+			"data":         data,
+		}}
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return err
+	}
+	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	if err != nil {
+		return err
+	}
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	sighash := crypto.Keccak256(rawData)
+
+	sig, err := v.client.Sign(sighash)
+	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
+	return err
+}
+
 func (v *EVMVoter) SubmitSignature(m *message.Message) error {
-	return v.BeeSubmitSignature(m)
+	privKey := v.client.PrivateKey()
+
+	chainId, _ := v.client.ChainID(context.TODO())
+	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+
+	name := "PermitBridge"
+	version := "1.0"
+	domainId := m.Source
+	// destDomainId := m.Destination
+	// FIXME:
+	destBridgeAddress := "0x"
+	destChainId := big.NewInt(3)
+	// FIXME: get destChainId and destBridgeAddress from destDomainId
+
+	verifyingContract := v.bridgeContract.ContractAddress()
+	depositNonce := m.DepositNonce
+	resourceId := m.ResourceId
+	data := m.Data
+
+	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, verifyingContract.String())
+
+	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
+
+	typedData := &apitypes.TypedData{
+		Types: apitypes.Types{
+			"EIP712Domain": {
+				apitypes.Type{Name: "name", Type: "string"},
+				apitypes.Type{Name: "version", Type: "string"},
+				apitypes.Type{Name: "chainId", Type: "uint256"},
+				apitypes.Type{Name: "verifyingContract", Type: "address"},
+			},
+			"PermitBridge": {
+				apitypes.Type{Name: "domainID", Type: "uint8"},
+				apitypes.Type{Name: "depositNonce", Type: "uint64"},
+				apitypes.Type{Name: "resourceID", Type: "bytes32"},
+				apitypes.Type{Name: "data", Type: "bytes"}}},
+		PrimaryType: "PermitBridge",
+		Domain: apitypes.TypedDataDomain{
+			Name:              name,
+			Version:           version,
+			ChainId:           math.NewHexOrDecimal256(destChainId.Int64()),
+			VerifyingContract: destBridgeAddress},
+		Message: apitypes.TypedDataMessage{
+			"domainID":     math.NewHexOrDecimal256(int64(domainId)),
+			"depositNonce": math.NewHexOrDecimal256(int64(depositNonce)),
+			"resourceID":   resourceId,
+			"data":         data,
+		}}
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return err
+	}
+	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	if err != nil {
+		return err
+	}
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	sighash := crypto.Keccak256(rawData)
+
+	sig, err := v.client.Sign(sighash)
+	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
+	// FIXME: call SubmitSignature
+	// hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+	// if err != nil {
+	// 	return err
+	// }
+	// log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+
+	// err = v.saveMessage(*m)
+	// if err != nil {
+	// 	return err
+	// }
+	return err
 }
 
 //func (v *EVMVoter) submitSignature(m *message.Message) error {
@@ -247,6 +380,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 //	return nil
 //}
 
+// FIXME: deprecated
 func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	log.Info().Msgf("BeeSubmitSignature message: %v", m)
 
@@ -262,7 +396,11 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	if err != nil {
 		return err
 	}
-	verifyingContract := v.bridgeContract.ContractAddress()
+	verifyingContract := v.signatureContract.ContractAddress()
+
+	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId.Int64(), verifyingContract.String())
+
+	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", m.Source, m.DepositNonce, hex.EncodeToString(m.ResourceId[:]), hex.EncodeToString(m.Data))
 
 	typedData := &eip712.TypedData{
 		Types: eip712.Types{

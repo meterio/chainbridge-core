@@ -5,11 +5,12 @@ package evm
 
 import (
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/util"
-	"math/big"
-	"time"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
@@ -104,6 +105,14 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
 		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId)
 	}
+
+	// TODO: remove this
+	// resourceId, _ := hex.DecodeString("00000000000000000000008a419ef4941355476cf04933e90bf3bbf2f7381400")
+	// data, _ := hex.DecodeString("00000000000000000000000000000000000000000000000000194d12e71db4000000000000000000000000000000000000000000000000000000000000000014551b6e92f7443e63ec2d0c43471de9574e834169")
+	// err = evmVoter.GetSignature(83, 5, 28, resourceId, data)
+	// if err != nil {
+	// 	log.Error().Msgf("failed to get signature: %s", err.Error())
+	// }
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil
 }
