@@ -249,6 +249,7 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	log.Info().Msgf("BeeSubmitSignature message: %v", m)
 
 	privKey := v.client.PrivateKey()
+	log.Info().Msgf("privKey %x", privKey)
 	signer := beecrypto.NewDefaultSigner(privKey)
 
 	name := "PermitBridge"
@@ -314,14 +315,15 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("EncodeForSigning get rawData %v", string(rawData[:]))
+	log.Info().Msgf("EncodeForSigning get rawData %x", rawData)
 
 	sighash, err := beecrypto.LegacyKeccak256(rawData)
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("LegacyKeccak256 get sighash %v", string(sighash[:]))
+	log.Info().Msgf("LegacyKeccak256 get sighash %x", sighash)
 
+	log.Info().Msgf("typedData %v", typedData)
 	sig, err := signer.SignTypedData(typedData)
 	if err != nil {
 		return err
