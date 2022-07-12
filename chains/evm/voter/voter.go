@@ -250,6 +250,7 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 
 	privKey := v.client.PrivateKey()
 	log.Info().Msgf("privKey %x", privKey)
+	log.Info().Msgf("PublicKey %x", privKey.PublicKey)
 	signer := beecrypto.NewDefaultSigner(privKey)
 
 	name := "PermitBridge"
@@ -328,6 +329,17 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	if err != nil {
 		return err
 	}
+
+	p1, err := beecrypto.Recover(sig, sighash)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("p1 PublicKey %x", p1)
+	p2, err := beecrypto.RecoverEIP712(sig, typedData)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("p2 PublicKey %x", p2)
 
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
