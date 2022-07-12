@@ -327,7 +327,7 @@ func (v *EVMVoter) BeeSubmitSignature(m *message.Message) error {
 	}
 	log.Info().Msgf("LegacyKeccak256 get sighash %x", sighash)
 
-	log.Info().Msgf("typedData %v", typedData)
+	log.Info().Msgf("typedData: Types %v, PrimaryType %v, Domain %v, Message %v", typedData.Types, typedData.PrimaryType, typedData.Domain, typedData.Message)
 	sig, err := signer.SignTypedData(typedData)
 	if err != nil {
 		return err
