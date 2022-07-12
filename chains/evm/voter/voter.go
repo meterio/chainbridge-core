@@ -142,6 +142,8 @@ func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeCont
 // VoteProposal checks if relayer already voted and is threshold
 // satisfied and casts a vote if it isn't.
 func (v *EVMVoter) VoteProposal(m *message.Message) error {
+	//v.client.ChainID(context.TODO())
+	//v.bridgeContract.ContractAddress()
 	prop, err := v.mh.HandleMessage(m)
 	if err != nil {
 		return err
@@ -243,7 +245,7 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 	return err
 }
 
-func (v *EVMVoter) SubmitSignature(m *message.Message) error {
+func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, bridgeContractAddress *common.Address) error {
 	privKey := v.client.PrivateKey()
 
 	chainId, _ := v.client.ChainID(context.TODO())
@@ -255,10 +257,10 @@ func (v *EVMVoter) SubmitSignature(m *message.Message) error {
 	// destDomainId := m.Destination
 	// FIXME:
 	destBridgeAddress := "0x"
-	destChainId := big.NewInt(3)
+	//destChainId := big.NewInt(3)
 	// FIXME: get destChainId and destBridgeAddress from destDomainId
 
-	verifyingContract := v.bridgeContract.ContractAddress()
+	verifyingContract := bridgeContractAddress // v.bridgeContract.ContractAddress()
 	depositNonce := m.DepositNonce
 	resourceId := m.ResourceId
 	data := m.Data
@@ -692,4 +694,12 @@ func (v *EVMVoter) increaseProposalVoteCount(hash common.Hash, propID common.Has
 	}
 
 	v.pendingProposalVotes[propID]--
+}
+
+func (v *EVMVoter) ChainID() (*big.Int, error) {
+	return v.client.ChainID(context.TODO())
+}
+
+func (v *EVMVoter) BridgeContractAddress() *common.Address {
+	return v.bridgeContract.ContractAddress()
 }

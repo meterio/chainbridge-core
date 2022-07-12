@@ -5,6 +5,7 @@
 package mock_relayer
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	reflect "reflect"
 
@@ -104,34 +105,39 @@ func (m *MockRelayedChain) Write(message *message.Message) error {
 	return ret0
 }
 
-
 // Write mocks base method.
-func (m *MockRelayedChain) Read(message *message.Message) error {
+func (m *MockRelayedChain) Read(message *message.Message) ([][]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", message)
 	ret0, _ := ret[0].(error)
-	return ret0
+	return [][]byte{}, ret0
 }
 
-
 // Write mocks base method.
-func (m *MockRelayedChain) Submit(message *message.Message) error {
+func (m *MockRelayedChain) Submit(message *message.Message, int2 *big.Int, address *common.Address) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Submit", message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-
 // Write mocks base method.
-func (m *MockRelayedChain) Submits(message *message.Message) error {
+func (m *MockRelayedChain) Submits(message *message.Message, data [][]byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Submit", message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (m *MockRelayedChain) MiddleId() *big.Int {
+func (m *MockRelayedChain) MiddleId() uint8 {
+	return 0
+}
+
+func (m *MockRelayedChain) ChainID() (*big.Int, error) {
+	return big.NewInt(0), nil
+}
+
+func (m *MockRelayedChain) BridgeContractAddress() *common.Address {
 	return nil
 }
 

@@ -35,10 +35,13 @@ type EventListener interface {
 type ProposalVoter interface {
 	VoteProposal(message *message.Message) error
 
-	SubmitSignature(message *message.Message) error
+	SubmitSignature(message *message.Message, chainID *big.Int, address *common.Address) error
 
 	GetSignatures(message *message.Message) ([][]byte, error)
 	VoteProposals(message *message.Message, data [][]byte) error
+
+	ChainID() (*big.Int, error)
+	BridgeContractAddress() *common.Address
 }
 
 // EVMChain is struct that aggregates all data required for
@@ -158,8 +161,8 @@ func (c *EVMChain) Read(msg *message.Message) ([][]byte, error) {
 	return c.writer.GetSignatures(msg) // GetSignatures
 }
 
-func (c *EVMChain) Submit(msg *message.Message) error {
-	return c.writer.SubmitSignature(msg) // SubmitSignature
+func (c *EVMChain) Submit(msg *message.Message, chainID *big.Int, bridgeContractAddress *common.Address) error {
+	return c.writer.SubmitSignature(msg, chainID, bridgeContractAddress) // SubmitSignature
 }
 
 func (c *EVMChain) Submits(msg *message.Message, data [][]byte) error {
@@ -172,4 +175,12 @@ func (c *EVMChain) DomainID() uint8 {
 
 func (c *EVMChain) MiddleId() uint8 {
 	return *c.config.GeneralChainConfig.MiddleId
+}
+
+func (c *EVMChain) ChainID() (*big.Int, error) {
+	return c.writer.ChainID()
+}
+
+func (c *EVMChain) BridgeContractAddress() *common.Address {
+	return c.writer.BridgeContractAddress()
 }

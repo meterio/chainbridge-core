@@ -6,7 +6,9 @@ package relayer
 import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
+	"math/big"
 )
 
 type Metrics interface {
@@ -19,9 +21,12 @@ type RelayedChain interface {
 	DomainID() uint8
 	MiddleId() uint8
 
+	ChainID() (*big.Int, error)
+	BridgeContractAddress() *common.Address
+
 	Read(message *message.Message) ([][]byte, error)
 	Write(message *message.Message) error
-	Submit(message *message.Message) error
+	Submit(message *message.Message, chainID *big.Int, address *common.Address) error
 	Submits(message *message.Message, data [][]byte) error
 }
 
@@ -103,7 +108,11 @@ func (r *Relayer) route(m *message.Message) {
 	// case 2
 	if middleChain != nil {
 		log.Info().Msgf("route case 2, message %v", m)
-		err := middleChain.Submit(m)
+		destChainID, err := destChain.ChainID()
+		if err != nil {
+			log.Error().Err(fmt.Errorf("error Submit %w get destChainID %v", err, m))
+		}
+		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress())
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
 		}
@@ -128,58 +137,58 @@ func (r *Relayer) route(m *message.Message) {
 	return
 }
 
-func (r *Relayer) toMiddleChain(m *message.Message) bool {
-	sourceChain, ok := r.registry[m.Source]
-	if !ok {
-		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
-		return false
-	}
-	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+//func (r *Relayer) toMiddleChain(m *message.Message) bool {
+//	sourceChain, ok := r.registry[m.Source]
+//	if !ok {
+//		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+//		return false
+//	}
+//	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+//
+//	middleChain, ok := r.registry[middleId]
+//	if !ok {
+//		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+//		return false
+//	}
+//
+//	for _, mp := range r.messageProcessors {
+//		if err := mp(m); err != nil {
+//			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
+//			return false
+//		}
+//	}
+//
+//	log.Debug().Msgf("Sending message %+v to middle %v", m, sourceChain.MiddleId())
+//
+//	if err := middleChain.Submit(m); err != nil {
+//		log.Error().Err(err).Msgf("writing message %+v", m)
+//		return false
+//	}
+//
+//	return true
+//}
 
-	middleChain, ok := r.registry[middleId]
-	if !ok {
-		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
-		return false
-	}
-
-	for _, mp := range r.messageProcessors {
-		if err := mp(m); err != nil {
-			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
-			return false
-		}
-	}
-
-	log.Debug().Msgf("Sending message %+v to middle %v", m, sourceChain.MiddleId())
-
-	if err := middleChain.Submit(m); err != nil {
-		log.Error().Err(err).Msgf("writing message %+v", m)
-		return false
-	}
-
-	return true
-}
-
-func (r *Relayer) toDestChain(m *message.Message) {
-	destChain, ok := r.registry[m.Destination]
-	if !ok {
-		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
-		return
-	}
-
-	for _, mp := range r.messageProcessors {
-		if err := mp(m); err != nil {
-			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
-			return
-		}
-	}
-
-	log.Debug().Msgf("Sending message %+v to destination %v", m, m.Destination)
-
-	if err := destChain.Write(m); err != nil {
-		log.Error().Err(err).Msgf("writing message %+v", m)
-		return
-	}
-}
+//func (r *Relayer) toDestChain(m *message.Message) {
+//	destChain, ok := r.registry[m.Destination]
+//	if !ok {
+//		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+//		return
+//	}
+//
+//	for _, mp := range r.messageProcessors {
+//		if err := mp(m); err != nil {
+//			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
+//			return
+//		}
+//	}
+//
+//	log.Debug().Msgf("Sending message %+v to destination %v", m, m.Destination)
+//
+//	if err := destChain.Write(m); err != nil {
+//		log.Error().Err(err).Msgf("writing message %+v", m)
+//		return
+//	}
+//}
 
 func (r *Relayer) addRelayedChain(c RelayedChain) {
 	if r.registry == nil {
