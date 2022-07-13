@@ -67,6 +67,14 @@ type ProposalEvents struct {
 	DataHash       [32]byte
 }
 
+type SignturePass struct {
+	OriginDomainID uint8
+	DepositNonce   uint64
+	ResourceID     [32]byte
+	Data           []byte
+	Signature      []byte
+}
+
 type CommonTransaction interface {
 	// Hash returns the transaction hash.
 	Hash() common.Hash

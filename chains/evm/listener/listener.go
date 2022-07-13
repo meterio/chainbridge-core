@@ -94,7 +94,7 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				l.trackProposalExecuted(logch)
-				proposalPassedMessage := l.trackProposalPassed(logch)
+				proposalPassedMessage := l.trackSignturePass(logch)
 				if proposalPassedMessage != nil {
 					proposalPassedMessage.FromDB = true
 					ch <- proposalPassedMessage
@@ -149,33 +149,33 @@ func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock
 	return query
 }
 
-func (v *EVMListener) trackProposalPassed(vLogs []ethereumTypes.Log) *message.Message {
+func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Message {
 	for _, vLog := range vLogs {
-		abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
 		if err != nil {
 			continue
 		}
 
-		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
+		pel, err := unpackSignturePassLog(abiIst, vLog.Data)
 		if err != nil {
 			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
 			continue
 		}
 
-		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
+		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
 		data, err := v.db.GetByKey(key)
 		if err != nil {
 			continue
 		}
 
-		if pel.Status == message.ProposalStatusCanceled {
-			v.db.Delete(key)
-			continue
-		}
-
-		if pel.Status != message.ProposalStatusPassed {
-			continue
-		}
+		//if pel.Status == message.ProposalStatusCanceled {
+		//	v.db.Delete(key)
+		//	continue
+		//}
+		//
+		//if pel.Status != message.ProposalStatusPassed {
+		//	continue
+		//}
 
 		m := message.Message{}
 
@@ -207,7 +207,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 			continue
 		}
 
-		key := []byte{pel.OriginDomainID, v.id, byte(pel.DepositNonce)}
+		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
 		data, err := v.db.GetByKey(key)
 		if err != nil {
 			continue
@@ -249,6 +249,17 @@ func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEve
 	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
 	if err != nil {
 		return &evmclient.ProposalEvents{}, err
+	}
+
+	return &pe, nil
+}
+
+func unpackSignturePassLog(abiIst abi.ABI, data []byte) (*evmclient.SignturePass, error) {
+	var pe evmclient.SignturePass
+
+	err := abiIst.UnpackIntoInterface(&pe, "SignturePass", data)
+	if err != nil {
+		return &evmclient.SignturePass{}, err
 	}
 
 	return &pe, nil

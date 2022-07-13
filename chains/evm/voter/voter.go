@@ -606,7 +606,7 @@ func (v *EVMVoter) saveMessage(m message.Message) error {
 		return err
 	}
 
-	key := []byte{m.Source, m.Destination, byte(m.DepositNonce)}
+	key := []byte{m.Source, byte(m.DepositNonce)}
 
 	err = v.db.SetByKey(key, network.Bytes())
 	if err != nil {
