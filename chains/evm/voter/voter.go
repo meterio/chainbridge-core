@@ -245,7 +245,7 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 	return err
 }
 
-func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, bridgeContractAddress *common.Address) error {
+func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, destBridgeAddress *common.Address) error {
 	privKey := v.client.PrivateKey()
 
 	chainId, _ := v.client.ChainID(context.TODO())
@@ -254,18 +254,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, bri
 	name := "PermitBridge"
 	version := "1.0"
 	domainId := m.Source
-	// destDomainId := m.Destination
-	// FIXME:
-	destBridgeAddress := "0x"
-	//destChainId := big.NewInt(3)
-	// FIXME: get destChainId and destBridgeAddress from destDomainId
-
-	verifyingContract := bridgeContractAddress // v.bridgeContract.ContractAddress()
 	depositNonce := m.DepositNonce
 	resourceId := m.ResourceId
 	data := m.Data
 
-	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, verifyingContract.String())
+	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, destBridgeAddress.String())
 
 	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
 
@@ -287,7 +280,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, bri
 			Name:              name,
 			Version:           version,
 			ChainId:           math.NewHexOrDecimal256(destChainId.Int64()),
-			VerifyingContract: destBridgeAddress},
+			VerifyingContract: destBridgeAddress.String()},
 		Message: apitypes.TypedDataMessage{
 			"domainID":     math.NewHexOrDecimal256(int64(domainId)),
 			"depositNonce": math.NewHexOrDecimal256(int64(depositNonce)),
@@ -307,17 +300,16 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, bri
 
 	sig, err := v.client.Sign(sighash)
 	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
-	// FIXME: call SubmitSignature
-	// hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *verifyingContract, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
-	// if err != nil {
-	// 	return err
-	// }
-	// log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+	if err != nil {
+		return err
+	}
+	log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
 
-	// err = v.saveMessage(*m)
-	// if err != nil {
-	// 	return err
-	// }
+	err = v.saveMessage(*m)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
