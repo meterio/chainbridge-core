@@ -191,14 +191,29 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 }
 
 func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int64, resourceId []byte, data []byte) error {
-	privKey := v.client.PrivateKey()
-
-	cid, _ := v.client.ChainID(context.TODO())
-	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), cid.Int64())
+	chainId = 3
+	domainId = 5
+	depositNonce = 22
+	//privKey := v.client.PrivateKey()
+	resourceId, err  := hex.DecodeString("00000000000000000000008a419ef4941355476cf04933e90bf3bbf2f7381400")
+	if err != nil {
+		return err
+	}
+	data, err = hex.DecodeString("00000000000000000000000000000000000000000000000000194cb424068e000000000000000000000000000000000000000000000000000000000000000014551b6e92f7443e63ec2d0c43471de9574e834169")
+	if err != nil {
+		return err
+	}
+	privKey, err := crypto.HexToECDSA("b6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659")
+	if err != nil {
+		return err
+	}
+	_ = privKey
+	//cid, _ := v.client.ChainID(context.TODO())
+	//log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), cid.Int64())
 
 	name := "PermitBridge"
 	version := "1.0"
-	verifyingContract := v.bridgeContract.ContractAddress()
+	verifyingContract := common.HexToAddress("4eBc9d4Dd56278a4a8480a21f27CBA345668bdc4")// v.bridgeContract.ContractAddress()
 
 	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, verifyingContract.String())
 
@@ -226,7 +241,7 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 		Message: apitypes.TypedDataMessage{
 			"domainID":     math.NewHexOrDecimal256(domainId),
 			"depositNonce": math.NewHexOrDecimal256(depositNonce),
-			"resourceID":   resourceId,
+			"resourceID":   resourceId[:],
 			"data":         data,
 		}}
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
@@ -241,6 +256,21 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 	sighash := crypto.Keccak256(rawData)
 
 	sig, err := v.client.Sign(sighash)
+
+
+	// Convert to Ethereum signature format with 'recovery id' v at the end.
+	//vSuffix := []byte{0x1c}
+	//copy(sig, sig[1:])
+	sig[64] = 0x1c
+	//return signature, nil
+	//sig = append(sig, vSuffix...)
+
+	//signer := beecrypto.NewDefaultSigner(privKey)
+	//sig, err := signer.Sign(sighash)
+	if err != nil {
+		return err
+	}
+
 	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
 	return err
 }
@@ -248,8 +278,8 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, destBridgeAddress *common.Address) error {
 	privKey := v.client.PrivateKey()
 
-	chainId, _ := v.client.ChainID(context.TODO())
-	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+	//chainId, _ := v.client.ChainID(context.TODO())
+	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), destChainId)
 
 	name := "PermitBridge"
 	version := "1.0"
@@ -258,9 +288,9 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	resourceId := m.ResourceId
 	data := m.Data
 
-	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, destBridgeAddress.String())
+	log.Info().Msgf("[Domain] name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, destChainId, destBridgeAddress.String())
 
-	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
+	log.Info().Msgf("[Message] domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
 
 	typedData := &apitypes.TypedData{
 		Types: apitypes.Types{
@@ -284,7 +314,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 		Message: apitypes.TypedDataMessage{
 			"domainID":     math.NewHexOrDecimal256(int64(domainId)),
 			"depositNonce": math.NewHexOrDecimal256(int64(depositNonce)),
-			"resourceID":   resourceId,
+			"resourceID":   resourceId[:],
 			"data":         data,
 		}}
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
@@ -298,7 +328,13 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
 	sighash := crypto.Keccak256(rawData)
 
+	//signer := beecrypto.NewDefaultSigner(privKey)
+	//sig, err := signer.Sign(sighash)
+	log.Info().Msgf("rawData: %x sighash: %x", rawData, sighash)
+
 	sig, err := v.client.Sign(sighash)
+	sig[64] = 0x1c
+
 	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {

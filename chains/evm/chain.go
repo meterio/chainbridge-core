@@ -104,9 +104,13 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 
 	var evmVoter *voter.EVMVoter
 	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId)
+	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
+
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
 		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId)
+
+		//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 	}
 
 	// TODO: remove this

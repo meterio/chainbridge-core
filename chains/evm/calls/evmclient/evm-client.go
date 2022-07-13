@@ -311,6 +311,11 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 }
 
 func (c *EVMClient) Sign(byteData []byte) ([]byte, error) {
+	//NOTE: test private key
+	//privKey, _ := crypto.HexToECDSA("b6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659")
+	//
+	//return crypto.Sign(byteData, privKey)
+	log.Info().Msgf("EVMClient instance PublicKey %v do Sign %x", c.kp.PublicKey(), byteData)
 	return crypto.Sign(byteData, c.kp.PrivateKey())
 }
 
