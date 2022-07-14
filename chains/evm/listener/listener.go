@@ -39,9 +39,10 @@ type ChainClient interface {
 }
 
 type EVMListener struct {
-	chainReader   ChainClient
-	eventHandler  EventHandler
-	bridgeAddress common.Address
+	chainReader      ChainClient
+	eventHandler     EventHandler
+	bridgeAddress    common.Address
+	signatureAddress common.Address
 
 	mh EVMMessageHandler
 	id uint8
@@ -50,8 +51,8 @@ type EVMListener struct {
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, mh EVMMessageHandler, id uint8, db *lvldb.LVLDB) *EVMListener {
-	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, mh: mh, id: id, db: db}
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, mh EVMMessageHandler, id uint8, db *lvldb.LVLDB) *EVMListener {
+	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress, mh: mh, id: id, db: db}
 }
 
 func (l *EVMListener) ListenToEvents(
@@ -86,18 +87,26 @@ func (l *EVMListener) ListenToEvents(
 					continue
 				}
 
-				query := l.buildQuery(l.bridgeAddress, string(util.ProposalEvent), startBlock, startBlock)
-				logch, err := l.chainReader.FilterLogs(context.TODO(), query)
+				query1 := l.buildQuery(l.bridgeAddress, string(util.ProposalEvent), startBlock, startBlock)
+				logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
 				if err != nil {
 					log.Error().Err(err).Msg("failed to FilterLogs")
 					continue
 				}
+				l.trackProposalExecuted(logch1)
 
-				l.trackProposalExecuted(logch)
-				proposalPassedMessage := l.trackSignturePass(logch)
-				if proposalPassedMessage != nil {
-					proposalPassedMessage.FromDB = true
-					ch <- proposalPassedMessage
+				if l.signatureAddress != util.ZeroAddress {
+					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
+					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
+					if err != nil {
+						log.Error().Err(err).Msg("failed to FilterLogs")
+						continue
+					}
+					proposalPassedMessage := l.trackSignturePass(logch2)
+					if proposalPassedMessage != nil {
+						proposalPassedMessage.FromDB = true
+						ch <- proposalPassedMessage
+					}
 				}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
