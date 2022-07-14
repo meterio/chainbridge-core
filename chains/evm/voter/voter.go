@@ -585,10 +585,10 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 	return data, nil
 }
 
-func (v *EVMVoter) VoteProposals(m *message.Message, data [][]byte) error {
+func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
 	log.Info().Msgf("VoteProposals message: %v", m)
 
-	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, data, transactor.TransactOptions{})
+	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}

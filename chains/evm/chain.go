@@ -169,8 +169,8 @@ func (c *EVMChain) Submit(msg *message.Message, chainID *big.Int, bridgeContract
 	return c.writer.SubmitSignature(msg, chainID, bridgeContractAddress) // SubmitSignature
 }
 
-func (c *EVMChain) Submits(msg *message.Message, data [][]byte) error {
-	return c.writer.VoteProposals(msg, data) // VoteProposals
+func (c *EVMChain) Submits(msg *message.Message, signatures [][]byte) error {
+	return c.writer.VoteProposals(msg, signatures) // VoteProposals
 }
 
 func (c *EVMChain) DomainID() uint8 {
