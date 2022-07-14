@@ -6,6 +6,7 @@ package listener
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/gob"
 	"math/big"
 	"strings"
@@ -170,7 +171,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 			continue
 		}
 
-		pel, err := unpackSignturePassLog(abiIst, vLog.Data)
+		pel, err := unpackSignturePassLog(abiIst, vLog.Data, vLog.Topics)
 		if err != nil {
 			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
 			continue
@@ -275,13 +276,18 @@ func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEve
 	return &pe, nil
 }
 
-func unpackSignturePassLog(abiIst abi.ABI, data []byte) (*evmclient.SignturePass, error) {
+func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*evmclient.SignturePass, error) {
 	var pe evmclient.SignturePass
 
 	err := abiIst.UnpackIntoInterface(&pe, "SignturePass", data)
 	if err != nil {
 		return &evmclient.SignturePass{}, err
 	}
+
+	buf := bytes.NewBuffer(topics[1][:])
+	originDomainID, err := binary.ReadUvarint(buf)
+	pe.OriginDomainID = uint8(originDomainID)
+	pe.ResourceID = topics[2]
 
 	return &pe, nil
 }
