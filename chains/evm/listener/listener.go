@@ -6,8 +6,8 @@ package listener
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/gob"
+	"errors"
 	"math/big"
 	"strings"
 	"time"
@@ -284,10 +284,15 @@ func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*
 		return &evmclient.SignturePass{}, err
 	}
 
-	buf := bytes.NewBuffer(topics[1][:])
-	originDomainID, err := binary.ReadUvarint(buf)
-	pe.OriginDomainID = uint8(originDomainID)
-	pe.ResourceID = topics[2]
+	if len(topics) != 3 {
+		return &evmclient.SignturePass{}, errors.New("topics out of index")
+	}
+
+	originDomainIDTopic := topics[1]
+	resourceIDTopic := topics[2]
+
+	pe.OriginDomainID = originDomainIDTopic[len(originDomainIDTopic)-1]
+	pe.ResourceID = resourceIDTopic
 
 	return &pe, nil
 }
