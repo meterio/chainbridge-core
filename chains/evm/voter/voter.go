@@ -333,7 +333,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	log.Info().Msgf("rawData: %x sighash: %x", rawData, sighash)
 
 	sig, err := v.client.Sign(sighash)
-	sig[64] = 0x1c
+	sig[64] += 27
 
 	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
