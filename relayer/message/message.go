@@ -5,6 +5,7 @@ package message
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/types"
@@ -72,4 +73,9 @@ func (m *Message) extractAmountTransferred() (float64, error) {
 	payloadAmountFloat, _ = new(big.Float).SetInt(big.NewInt(0).SetBytes(amountByteSlice)).Float64()
 
 	return payloadAmountFloat, nil
+}
+
+func (m *Message) String() string {
+	return fmt.Sprintf("Source %v, Destination %v, DepositNonce %v, ResourceId %x, Type %v, FromDB %v, Data %x",
+		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.FromDB, m.Data)
 }

@@ -344,8 +344,10 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 
 	err = v.saveMessage(*m)
 	if err != nil {
+		log.Error().Err(err)
 		return err
 	}
+	log.Info().Msgf("saveMessage!")
 	return err
 }
 
@@ -608,6 +610,7 @@ func (v *EVMVoter) saveMessage(m message.Message) error {
 
 	key := []byte{m.Source, byte(m.DepositNonce)}
 
+	log.Info().Msgf("saveMessage db.SetByKey %x", key)
 	err = v.db.SetByKey(key, network.Bytes())
 	if err != nil {
 		return err

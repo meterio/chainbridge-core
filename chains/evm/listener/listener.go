@@ -159,9 +159,14 @@ func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock
 }
 
 func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Message {
+	if len(vLogs) != 0 {
+		log.Info().Msgf("trackSignturePass vLogs %v", vLogs)
+	}
+
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
 		if err != nil {
+			log.Error().Msgf("strings.NewReader consts.SignaturesABI err %v", err)
 			continue
 		}
 
@@ -171,9 +176,13 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 			continue
 		}
 
+		log.Debug().Msgf("SignturePass %v", pel)
+
 		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
+		log.Info().Msgf("trackSignturePass db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
+			log.Error().Msgf("key %x, data %v", key, data)
 			continue
 		}
 
@@ -217,12 +226,14 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 		}
 
 		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
+		log.Info().Msgf("trackProposalExecuted db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
 			continue
 		}
 
 		if pel.Status == message.ProposalStatusCanceled {
+			log.Info().Msgf("trackProposalExecuted ProposalStatusCanceled db.Delete %x", key)
 			v.db.Delete(key)
 			continue
 		}
@@ -248,6 +259,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 		}
 
 		v.mh.CheckAndExecuteAirDrop(m)
+		log.Info().Msgf("trackProposalExecuted CheckAndExecuteAirDrop db.Delete %x", key)
 		v.db.Delete(key)
 	}
 }

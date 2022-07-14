@@ -75,6 +75,11 @@ type SignturePass struct {
 	Signature      []byte
 }
 
+func (s SignturePass) String() string {
+	return fmt.Sprintf("OriginDomainID %v, DepositNonce %v, ResourceID %x, Data %x, Signature %x",
+		s.OriginDomainID, s.DepositNonce, s.ResourceID, s.Data, s.Signature)
+}
+
 type CommonTransaction interface {
 	// Hash returns the transaction hash.
 	Hash() common.Hash
