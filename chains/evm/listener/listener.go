@@ -65,6 +65,87 @@ func (l *EVMListener) ListenToEvents(
 	errChn chan<- error,
 ) <-chan *message.Message {
 	ch := make(chan *message.Message)
+	if l.signatureAddress != util.ZeroAddress {
+		go func() {
+			for {
+				select {
+				case <-stopChn:
+					return
+				default:
+					head, err := l.chainReader.LatestBlock()
+					if err != nil {
+						log.Error().Err(err).Msg("Unable to get latest block")
+						time.Sleep(blockRetryInterval)
+						continue
+					}
+
+					if startBlock == nil {
+						startBlock = head
+					}
+
+					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
+					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
+						time.Sleep(blockRetryInterval)
+						continue
+					}
+
+					//query1 := l.buildQuery(l.bridgeAddress, string(util.ProposalEvent), startBlock, startBlock)
+					//logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
+					//if err != nil {
+					//	log.Error().Err(err).Msg("failed to FilterLogs")
+					//	continue
+					//}
+					//l.trackProposalExecuted(logch1)
+
+					//if l.signatureAddress != util.ZeroAddress {
+						query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
+						logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
+						if err != nil {
+							log.Error().Err(err).Msg("failed to FilterLogs")
+							continue
+						}
+						proposalPassedMessage := l.trackSignturePass(logch2)
+						if proposalPassedMessage != nil {
+							proposalPassedMessage.FromDB = true
+							ch <- proposalPassedMessage
+						}
+					//}
+
+					//logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
+					//if err != nil {
+					//	// Filtering logs error really can appear only on wrong configuration or temporary network problem
+					//	// so i do no see any reason to break execution
+					//	log.Error().Err(err).Str("DomainID", string(domainID)).Msgf("Unable to filter logs")
+					//	continue
+					//}
+					//for _, eventLog := range logs {
+					//	log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
+					//	m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
+					//	if err != nil {
+					//		log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
+					//	} else {
+					//		log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
+					//		ch <- m
+					//	}
+					//}
+					if startBlock.Int64()%20 == 0 {
+						// Logging process every 20 bocks to exclude spam
+						log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
+					}
+					// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
+					//Write to block store. Not a critical operation, no need to retry
+					err = blockstore.StoreBlock(startBlock, domainID)
+					if err != nil {
+						log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
+					}
+					// Goto next block
+					startBlock.Add(startBlock, big.NewInt(1))
+				}
+			}
+		}()
+		return ch
+	}
+
 	go func() {
 		for {
 			select {
@@ -96,19 +177,19 @@ func (l *EVMListener) ListenToEvents(
 				}
 				l.trackProposalExecuted(logch1)
 
-				if l.signatureAddress != util.ZeroAddress {
-					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
-					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
-					if err != nil {
-						log.Error().Err(err).Msg("failed to FilterLogs")
-						continue
-					}
-					proposalPassedMessage := l.trackSignturePass(logch2)
-					if proposalPassedMessage != nil {
-						proposalPassedMessage.FromDB = true
-						ch <- proposalPassedMessage
-					}
-				}
+				//if l.signatureAddress != util.ZeroAddress {
+				//	query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
+				//	logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
+				//	if err != nil {
+				//		log.Error().Err(err).Msg("failed to FilterLogs")
+				//		continue
+				//	}
+				//	proposalPassedMessage := l.trackSignturePass(logch2)
+				//	if proposalPassedMessage != nil {
+				//		proposalPassedMessage.FromDB = true
+				//		ch <- proposalPassedMessage
+				//	}
+				//}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
