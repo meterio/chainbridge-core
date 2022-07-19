@@ -67,6 +67,7 @@ func (l *EVMListener) ListenToEvents(
 	ch := make(chan *message.Message)
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
+			log.Info().Msgf("go signatureAddress %x", l.signatureAddress)
 			for {
 				select {
 				case <-stopChn:
@@ -82,6 +83,8 @@ func (l *EVMListener) ListenToEvents(
 					if startBlock == nil {
 						startBlock = head
 					}
+
+					log.Info().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
 
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -147,6 +150,8 @@ func (l *EVMListener) ListenToEvents(
 	}
 
 	go func() {
+		log.Info().Msgf("go ListenToEvents")
+
 		for {
 			select {
 			case <-stopChn:
@@ -162,6 +167,8 @@ func (l *EVMListener) ListenToEvents(
 				if startBlock == nil {
 					startBlock = head
 				}
+
+				log.Info().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
 
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -241,9 +248,9 @@ func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock
 }
 
 func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Message {
-	if len(vLogs) != 0 {
-		log.Info().Msgf("trackSignturePass vLogs %v", vLogs)
-	}
+	//if len(vLogs) != 0 {
+	//	log.Info().Msgf("trackSignturePass vLogs %v", vLogs)
+	//}
 
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
