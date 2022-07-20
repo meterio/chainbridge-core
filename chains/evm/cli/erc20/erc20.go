@@ -29,4 +29,6 @@ func init() {
 	ERC20Cmd.AddCommand(balanceCmd)
 	ERC20Cmd.AddCommand(depositCmd)
 	ERC20Cmd.AddCommand(mintCmd)
+	ERC20Cmd.AddCommand(adminInfoCmd)
+	ERC20Cmd.AddCommand(minterInfoCmd)
 }

@@ -64,12 +64,44 @@ func (c *ERC20Contract) ApproveTokens(
 	return c.ExecuteTransaction("approve", opts, target, amount)
 }
 
+func (c *ERC20Contract) DefaultAdminRole() ([32]byte, error) {
+	res, err := c.CallContract("DEFAULT_ADMIN_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
 func (c *ERC20Contract) MinterRole() ([32]byte, error) {
 	res, err := c.CallContract("MINTER_ROLE")
 	if err != nil {
 		return [32]byte{}, err
 	}
 	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *ERC20Contract) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
+	res, err := c.CallContract("getRoleMemberCount", role)
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+
+	return out, nil
+}
+
+func (c *ERC20Contract) GetRoleMember(role [32]byte, i int64) (common.Address, error) {
+	index := &big.Int{}
+	index.SetInt64(i)
+
+	res, err := c.CallContract("getRoleMember", role, index)
+	if err != nil {
+		return common.Address{}, err
+	}
+	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
 	return out, nil
 }
 
