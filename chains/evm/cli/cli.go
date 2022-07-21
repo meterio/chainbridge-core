@@ -9,6 +9,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/erc20"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/erc721"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/signature"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -91,4 +92,7 @@ func init() {
 
 	// utils
 	EvmRootCLI.AddCommand(utils.UtilsCmd)
+
+	// signature
+	EvmRootCLI.AddCommand(signature.SignatureCmd)
 }

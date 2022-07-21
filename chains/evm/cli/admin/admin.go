@@ -32,7 +32,11 @@ func init() {
 	AdminCmd.AddCommand(setFeeCmd)
 	AdminCmd.AddCommand(setThresholdCmd)
 	AdminCmd.AddCommand(getThresholdCmd)
+	AdminCmd.AddCommand(setSignatureThresholdCmd)
+	AdminCmd.AddCommand(getSignatureThresholdCmd)
 	AdminCmd.AddCommand(unpauseCmd)
 	AdminCmd.AddCommand(withdrawCmd)
 	AdminCmd.AddCommand(setDepositNonceCmd)
+	AdminCmd.AddCommand(setDestChainIdCmd)
+	AdminCmd.AddCommand(getDestChainIdCmd)
 }

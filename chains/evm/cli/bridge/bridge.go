@@ -31,4 +31,6 @@ func init() {
 	BridgeCmd.AddCommand(registerResourceCmd)
 	BridgeCmd.AddCommand(setBurnCmd)
 	BridgeCmd.AddCommand(voteProposalCmd)
+	BridgeCmd.AddCommand(adminInfoCmd)
+	BridgeCmd.AddCommand(relayerInfoCmd)
 }

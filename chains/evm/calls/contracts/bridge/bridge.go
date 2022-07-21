@@ -398,3 +398,53 @@ func idAndNonce(srcId uint8, nonce uint64) *big.Int {
 	data = append(data, uint8(srcId))
 	return big.NewInt(0).SetBytes(data)
 }
+
+func (c *BridgeContract) DefaultAdminRole() ([32]byte, error) {
+	res, err := c.CallContract("DEFAULT_ADMIN_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *BridgeContract) MinterRole() ([32]byte, error) {
+	res, err := c.CallContract("MINTER_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *BridgeContract) RelayerRole() ([32]byte, error) {
+	res, err := c.CallContract("RELAYER_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *BridgeContract) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
+	res, err := c.CallContract("getRoleMemberCount", role)
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+
+	return out, nil
+}
+
+func (c *BridgeContract) GetRoleMember(role [32]byte, i int64) (common.Address, error) {
+	index := &big.Int{}
+	index.SetInt64(i)
+
+	res, err := c.CallContract("getRoleMember", role, index)
+	if err != nil {
+		return common.Address{}, err
+	}
+	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
+	return out, nil
+}

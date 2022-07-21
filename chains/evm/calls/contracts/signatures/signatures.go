@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
+	"math/big"
 	"strings"
 )
 
@@ -106,4 +107,115 @@ func (c *SignaturesContract) CheckSignature(
 
 	out := abi.ConvertType(res[0], new(bool)).(*bool)
 	return *out, nil
+}
+
+func (c *SignaturesContract) DefaultAdminRole() ([32]byte, error) {
+	res, err := c.CallContract("DEFAULT_ADMIN_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *SignaturesContract) RelayerRole() ([32]byte, error) {
+	res, err := c.CallContract("RELAYER_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *SignaturesContract) MinterRole() ([32]byte, error) {
+	res, err := c.CallContract("MINTER_ROLE")
+	if err != nil {
+		return [32]byte{}, err
+	}
+	out := *abi.ConvertType(res[0], new([32]byte)).(*[32]byte)
+	return out, nil
+}
+
+func (c *SignaturesContract) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
+	res, err := c.CallContract("getRoleMemberCount", role)
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+
+	return out, nil
+}
+
+func (c *SignaturesContract) GetRoleMember(role [32]byte, i int64) (common.Address, error) {
+	index := &big.Int{}
+	index.SetInt64(i)
+
+	res, err := c.CallContract("getRoleMember", role, index)
+	if err != nil {
+		return common.Address{}, err
+	}
+	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
+	return out, nil
+}
+
+func (c *SignaturesContract) GetThreshold(domain uint8) (uint8, error) {
+	log.Debug().Msg("Getting threshold")
+	res, err := c.CallContract("_relayerThreshold", domain)
+	if err != nil {
+		return 0, err
+	}
+	out := *abi.ConvertType(res[0], new(uint8)).(*uint8)
+	return out, nil
+}
+
+func (c *SignaturesContract) SetThresholdInput(
+	threshold uint64,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting threshold %d", threshold)
+	return c.ExecuteTransaction(
+		"adminChangeRelayerThreshold",
+		opts,
+		big.NewInt(0).SetUint64(threshold),
+	)
+}
+
+func (c *SignaturesContract) GrantRole(
+	role [32]byte,
+	account common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	//log.Debug().Msgf("Setting threshold %d", threshold)
+	return c.ExecuteTransaction(
+		"grantRole",
+		opts,
+		role, account,
+	)
+}
+
+func (c *SignaturesContract) AdminSetDestChainId(
+	destinationDomainID uint8,
+	chainId uint8,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	//log.Debug().Msgf("Setting threshold %d", threshold)
+	return c.ExecuteTransaction(
+		"adminSetDestChainId",
+		opts,
+		destinationDomainID, chainId,
+	)
+}
+
+func (c *SignaturesContract) GetDestChainId(
+	destinationDomainID uint8,
+) (*big.Int, error) {
+	res, err := c.CallContract("destChainId", destinationDomainID)
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+	//out := *abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+	return out, nil
 }
