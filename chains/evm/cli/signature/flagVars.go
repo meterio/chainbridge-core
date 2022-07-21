@@ -24,6 +24,7 @@ var (
 	Execute         string
 	Hash            bool
 	TokenContract   string
+	Relayer         string
 )
 
 //processed flag vars
@@ -37,6 +38,7 @@ var (
 	DepositSigBytes    [4]byte
 	ExecuteSigBytes    [4]byte
 	DataBytes          []byte
+	RelayerAddr        common.Address
 )
 
 // global flags

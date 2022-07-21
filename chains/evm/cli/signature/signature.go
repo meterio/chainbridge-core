@@ -25,7 +25,7 @@ var SignatureCmd = &cobra.Command{
 func init() {
 	SignatureCmd.AddCommand(adminInfoCmd)
 	SignatureCmd.AddCommand(relayerInfoCmd)
-	//SignatureCmd.AddCommand(queryProposalCmd)
+	SignatureCmd.AddCommand(addRelayerCmd)
 	//SignatureCmd.AddCommand(queryResourceCmd)
 	//SignatureCmd.AddCommand(registerGenericResourceCmd)
 	//SignatureCmd.AddCommand(registerNativeResourceCmd)
