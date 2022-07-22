@@ -178,6 +178,9 @@ func (c *EVMChain) DomainID() uint8 {
 }
 
 func (c *EVMChain) MiddleId() uint8 {
+	if c.config.GeneralChainConfig.MiddleId == nil {
+		return 0
+	}
 	return *c.config.GeneralChainConfig.MiddleId
 }
 
