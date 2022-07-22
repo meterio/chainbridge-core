@@ -17,7 +17,7 @@ import (
 
 var setSignatureThresholdCmd = &cobra.Command{
 	Use:   "set-signature-threshold",
-	Short: "Set a new relayer vote threshold",
+	Short: "Set a new signature vote threshold",
 	Long:  "The set-signature-threshold subcommand sets a new relayer vote threshold",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
@@ -48,9 +48,10 @@ var setSignatureThresholdCmd = &cobra.Command{
 }
 
 func BindSetSignatureThresholdFlags(cmd *cobra.Command) {
+	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
 	cmd.Flags().Uint64Var(&SignatureThreshold, "threshold", 0, "New relayer threshold")
 	cmd.Flags().StringVar(&Signature, "signature", "", "Signature contract address")
-	flags.MarkFlagsAsRequired(cmd, "threshold", "signature")
+	flags.MarkFlagsAsRequired(cmd, "threshold", "signature", "domain")
 }
 
 func init() {
@@ -73,7 +74,7 @@ func SetSignatureThresholdCMD(cmd *cobra.Command, args []string, contract *signa
 Setting new threshold
 Threshold: %d
 Signature address: %s`, SignatureThreshold, Signature)
-	_, err := contract.SetThresholdInput(SignatureThreshold, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err := contract.SetThresholdInput(DomainID, SignatureThreshold, transactor.TransactOptions{GasLimit: gasLimit})
 	if err != nil {
 		return err
 	}

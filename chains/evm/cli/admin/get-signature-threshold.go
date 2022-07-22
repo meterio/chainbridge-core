@@ -17,8 +17,8 @@ import (
 
 var getSignatureThresholdCmd = &cobra.Command{
 	Use:   "get-signature-threshold",
-	Short: "Get the relayer vote threshold",
-	Long:  "The get-signature-threshold subcommand returns the relayer vote threshold",
+	Short: "Get the signature vote threshold",
+	Long:  "The get-signature-threshold subcommand returns the signature vote threshold",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},

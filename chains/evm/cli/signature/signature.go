@@ -8,7 +8,7 @@ import (
 )
 
 var SignatureCmd = &cobra.Command{
-	Use:   "signature",
+	Use:   "relaychain",
 	Short: "Set of commands for interacting with a signature",
 	Long:  "Set of commands for interacting with a signature",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

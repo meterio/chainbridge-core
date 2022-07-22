@@ -170,6 +170,7 @@ func (c *SignaturesContract) GetThreshold(domain uint8) (uint8, error) {
 }
 
 func (c *SignaturesContract) SetThresholdInput(
+	destinationDomainID uint8,
 	threshold uint64,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
@@ -177,6 +178,7 @@ func (c *SignaturesContract) SetThresholdInput(
 	return c.ExecuteTransaction(
 		"adminChangeRelayerThreshold",
 		opts,
+		destinationDomainID,
 		big.NewInt(0).SetUint64(threshold),
 	)
 }
