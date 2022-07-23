@@ -358,7 +358,7 @@ func (c *BridgeContract) ProposalStatus(p *proposal.Proposal) (message.ProposalS
 		Str("resourceID", hexutil.Encode(p.ResourceId[:])).
 		Str("handler", p.HandlerAddress.String()).
 		Msg("Getting proposal status")
-	res, err := c.CallContract("getProposal", p.Source, p.DepositNonce, p.GetDataHash())
+	res, err := c.CallContract("getProposal", p.Source, p.DepositNonce, p.ResourceId, p.GetDataHash())
 	if err != nil {
 		return message.ProposalStatus{}, err
 	}
