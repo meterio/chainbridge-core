@@ -184,7 +184,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		}
 	}
 
-	log.Debug().Str("hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
+	log.Info().Str("tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
 	return nil
 }
 
@@ -334,7 +334,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	if err != nil {
 		return err
 	}
-	log.Debug().Str("hash", hash.String()).Msgf("SubmitSignature")
+	log.Info().Str("tx hash", hash.String()).Msgf("SubmitSignature")
 
 	err = v.saveMessage(*m)
 	if err != nil {
@@ -438,7 +438,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error 
 	if err != nil {
 		return err
 	}
-	log.Debug().Str("hash", hash.String()).Msgf("VoteProposals")
+	log.Info().Str("tx hash", hash.String()).Msgf("VoteProposals")
 
 	return nil
 }
@@ -456,7 +456,7 @@ func (v *EVMVoter) saveMessage(m message.Message) error {
 
 	key := []byte{m.Source, byte(m.DepositNonce)}
 
-	log.Info().Msgf("saveMessage db.SetByKey %x", key)
+	log.Debug().Msgf("saveMessage db.SetByKey %x", key)
 	err = v.db.SetByKey(key, network.Bytes())
 	if err != nil {
 		return err

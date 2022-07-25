@@ -67,7 +67,7 @@ func (l *EVMListener) ListenToEvents(
 	ch := make(chan *message.Message)
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
-			log.Info().Msgf("go signatureAddress %x", l.signatureAddress)
+			log.Debug().Msgf("go signatureAddress %x", l.signatureAddress)
 			for {
 				select {
 				case <-stopChn:
@@ -84,7 +84,7 @@ func (l *EVMListener) ListenToEvents(
 						startBlock = head
 					}
 
-					log.Info().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
+					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
 
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -150,7 +150,7 @@ func (l *EVMListener) ListenToEvents(
 	}
 
 	go func() {
-		log.Info().Msgf("go ListenToEvents")
+		log.Info().Msgf("ListenToEvents, startBlock %v", startBlock)
 
 		for {
 			select {
@@ -168,7 +168,7 @@ func (l *EVMListener) ListenToEvents(
 					startBlock = head
 				}
 
-				log.Info().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
+				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
 
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -268,7 +268,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		log.Debug().Msgf("SignturePass %v", pel)
 
 		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
-		log.Info().Msgf("trackSignturePass db.GetByKey %x", key)
+		log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
 			log.Error().Msgf("key %x, data %v", key, data)
@@ -315,14 +315,14 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 		}
 
 		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
-		log.Info().Msgf("trackProposalExecuted db.GetByKey %x", key)
+		log.Debug().Msgf("trackProposalExecuted db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
 			continue
 		}
 
 		if pel.Status == message.ProposalStatusCanceled {
-			log.Info().Msgf("trackProposalExecuted ProposalStatusCanceled db.Delete %x", key)
+			log.Debug().Msgf("trackProposalExecuted ProposalStatusCanceled db.Delete %x", key)
 			v.db.Delete(key)
 			continue
 		}
