@@ -56,7 +56,7 @@ func (c *SignaturesContract) SubmitSignature(
 	signature []byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, destinationBridge %v, depositNonce %v, resourceID %v", originDomainID, destinationDomainID, destinationBridge, depositNonce, resourceID)
+	log.Info().Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, destinationBridge %v, depositNonce %v, resourceID %x", originDomainID, destinationDomainID, destinationBridge, depositNonce, resourceID)
 	return c.ExecuteTransaction(
 		"submitSignature",
 		opts,

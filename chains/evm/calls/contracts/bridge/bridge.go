@@ -168,7 +168,7 @@ func (c *BridgeContract) Erc20Deposit(
 	destDomainID uint8,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().
+	log.Info().
 		Str("recipient", recipient.String()).
 		Str("resourceID", hexutil.Encode(resourceID[:])).
 		Str("amount", amount.String()).
@@ -242,7 +242,7 @@ func (c *BridgeContract) VoteProposal(
 	proposal *proposal.Proposal,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().
+	log.Info().
 		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).
 		Str("resourceID", hexutil.Encode(proposal.ResourceId[:])).
 		Str("handler", proposal.HandlerAddress.String()).
@@ -262,7 +262,7 @@ func (c *BridgeContract) VoteProposals(
 	signatures [][]byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().
+	log.Info().
 		Str("domainID", string(domainID)).
 		Str("depositNonce", string(depositNonce)).
 		Str("resourceID", string(resourceID[:])).
