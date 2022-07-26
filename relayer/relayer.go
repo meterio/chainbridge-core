@@ -92,12 +92,12 @@ func (r *Relayer) route(m *message.Message) {
 
 	// case 1
 	if m.FromDB {
-		log.Info().Msgf("route case 1, message %v", m)
-		data, err := middleChain.Read(m)
+		log.Debug().Msgf("route case 1, message %v", m)
+		data, err := middleChain.Read(m) // getSignatures
 		if err != nil {
 			log.Error().Msgf(err.Error())
 		}
-		err = destChain.Submits(m, data)
+		err = destChain.Submits(m, data) // voteProposals
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 		}
@@ -107,12 +107,12 @@ func (r *Relayer) route(m *message.Message) {
 
 	// case 2
 	if middleChain != nil {
-		log.Info().Msgf("route case 2, message %v", m)
+		log.Debug().Msgf("route case 2, message %v", m)
 		destChainID, err := destChain.ChainID()
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submit %w get destChainID %v", err, m))
 		}
-		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress())
+		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
 		}
@@ -120,7 +120,7 @@ func (r *Relayer) route(m *message.Message) {
 	}
 
 	// case 3
-	log.Info().Msgf("route case 3, message %v", m)
+	log.Debug().Msgf("route case 3, message %v", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
@@ -130,7 +130,7 @@ func (r *Relayer) route(m *message.Message) {
 
 	log.Debug().Msgf("Sending message %+v to destination %v", m, m.Destination)
 
-	if err := destChain.Write(m); err != nil {
+	if err := destChain.Write(m); err != nil { // voteProposal
 		log.Error().Err(err).Msgf("writing message %+v", m)
 		return
 	}

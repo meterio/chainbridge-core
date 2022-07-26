@@ -202,7 +202,7 @@ func (l *EVMListener) ListenToEvents(
 				if err != nil {
 					// Filtering logs error really can appear only on wrong configuration or temporary network problem
 					// so i do no see any reason to break execution
-					log.Error().Err(err).Str("DomainID", string(domainID)).Msgf("Unable to filter logs")
+					log.Error().Err(err).Uint8("DomainID", domainID).Msgf("Unable to filter logs")
 					continue
 				}
 				for _, eventLog := range logs {

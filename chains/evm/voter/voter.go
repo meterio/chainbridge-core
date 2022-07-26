@@ -78,6 +78,7 @@ type SignatureContract interface {
 	ContractAddress() *common.Address
 	SubmitSignature(originDomainID uint8, destinationDomainID uint8, destinationBridge common.Address, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
 
+	GetThreshold(domain uint8) (uint8, error)
 	GetSignatures(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
 }
 
@@ -273,10 +274,24 @@ func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int6
 }
 
 func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, destBridgeAddress *common.Address) error {
+	signatures, err := v.GetSignatures(m)
+	if err != nil {
+		return err
+	}
+
+	threshold, err := v.signatureContract.GetThreshold(m.Destination)
+	if err != nil {
+		return err
+	}
+
+	if len(signatures) >= int(threshold) {
+		return nil
+	}
+
 	privKey := v.client.PrivateKey()
 
 	//chainId, _ := v.client.ChainID(context.TODO())
-	log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), destChainId)
+	log.Debug().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), destChainId)
 
 	name := "PermitBridge"
 	version := "1.0"
@@ -325,11 +340,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
 	sighash := crypto.Keccak256(rawData)
 
-	log.Info().Msgf("rawData: %x sighash: %x", rawData, sighash)
+	log.Debug().Msgf("rawData: %x sighash: %x", rawData, sighash)
 	sig, err := v.client.Sign(sighash)
 	sig[64] += 27
 
-	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
+	log.Debug().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
 		return err
