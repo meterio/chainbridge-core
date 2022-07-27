@@ -261,7 +261,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 
 		pel, err := unpackSignturePassLog(abiIst, vLog.Data, vLog.Topics)
 		if err != nil {
-			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
+			log.Error().Msgf("failed unpackSignturePassLog: %v", err)
 			continue
 		}
 
@@ -310,7 +310,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 
 		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
 		if err != nil {
-			log.Error().Msgf("failed unpacking Proposal Executed event log: %v", err)
+			log.Error().Msgf("failed unpackProposalEventLog: %v", err)
 			continue
 		}
 
@@ -372,7 +372,7 @@ func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*
 		return &evmclient.SignturePass{}, err
 	}
 
-	if len(topics) != 3 {
+	if len(topics) < 4 {
 		return &evmclient.SignturePass{}, errors.New("topics out of index")
 	}
 
