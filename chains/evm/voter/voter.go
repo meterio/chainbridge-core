@@ -9,6 +9,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/gob"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/types"
 	ethereum "github.com/ethereum/go-ethereum"
@@ -302,9 +303,9 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	resourceId := m.ResourceId
 	data := m.Data
 
-	log.Info().Msgf("[Domain] name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, destChainId, destBridgeAddress.String())
+	log.Debug().Msgf("[Domain] name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, destChainId, destBridgeAddress.String())
 
-	log.Info().Msgf("[Message] domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
+	log.Debug().Msgf("[Message] domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
 
 	typedData := &apitypes.TypedData{
 		Types: apitypes.Types{
@@ -347,6 +348,13 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	sig[64] += 27
 
 	log.Debug().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
+
+	for _, signature := range signatures {
+		if bytes.Equal(signature, sig) {
+			return errors.New("relayer already voted")
+		}
+	}
+
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
 		return err
