@@ -51,6 +51,7 @@ func (s *ProposalStatusTestSuite) SetupTest() {
 	s.bridgeContract = bridge.NewBridgeContract(s.mockContractCaller, common.HexToAddress(testContractAddress), s.mockTransactor)
 	s.proposal = *proposal.NewProposal(
 		uint8(1),
+		uint8(1),
 		uint64(1),
 		testResourceId,
 		[]byte{},

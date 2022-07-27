@@ -10,7 +10,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-
+	"github.com/ChainSafe/chainbridge-core/types"
 	ethereum "github.com/ethereum/go-ethereum"
 
 	"github.com/ethereum/go-ethereum/common/math"
@@ -70,6 +70,7 @@ type BridgeContract interface {
 	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, opts transactor.TransactOptions) (*common.Hash, error)
 	SimulateVoteProposal(proposal *proposal.Proposal) error
 	ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
+	GetProposal(source uint8, depositNonce uint64, resourceId types.ResourceID, data []byte) (message.ProposalStatus, error)
 	GetThreshold() (uint8, error)
 	ContractAddress() *common.Address
 }
@@ -285,6 +286,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	if len(signatures) >= int(threshold) {
+		log.Info().Msgf("signatures length >= threshold, skip SubmitSignature")
 		return nil
 	}
 
@@ -447,6 +449,16 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
+	proposal, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	if err != nil {
+		return err
+	}
+
+	if proposal.Status != message.ProposalStatusInactive {
+		log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
+		return nil
+	}
+
 	log.Info().Msgf("VoteProposals message: %v", m)
 
 	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
@@ -469,7 +481,7 @@ func (v *EVMVoter) saveMessage(m message.Message) error {
 		return err
 	}
 
-	key := []byte{m.Source, byte(m.DepositNonce)}
+	key := []byte{m.Source, 0x00, m.Destination, 0x00, byte(m.DepositNonce)}
 
 	log.Debug().Msgf("saveMessage db.SetByKey %x", key)
 	err = v.db.SetByKey(key, network.Bytes())

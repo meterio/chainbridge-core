@@ -352,6 +352,20 @@ func (c *BridgeContract) IsRelayer(relayerAddress common.Address) (bool, error) 
 	return *out, nil
 }
 
+func (c *BridgeContract) GetProposal(source uint8, depositNonce uint64, resourceId types.ResourceID, data []byte) (message.ProposalStatus, error) {
+	log.Debug().
+		Str("source", strconv.FormatUint(uint64(source), 10)).
+		Str("depositNonce", strconv.FormatUint(depositNonce, 10)).
+		Str("resourceID", hexutil.Encode(resourceId[:])).
+		Msg("Getting proposal")
+	res, err := c.CallContract("getProposal", source, depositNonce, resourceId, data)
+	if err != nil {
+		return message.ProposalStatus{}, err
+	}
+	out := *abi.ConvertType(res[0], new(message.ProposalStatus)).(*message.ProposalStatus)
+	return out, nil
+}
+
 func (c *BridgeContract) ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error) {
 	log.Debug().
 		Str("depositNonce", strconv.FormatUint(p.DepositNonce, 10)).

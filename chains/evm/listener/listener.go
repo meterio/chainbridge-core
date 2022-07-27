@@ -67,7 +67,7 @@ func (l *EVMListener) ListenToEvents(
 	ch := make(chan *message.Message)
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
-			log.Debug().Msgf("go signatureAddress %x", l.signatureAddress)
+			log.Info().Msgf("ListenToEvents, relayChain startBlock %v", startBlock)
 			for {
 				select {
 				case <-stopChn:
@@ -101,17 +101,17 @@ func (l *EVMListener) ListenToEvents(
 					//l.trackProposalExecuted(logch1)
 
 					//if l.signatureAddress != util.ZeroAddress {
-						query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
-						logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
-						if err != nil {
-							log.Error().Err(err).Msg("failed to FilterLogs")
-							continue
-						}
-						proposalPassedMessage := l.trackSignturePass(logch2)
-						if proposalPassedMessage != nil {
-							proposalPassedMessage.FromDB = true
-							ch <- proposalPassedMessage
-						}
+					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
+					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
+					if err != nil {
+						log.Error().Err(err).Msg("failed to FilterLogs")
+						continue
+					}
+					proposalPassedMessage := l.trackSignturePass(logch2)
+					if proposalPassedMessage != nil {
+						proposalPassedMessage.FromDB = true
+						ch <- proposalPassedMessage
+					}
 					//}
 
 					//logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
@@ -206,7 +206,7 @@ func (l *EVMListener) ListenToEvents(
 					continue
 				}
 				for _, eventLog := range logs {
-					log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
+					//log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
 					m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
 					if err != nil {
 						log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
@@ -267,7 +267,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 
 		log.Debug().Msgf("SignturePass %v", pel)
 
-		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
+		key := []byte{pel.OriginDomainID, 0x00, pel.DestinationDomainID, 0x00, byte(pel.DepositNonce)}
 		log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
@@ -314,7 +314,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log) {
 			continue
 		}
 
-		key := []byte{pel.OriginDomainID, byte(pel.DepositNonce)}
+		key := []byte{pel.OriginDomainID, 0x00, v.id, 0x00, byte(pel.DepositNonce)}
 		log.Debug().Msgf("trackProposalExecuted db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
@@ -376,11 +376,13 @@ func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*
 		return &evmclient.SignturePass{}, errors.New("topics out of index")
 	}
 
-	originDomainIDTopic := topics[1]
-	resourceIDTopic := topics[2]
+	originDomainID := topics[1]
+	destinationDomainID := topics[2]
+	resourceID := topics[3]
 
-	pe.OriginDomainID = originDomainIDTopic[len(originDomainIDTopic)-1]
-	pe.ResourceID = resourceIDTopic
+	pe.OriginDomainID = originDomainID[len(originDomainID)-1]
+	pe.DestinationDomainID = destinationDomainID[len(destinationDomainID)-1]
+	pe.ResourceID = resourceID
 
 	return &pe, nil
 }

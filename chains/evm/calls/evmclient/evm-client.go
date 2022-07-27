@@ -68,16 +68,17 @@ type ProposalEvents struct {
 }
 
 type SignturePass struct {
-	OriginDomainID uint8
-	DepositNonce   uint64
-	ResourceID     [32]byte
-	Data           []byte
-	Signature      []byte
+	OriginDomainID      uint8
+	DestinationDomainID uint8
+	DepositNonce        uint64
+	ResourceID          [32]byte
+	Data                []byte
+	Signature           []byte
 }
 
 func (s SignturePass) String() string {
-	return fmt.Sprintf("OriginDomainID %v, DepositNonce %v, ResourceID %x, Data %x, Signature %x",
-		s.OriginDomainID, s.DepositNonce, s.ResourceID, s.Data, s.Signature)
+	return fmt.Sprintf("OriginDomainID %v, DestinationDomainID %v, DepositNonce %v, ResourceID %x, Data %x, Signature %x",
+		s.OriginDomainID, s.DestinationDomainID, s.DepositNonce, s.ResourceID, s.Data, s.Signature)
 }
 
 type CommonTransaction interface {
