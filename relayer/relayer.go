@@ -6,9 +6,11 @@ package relayer
 import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"math/big"
+	"time"
 )
 
 type Metrics interface {
@@ -25,9 +27,12 @@ type RelayedChain interface {
 	BridgeContractAddress() *common.Address
 
 	Read(message *message.Message) ([][]byte, error)
+	Get(message *message.Message) (bool, error)
 	Write(message *message.Message) error
 	Submit(message *message.Message, chainID *big.Int, address *common.Address) error
 	Submits(message *message.Message, data [][]byte) error
+	SignatureSubmit() bool
+	DelayConfirmations() *big.Int
 }
 
 func NewRelayer(chains []RelayedChain, metrics Metrics, messageProcessors ...message.MessageProcessor) *Relayer {
@@ -91,7 +96,7 @@ func (r *Relayer) route(m *message.Message) {
 	}
 
 	// case 1
-	if m.FromDB {
+	if m.FromDB && middleChain.SignatureSubmit() {
 		log.Debug().Msgf("route case 1, message %v", m)
 		data, err := middleChain.Read(m) // getSignatures
 		if err != nil {
@@ -114,6 +119,29 @@ func (r *Relayer) route(m *message.Message) {
 		}
 		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
+			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
+				<-time.After(time.Second * 15)
+
+				statusInactive, err := destChain.Get(m) // ProposalStatusInactive
+				if err != nil {
+					log.Error().Msgf(err.Error())
+					return
+				}
+
+				if statusInactive {
+					log.Debug().Msgf("route case change from 2 to 1, message %v", m)
+					data, err := middleChain.Read(m) // getSignatures
+					if err != nil {
+						log.Error().Msgf(err.Error())
+					}
+					err = destChain.Submits(m, data) // voteProposals
+					if err != nil {
+						log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
+					}
+
+					return
+				}
+			}
 			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
 		}
 		return

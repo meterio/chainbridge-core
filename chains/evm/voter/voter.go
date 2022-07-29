@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/types"
+	"github.com/ChainSafe/chainbridge-core/util"
 	ethereum "github.com/ethereum/go-ethereum"
 
 	"github.com/ethereum/go-ethereum/common/math"
@@ -288,7 +289,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 
 	if len(signatures) >= int(threshold) {
 		log.Info().Msgf("signatures length >= threshold, skip SubmitSignature")
-		return nil
+		return errors.New(util.OVERTHRESHOLD)
 	}
 
 	privKey := v.client.PrivateKey()
@@ -456,13 +457,37 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 	return data, nil
 }
 
+func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
+	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	if err != nil {
+		return false, err
+	}
+
+	if pps.Status != message.ProposalStatusInactive {
+		log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
-	proposal, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	//proposal, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if proposal.Status != message.ProposalStatusInactive {
+	//	log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
+	//	return nil
+	//}
+
+	statusInactive, err := v.ProposalStatusInactive(m)
 	if err != nil {
 		return err
 	}
 
-	if proposal.Status != message.ProposalStatusInactive {
+	if !statusInactive {
 		log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
 		return nil
 	}

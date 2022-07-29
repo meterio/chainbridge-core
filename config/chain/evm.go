@@ -21,6 +21,7 @@ type EVMConfig struct {
 	GasLimit           *big.Int
 	StartBlock         *big.Int
 	BlockConfirmations *big.Int
+	DelayConfirmations *big.Int
 	BlockRetryInterval time.Duration
 
 	AirDropAmount        *big.Int
@@ -29,6 +30,7 @@ type EVMConfig struct {
 	MoonbeamFinality     bool // blocks are needed to implicitly confirm the finality
 
 	SignatureContract common.Address
+	SignatureSubmit   bool
 }
 
 type RawEVMConfig struct {
@@ -50,6 +52,8 @@ type RawEVMConfig struct {
 	MoonbeamFinalityOpt     bool   `mapstructure:"moonbeamFinality"`
 
 	SignatureContractOpt string `mapstructure:"signatureContract"`
+	SignatureSubmit      bool   `mapstructure:"signatureSubmit"`
+	DelayConfirmations   int64  `mapstructure:"delayConfirmations"`
 }
 
 func (c *RawEVMConfig) Validate() error {
@@ -61,6 +65,9 @@ func (c *RawEVMConfig) Validate() error {
 	}
 	if c.BlockConfirmations != 0 && c.BlockConfirmations < 1 {
 		return fmt.Errorf("blockConfirmations has to be >=1")
+	}
+	if c.DelayConfirmations != 0 && c.DelayConfirmations < 1 {
+		return fmt.Errorf("DelayConfirmations has to be >=1")
 	}
 	return nil
 }
@@ -92,6 +99,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(c.StartBlock),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
+		DelayConfirmations: big.NewInt(consts.DefaultDelayConfirmations),
 
 		AirDropAmount:        big.NewInt(0),
 		AirDropErc20Contract: common.Address{},
@@ -99,6 +107,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		MoonbeamFinality:     false,
 
 		SignatureContract: common.Address{},
+		SignatureSubmit:   c.SignatureSubmit,
 	}
 
 	if c.GasLimit != 0 {
@@ -115,6 +124,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.BlockConfirmations != 0 {
 		config.BlockConfirmations = big.NewInt(c.BlockConfirmations)
+	}
+
+	if c.DelayConfirmations != 0 {
+		config.DelayConfirmations = big.NewInt(c.DelayConfirmations)
 	}
 
 	if c.BlockRetryInterval != 0 {
