@@ -92,15 +92,6 @@ func (l *EVMListener) ListenToEvents(
 						continue
 					}
 
-					//query1 := l.buildQuery(l.bridgeAddress, string(util.ProposalEvent), startBlock, startBlock)
-					//logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
-					//if err != nil {
-					//	log.Error().Err(err).Msg("failed to FilterLogs")
-					//	continue
-					//}
-					//l.trackProposalExecuted(logch1)
-
-					//if l.signatureAddress != util.ZeroAddress {
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
@@ -112,25 +103,7 @@ func (l *EVMListener) ListenToEvents(
 						proposalPassedMessage.FromDB = true
 						ch <- proposalPassedMessage
 					}
-					//}
 
-					//logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
-					//if err != nil {
-					//	// Filtering logs error really can appear only on wrong configuration or temporary network problem
-					//	// so i do no see any reason to break execution
-					//	log.Error().Err(err).Str("DomainID", string(domainID)).Msgf("Unable to filter logs")
-					//	continue
-					//}
-					//for _, eventLog := range logs {
-					//	log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
-					//	m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
-					//	if err != nil {
-					//		log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
-					//	} else {
-					//		log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
-					//		ch <- m
-					//	}
-					//}
 					if startBlock.Int64()%20 == 0 {
 						// Logging process every 20 bocks to exclude spam
 						log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
@@ -183,20 +156,6 @@ func (l *EVMListener) ListenToEvents(
 					continue
 				}
 				l.trackProposalExecuted(logch1)
-
-				//if l.signatureAddress != util.ZeroAddress {
-				//	query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
-				//	logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
-				//	if err != nil {
-				//		log.Error().Err(err).Msg("failed to FilterLogs")
-				//		continue
-				//	}
-				//	proposalPassedMessage := l.trackSignturePass(logch2)
-				//	if proposalPassedMessage != nil {
-				//		proposalPassedMessage.FromDB = true
-				//		ch <- proposalPassedMessage
-				//	}
-				//}
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
