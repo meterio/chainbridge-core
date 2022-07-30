@@ -120,7 +120,8 @@ func (r *Relayer) route(m *message.Message) {
 		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
-				<-time.After(time.Second * 15)
+				delayConfirmations := middleChain.DelayConfirmations()
+				<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
 
 				statusInactive, err := destChain.Get(m) // ProposalStatusInactive
 				if err != nil {
