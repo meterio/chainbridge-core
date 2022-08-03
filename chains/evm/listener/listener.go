@@ -86,10 +86,17 @@ func (l *EVMListener) ListenToEvents(
 
 					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
 
+					latestSubStart := big.NewInt(0).Sub(head, startBlock)
+					doubleBlockDelay := big.NewInt(1).Mul(blockDelay, big.NewInt(2))
+
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
+					if latestSubStart.Cmp(blockDelay) == -1 {
 						time.Sleep(blockRetryInterval)
 						continue
+					}
+
+					if latestSubStart.Cmp(doubleBlockDelay) == 1 {
+						startBlock = big.NewInt(0).Sub(head, doubleBlockDelay)
 					}
 
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
@@ -110,10 +117,10 @@ func (l *EVMListener) ListenToEvents(
 					}
 					// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
 					//Write to block store. Not a critical operation, no need to retry
-					err = blockstore.StoreBlock(startBlock, domainID)
-					if err != nil {
-						log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
-					}
+					//err = blockstore.StoreBlock(startBlock, domainID)
+					//if err != nil {
+					//	log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
+					//}
 					// Goto next block
 					startBlock.Add(startBlock, big.NewInt(1))
 				}

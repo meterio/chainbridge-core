@@ -6,12 +6,16 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/flags"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
+
+var ZeroHash = common.Hash{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 type Contract struct {
 	contractAddress common.Address
@@ -64,6 +68,12 @@ func (c *Contract) ExecuteTransaction(method string, opts transactor.TransactOpt
 	if err != nil {
 		return nil, err
 	}
+
+	if viper.GetBool(flags.DryFlagName) {
+		log.Info().Msgf("!!! Dry run transaction input data %#x", input)
+		return &ZeroHash, nil
+	}
+
 	h, err := c.Transact(&c.contractAddress, input, opts)
 	if err != nil {
 		log.Error().

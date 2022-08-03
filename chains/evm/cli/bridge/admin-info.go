@@ -46,8 +46,8 @@ var adminInfoCmd = &cobra.Command{
 }
 
 func BindAdminInfoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&Bridge, "contract", "", "Bridge contract address")
-	flags.MarkFlagsAsRequired(cmd, "contract")
+	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
+	flags.MarkFlagsAsRequired(cmd, "bridge")
 }
 
 func init() {

@@ -26,10 +26,6 @@ func init() {
 	SignatureCmd.AddCommand(adminInfoCmd)
 	SignatureCmd.AddCommand(relayerInfoCmd)
 	SignatureCmd.AddCommand(addRelayerCmd)
-	//SignatureCmd.AddCommand(queryResourceCmd)
-	//SignatureCmd.AddCommand(registerGenericResourceCmd)
-	//SignatureCmd.AddCommand(registerNativeResourceCmd)
-	//SignatureCmd.AddCommand(registerResourceCmd)
-	//SignatureCmd.AddCommand(setBurnCmd)
-	//SignatureCmd.AddCommand(voteProposalCmd)
+	SignatureCmd.AddCommand(getSignatureThresholdCmd)
+	SignatureCmd.AddCommand(setSignatureThresholdCmd)
 }

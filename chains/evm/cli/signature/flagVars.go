@@ -25,6 +25,7 @@ var (
 	Hash            bool
 	TokenContract   string
 	Relayer         string
+	SignatureThreshold uint64
 )
 
 //processed flag vars

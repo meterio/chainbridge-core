@@ -1,9 +1,8 @@
-package admin
+package signature
 
 import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
@@ -16,9 +15,9 @@ import (
 )
 
 var setSignatureThresholdCmd = &cobra.Command{
-	Use:   "set-signature-threshold",
+	Use:   "set-threshold",
 	Short: "Set a new signature vote threshold",
-	Long:  "The set-signature-threshold subcommand sets a new relayer vote threshold",
+	Long:  "The set-threshold subcommand sets a new relayer vote threshold",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},

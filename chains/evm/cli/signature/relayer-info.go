@@ -46,8 +46,8 @@ var relayerInfoCmd = &cobra.Command{
 }
 
 func BindRelayerInfoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&Signature, "contract", "", "Signature contract address")
-	flags.MarkFlagsAsRequired(cmd, "contract")
+	cmd.Flags().StringVar(&Signature, "signature", "", "Signature contract address")
+	flags.MarkFlagsAsRequired(cmd, "signature")
 }
 
 func init() {

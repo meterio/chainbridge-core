@@ -60,7 +60,8 @@ func (c *RawEVMConfig) Validate() error {
 	if err := c.GeneralChainConfig.Validate(); err != nil {
 		return err
 	}
-	if c.Bridge == "" {
+
+	if c.SignatureContractOpt == "" && c.Bridge == "" {
 		return fmt.Errorf("required field chain.Bridge empty for chain %v", *c.Id)
 	}
 	if c.BlockConfirmations != 0 && c.BlockConfirmations < 1 {

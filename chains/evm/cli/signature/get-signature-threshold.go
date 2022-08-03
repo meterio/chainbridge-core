@@ -1,24 +1,23 @@
-package admin
+package signature
 
 import (
 	"fmt"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
-	"github.com/ChainSafe/chainbridge-core/util"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 var getSignatureThresholdCmd = &cobra.Command{
-	Use:   "get-signature-threshold",
+	Use:   "get-threshold",
 	Short: "Get the signature vote threshold",
-	Long:  "The get-signature-threshold subcommand returns the signature vote threshold",
+	Long:  "The get-threshold subcommand returns the signature vote threshold",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},

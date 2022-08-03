@@ -11,6 +11,7 @@ var (
 	KeystoreFlagName    = "keystore"
 	BlockstoreFlagName  = "blockstore"
 	FreshStartFlagName  = "fresh"
+	DryFlagName         = "dry"
 	LatestBlockFlagName = "latest"
 	TestKeyFlagName     = "testkey"
 	LogLevelFlagName    = "loglevel"
@@ -25,6 +26,9 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().Bool(FreshStartFlagName, false, "Disables loading from blockstore at start. Opts will still be used if specified. (default: false)")
 	_ = viper.BindPFlag(FreshStartFlagName, rootCMD.PersistentFlags().Lookup(FreshStartFlagName))
+
+	rootCMD.PersistentFlags().Bool(DryFlagName, false, "Dry run mode, do not submit transaction. Opts will still be used if specified. (default: false)")
+	_ = viper.BindPFlag(DryFlagName, rootCMD.PersistentFlags().Lookup(DryFlagName))
 
 	rootCMD.PersistentFlags().Bool(LatestBlockFlagName, false, "Overrides blockstore and start block, starts from latest block (default: false)")
 	_ = viper.BindPFlag(LatestBlockFlagName, rootCMD.PersistentFlags().Lookup(LatestBlockFlagName))

@@ -2,7 +2,6 @@ package admin
 
 import (
 	"fmt"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/spf13/cobra"
 )
@@ -32,8 +31,6 @@ func init() {
 	AdminCmd.AddCommand(setFeeCmd)
 	AdminCmd.AddCommand(setThresholdCmd)
 	AdminCmd.AddCommand(getThresholdCmd)
-	AdminCmd.AddCommand(setSignatureThresholdCmd)
-	AdminCmd.AddCommand(getSignatureThresholdCmd)
 	AdminCmd.AddCommand(unpauseCmd)
 	AdminCmd.AddCommand(withdrawCmd)
 	AdminCmd.AddCommand(setDepositNonceCmd)
