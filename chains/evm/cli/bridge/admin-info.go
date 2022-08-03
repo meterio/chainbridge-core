@@ -87,7 +87,7 @@ func AdminInfoCmd(cmd *cobra.Command, args []string, contract *bridge.BridgeCont
 			log.Error().Err(fmt.Errorf("failed contract call error: %v", err))
 			return err
 		}
-		log.Info().Msgf("%v: %x", index, addr)
+		log.Info().Msgf("%v: %#x", index, addr)
 	}
 
 	return nil

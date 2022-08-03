@@ -80,7 +80,7 @@ func AdminInfoCmd(cmd *cobra.Command, args []string, contract *signatures.Signat
 		return err
 	}
 
-	log.Info().Msgf("[Signature %x] has %v admin(s).", Signature, count)
+	log.Info().Msgf("[Signature %#x] has %v admin(s).", SignatureAddr, count)
 
 	var index int64
 	for index = 0; index < count.Int64(); index++ {
@@ -89,7 +89,7 @@ func AdminInfoCmd(cmd *cobra.Command, args []string, contract *signatures.Signat
 			log.Error().Err(fmt.Errorf("failed contract call error: %v", err))
 			return err
 		}
-		log.Info().Msgf("%v: %x", index, addr)
+		log.Info().Msgf("%v: %#x", index, addr)
 	}
 
 	return nil

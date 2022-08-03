@@ -87,7 +87,7 @@ func RelayerInfoCmd(cmd *cobra.Command, args []string, contract *bridge.BridgeCo
 			log.Error().Err(fmt.Errorf("failed contract call error: %v", err))
 			return err
 		}
-		log.Info().Msgf("%v: %x", index, addr)
+		log.Info().Msgf("%v: %#x", index, addr)
 	}
 
 	return nil
