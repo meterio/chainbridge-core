@@ -29,7 +29,7 @@ import (
 )
 
 type EventListener interface {
-	ListenToEvents(startBlock, blockConfirmations *big.Int, blockRetryInterval time.Duration, domainID uint8, blockstore *store.BlockStore, stopChn <-chan struct{}, errChn chan<- error) <-chan *message.Message
+	ListenToEvents(startBlock, blockConfirmations *big.Int, blockRetryInterval time.Duration, domainID uint8, blockstore *store.BlockStore, airdrop bool, stopChn <-chan struct{}, errChn chan<- error) <-chan *message.Message
 }
 
 type ProposalVoter interface {
@@ -145,7 +145,9 @@ func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsC
 		return
 	}
 
-	ech := c.listener.ListenToEvents(startBlock, c.config.BlockConfirmations, c.config.BlockRetryInterval, *c.config.GeneralChainConfig.Id, c.blockstore, stop, sysErr)
+	airdrop := (c.config.AirDropAmount.Sign() != 0) || (c.config.AirDropErc20Amount.Sign() != 0)
+
+	ech := c.listener.ListenToEvents(startBlock, c.config.BlockConfirmations, c.config.BlockRetryInterval, *c.config.GeneralChainConfig.Id, c.blockstore, airdrop, stop, sysErr)
 	for {
 		select {
 		case <-stop:
