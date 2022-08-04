@@ -68,7 +68,7 @@ func (l *EVMListener) ListenToEvents(
 	ch := make(chan *message.Message)
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
-			log.Info().Msgf("ListenToEvents, relayChain startBlock %v", startBlock)
+			log.Info().Msgf("ListenToEvents, relayChain startBlock %v, domainID %v", startBlock, l.id)
 			for {
 				select {
 				case <-stopChn:
@@ -132,7 +132,7 @@ func (l *EVMListener) ListenToEvents(
 
 	if airdrop {
 		go func() {
-			log.Info().Msgf("ListenToEvents with airdrop, startBlock %v", startBlock)
+			log.Info().Msgf("ListenToEvents with airdrop, startBlock %v, domainID %v", startBlock, l.id)
 
 			for {
 				select {
@@ -195,7 +195,7 @@ func (l *EVMListener) ListenToEvents(
 	}
 
 	go func() {
-		log.Info().Msgf("ListenToEvents, startBlock %v", startBlock)
+		log.Info().Msgf("ListenToEvents, startBlock %v, domainID %v", startBlock, l.id)
 
 		for {
 			select {

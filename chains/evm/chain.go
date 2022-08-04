@@ -145,9 +145,9 @@ func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsC
 		return
 	}
 
-	airdrop := (c.config.AirDropAmount.Sign() != 0) || (c.config.AirDropErc20Amount.Sign() != 0)
+	noAirdrop := (c.config.AirDropAmount.Sign() == 0) && (c.config.AirDropErc20Amount.Sign() == 0)
 
-	ech := c.listener.ListenToEvents(startBlock, c.config.BlockConfirmations, c.config.BlockRetryInterval, *c.config.GeneralChainConfig.Id, c.blockstore, airdrop, stop, sysErr)
+	ech := c.listener.ListenToEvents(startBlock, c.config.BlockConfirmations, c.config.BlockRetryInterval, *c.config.GeneralChainConfig.Id, c.blockstore, !noAirdrop, stop, sysErr)
 	for {
 		select {
 		case <-stop:

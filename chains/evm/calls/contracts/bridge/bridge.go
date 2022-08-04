@@ -263,9 +263,9 @@ func (c *BridgeContract) VoteProposals(
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	log.Info().
-		Str("domainID", string(domainID)).
-		Str("depositNonce", string(depositNonce)).
-		Str("resourceID", string(resourceID[:])).
+		Str("domainID", strconv.Itoa(int(domainID))).
+		Str("depositNonce", strconv.FormatUint(depositNonce, 10)).
+		Str("resourceID", hexutil.Encode(resourceID[:])).
 		Msgf("VoteProposals")
 	return c.ExecuteTransaction(
 		"voteProposals",
