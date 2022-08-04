@@ -76,7 +76,7 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						log.Error().Err(err).Msg("Unable to get latest block")
+						log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
 						time.Sleep(blockRetryInterval)
 						continue
 					}
@@ -103,7 +103,7 @@ func (l *EVMListener) ListenToEvents(
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
-						log.Error().Err(err).Msg("failed to FilterLogs")
+						log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
 						continue
 					}
 					proposalPassedMessage := l.trackSignturePass(logch2)
@@ -141,7 +141,7 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						log.Error().Err(err).Msg("Unable to get latest block")
+						log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
 						time.Sleep(blockRetryInterval)
 						continue
 					}
@@ -161,7 +161,7 @@ func (l *EVMListener) ListenToEvents(
 					query1 := l.buildMultiQuery(l.bridgeAddress, []string{string(util.ProposalEvent), string(util.Deposit)}, startBlock, startBlock)
 					logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
 					if err != nil {
-						log.Error().Err(err).Msg("failed to FilterLogs")
+						log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
 						continue
 					}
 					l.trackProposalExecuted(logch1, domainID, startBlock, ch)
@@ -183,7 +183,7 @@ func (l *EVMListener) ListenToEvents(
 					//Write to block store. Not a critical operation, no need to retry
 					err = blockstore.StoreBlock(startBlock, domainID)
 					if err != nil {
-						log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
+						log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
 					}
 					// Goto next block
 					startBlock.Add(startBlock, big.NewInt(1))
@@ -204,7 +204,7 @@ func (l *EVMListener) ListenToEvents(
 			default:
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
-					log.Error().Err(err).Msg("Unable to get latest block")
+					log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
 					time.Sleep(blockRetryInterval)
 					continue
 				}
@@ -248,7 +248,7 @@ func (l *EVMListener) ListenToEvents(
 				//Write to block store. Not a critical operation, no need to retry
 				err = blockstore.StoreBlock(startBlock, domainID)
 				if err != nil {
-					log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
+					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
 				}
 				// Goto next block
 				startBlock.Add(startBlock, big.NewInt(1))
