@@ -395,7 +395,9 @@ func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
+	log.Debug().Msgf("voter before sleep %v", v.delayVoteProposals)
 	<-time.After(time.Second * time.Duration(v.delayVoteProposals.Int64()))
+	log.Debug().Msgf("voter after sleep %v", v.delayVoteProposals)
 
 	statusInactive, err := v.ProposalStatusInactive(m)
 	if err != nil {

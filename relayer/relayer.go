@@ -121,7 +121,9 @@ func (r *Relayer) route(m *message.Message) {
 		if err != nil {
 			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
 				delayConfirmations := middleChain.DelayConfirmations()
+				log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
 				<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
+				log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
 
 				statusInactive, err := destChain.Get(m) // ProposalStatusInactive
 				if err != nil {
