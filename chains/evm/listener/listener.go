@@ -275,11 +275,11 @@ func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock
 
 func (v *EVMListener) buildMultiQuery(contract common.Address, sigArray []string, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
 	topics := make([][]common.Hash, 0)
+	topic := make([]common.Hash, 0)
 	for _, sig := range sigArray {
-		topic := []common.Hash{crypto.Keccak256Hash([]byte(sig))}
-
-		topics = append(topics, topic)
+		topic = append(topic, crypto.Keccak256Hash([]byte(sig)))
 	}
+	topics = append(topics, topic)
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{contract},
