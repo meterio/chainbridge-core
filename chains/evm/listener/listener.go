@@ -85,7 +85,7 @@ func (l *EVMListener) ListenToEvents(
 						startBlock = head
 					}
 
-					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
+					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
 
 					latestSubStart := big.NewInt(0).Sub(head, startBlock)
 					doubleBlockDelay := big.NewInt(1).Mul(blockDelay, big.NewInt(2))
@@ -150,7 +150,7 @@ func (l *EVMListener) ListenToEvents(
 						startBlock = head
 					}
 
-					log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
+					log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
 
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -213,7 +213,7 @@ func (l *EVMListener) ListenToEvents(
 					startBlock = head
 				}
 
-				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v", head, startBlock, blockDelay)
+				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
 
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
