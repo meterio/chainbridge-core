@@ -21,7 +21,7 @@ type EVMConfig struct {
 	GasLimit           *big.Int
 	StartBlock         *big.Int
 	BlockConfirmations *big.Int
-	DelayConfirmations *big.Int
+	DelayVoteProposals *big.Int
 	BlockRetryInterval time.Duration
 
 	AirDropAmount        *big.Int
@@ -53,7 +53,7 @@ type RawEVMConfig struct {
 
 	SignatureContractOpt string `mapstructure:"signatureContract"`
 	SignatureSubmit      bool   `mapstructure:"signatureSubmit"`
-	DelayConfirmations   int64  `mapstructure:"delayConfirmations"`
+	DelayVoteProposals   int64  `mapstructure:"delayVoteProposals"`
 }
 
 func (c *RawEVMConfig) Validate() error {
@@ -67,8 +67,8 @@ func (c *RawEVMConfig) Validate() error {
 	if c.BlockConfirmations != 0 && c.BlockConfirmations < 1 {
 		return fmt.Errorf("blockConfirmations has to be >=1")
 	}
-	if c.DelayConfirmations != 0 && c.DelayConfirmations < 1 {
-		return fmt.Errorf("DelayConfirmations has to be >=1")
+	if c.DelayVoteProposals != 0 && c.DelayVoteProposals < 1 {
+		return fmt.Errorf("DelayVoteProposals has to be >=1")
 	}
 	return nil
 }
@@ -100,7 +100,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(c.StartBlock),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
-		DelayConfirmations: big.NewInt(consts.DefaultDelayConfirmations),
+		DelayVoteProposals: big.NewInt(consts.DefaultDelayConfirmations),
 
 		AirDropAmount:        big.NewInt(0),
 		AirDropErc20Contract: common.Address{},
@@ -127,8 +127,8 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		config.BlockConfirmations = big.NewInt(c.BlockConfirmations)
 	}
 
-	if c.DelayConfirmations != 0 {
-		config.DelayConfirmations = big.NewInt(c.DelayConfirmations)
+	if c.DelayVoteProposals != 0 {
+		config.DelayVoteProposals = big.NewInt(c.DelayVoteProposals)
 	}
 
 	if c.BlockRetryInterval != 0 {

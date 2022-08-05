@@ -104,12 +104,12 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId)
+	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId, config.DelayVoteProposals)
 	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId)
+		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId, config.DelayVoteProposals)
 
 		//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 	}
@@ -185,7 +185,7 @@ func (c *EVMChain) SignatureSubmit() bool {
 }
 
 func (c *EVMChain) DelayConfirmations() *big.Int {
-	return c.config.DelayConfirmations
+	return c.config.DelayVoteProposals
 }
 
 func (c *EVMChain) DomainID() uint8 {

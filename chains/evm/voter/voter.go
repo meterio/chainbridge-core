@@ -93,6 +93,7 @@ type EVMVoter struct {
 	pendingProposalVotes map[common.Hash]uint8
 	id                   uint8
 	db                   *lvldb.LVLDB
+	delayVoteProposals   *big.Int
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -102,7 +103,7 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, delayVoteProposals *big.Int) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
@@ -111,6 +112,7 @@ func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainCl
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
+		delayVoteProposals:   delayVoteProposals,
 	}
 
 	ch := make(chan common.Hash)
@@ -129,7 +131,7 @@ func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainCl
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8) *EVMVoter {
+func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, delayVoteProposals *big.Int) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
@@ -138,6 +140,7 @@ func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeCont
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
+		delayVoteProposals:   delayVoteProposals,
 	}
 }
 
@@ -392,6 +395,8 @@ func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
+	<-time.After(time.Second * time.Duration(v.delayVoteProposals.Int64()))
+
 	statusInactive, err := v.ProposalStatusInactive(m)
 	if err != nil {
 		return err
