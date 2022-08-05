@@ -394,10 +394,10 @@ func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
 	return true, nil
 }
 
-func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte) error {
-	log.Debug().Msgf("voter before sleep %v", v.delayVoteProposals)
-	<-time.After(time.Second * time.Duration(v.delayVoteProposals.Int64()))
-	log.Debug().Msgf("voter after sleep %v", v.delayVoteProposals)
+func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
+	log.Debug().Msgf("voter before sleep %v", sleepDuration)
+	<-time.After(time.Second * time.Duration(sleepDuration.Int64()))
+	log.Debug().Msgf("voter after sleep %v", sleepDuration)
 
 	statusInactive, err := v.ProposalStatusInactive(m)
 	if err != nil {

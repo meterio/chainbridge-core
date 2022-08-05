@@ -38,7 +38,7 @@ type ProposalVoter interface {
 	SubmitSignature(message *message.Message, chainID *big.Int, address *common.Address) error
 
 	GetSignatures(message *message.Message) ([][]byte, error)
-	VoteProposals(message *message.Message, data [][]byte) error
+	VoteProposals(message *message.Message, data [][]byte, sleepDuration *big.Int) error
 	ProposalStatusInactive(m *message.Message) (bool, error)
 
 	ChainID() (*big.Int, error)
@@ -176,15 +176,15 @@ func (c *EVMChain) Get(msg *message.Message) (bool, error) {
 	return c.writer.ProposalStatusInactive(msg)
 }
 
-func (c *EVMChain) Submits(msg *message.Message, signatures [][]byte) error {
-	return c.writer.VoteProposals(msg, signatures) // VoteProposals
+func (c *EVMChain) Submits(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
+	return c.writer.VoteProposals(msg, signatures, sleepDuration) // VoteProposals
 }
 
 func (c *EVMChain) SignatureSubmit() bool {
 	return c.config.SignatureSubmit
 }
 
-func (c *EVMChain) DelayConfirmations() *big.Int {
+func (c *EVMChain) DelayVoteProposals() *big.Int {
 	return c.config.DelayVoteProposals
 }
 

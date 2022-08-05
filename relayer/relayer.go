@@ -30,9 +30,9 @@ type RelayedChain interface {
 	Get(message *message.Message) (bool, error)
 	Write(message *message.Message) error
 	Submit(message *message.Message, chainID *big.Int, address *common.Address) error
-	Submits(message *message.Message, data [][]byte) error
+	Submits(message *message.Message, data [][]byte, sleepDuration *big.Int) error
 	SignatureSubmit() bool
-	DelayConfirmations() *big.Int
+	DelayVoteProposals() *big.Int
 }
 
 func NewRelayer(chains []RelayedChain, metrics Metrics, messageProcessors ...message.MessageProcessor) *Relayer {
@@ -97,12 +97,12 @@ func (r *Relayer) route(m *message.Message) {
 
 	// case 1
 	if m.FromDB && middleChain.SignatureSubmit() {
-		log.Debug().Msgf("route case 1, message %v", m)
+		log.Debug().Msgf("route case 1, signaturePass, message %v", m)
 		data, err := middleChain.Read(m) // getSignatures
 		if err != nil {
 			log.Error().Msgf(err.Error())
 		}
-		err = destChain.Submits(m, data) // voteProposals
+		err = destChain.Submits(m, data, middleChain.DelayVoteProposals()) // voteProposals
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 		}
@@ -112,7 +112,7 @@ func (r *Relayer) route(m *message.Message) {
 
 	// case 2
 	if middleChain != nil {
-		log.Debug().Msgf("route case 2, message %v", m)
+		log.Debug().Msgf("route case 2, deposit with relayChain, message %v", m)
 		destChainID, err := destChain.ChainID()
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submit %w get destChainID %v", err, m))
@@ -120,7 +120,8 @@ func (r *Relayer) route(m *message.Message) {
 		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
-				delayConfirmations := middleChain.DelayConfirmations()
+				// case 4
+				delayConfirmations := middleChain.DelayVoteProposals()
 				log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
 				<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
 				log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
@@ -132,12 +133,12 @@ func (r *Relayer) route(m *message.Message) {
 				}
 
 				if statusInactive {
-					log.Debug().Msgf("route case change from 2 to 1, message %v", m)
+					log.Debug().Msgf("route case 2 to 1, message %v", m)
 					data, err := middleChain.Read(m) // getSignatures
 					if err != nil {
 						log.Error().Msgf(err.Error())
 					}
-					err = destChain.Submits(m, data) // voteProposals
+					err = destChain.Submits(m, data, big.NewInt(0)) // voteProposals
 					if err != nil {
 						log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 					}
@@ -151,7 +152,7 @@ func (r *Relayer) route(m *message.Message) {
 	}
 
 	// case 3
-	log.Debug().Msgf("route case 3, message %v", m)
+	log.Debug().Msgf("route case 3, deposit without relayChain, message %v", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
