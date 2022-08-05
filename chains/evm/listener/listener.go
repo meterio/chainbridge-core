@@ -378,7 +378,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log, domainID 
 	for _, l := range vLogs {
 		depositLog, err := UnpackDepositEventLog(abiIst, l.Data)
 		if err != nil {
-			log.Error().Msgf("failed unpacking deposit event log: %v", err)
+			log.Warn().Msgf("failed unpacking deposit event log: %v", err)
 			continue
 		}
 		log.Debug().Msgf("Found deposit log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, depositLog.SenderAddress)
@@ -406,7 +406,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log, domainID 
 
 		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
 		if err != nil {
-			log.Error().Msgf("failed unpackProposalEventLog: %v", err)
+			log.Warn().Msgf("failed unpack Proposal Event Log: %v", err)
 			continue
 		}
 
