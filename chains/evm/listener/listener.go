@@ -68,7 +68,8 @@ func (l *EVMListener) ListenToEvents(
 	ch := make(chan *message.Message)
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
-			log.Info().Msgf("ListenToEvents, relayChain startBlock %v, domainID %v", startBlock, l.id)
+			startBlock = big.NewInt(0)
+			log.Info().Msgf("ListenToEvents, relayChain domainID %v", l.id)
 			for {
 				select {
 				case <-stopChn:
@@ -81,23 +82,29 @@ func (l *EVMListener) ListenToEvents(
 						continue
 					}
 
-					if startBlock == nil {
-						startBlock = head
+					if startBlock == nil || startBlock.Sign() == 0 {
+						startBlock = big.NewInt(0).Sub(head, blockDelay)
 					}
 
 					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
 
-					latestSubStart := big.NewInt(0).Sub(head, startBlock)
-					doubleBlockDelay := big.NewInt(1).Mul(blockDelay, big.NewInt(2))
+					//latestSubStart := big.NewInt(0).Sub(head, startBlock)
+					//doubleBlockDelay := big.NewInt(1).Mul(blockDelay, big.NewInt(2))
+					//
+					//// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
+					//if latestSubStart.Cmp(blockDelay) == -1 {
+					//	time.Sleep(blockRetryInterval)
+					//	continue
+					//}
+					//
+					//if latestSubStart.Cmp(doubleBlockDelay) == 1 {
+					//	startBlock = big.NewInt(0).Sub(head, doubleBlockDelay)
+					//}
 
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-					if latestSubStart.Cmp(blockDelay) == -1 {
+					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
 						time.Sleep(blockRetryInterval)
 						continue
-					}
-
-					if latestSubStart.Cmp(doubleBlockDelay) == 1 {
-						startBlock = big.NewInt(0).Sub(head, doubleBlockDelay)
 					}
 
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
