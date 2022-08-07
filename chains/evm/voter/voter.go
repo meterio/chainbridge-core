@@ -387,7 +387,6 @@ func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
 	}
 
 	if pps.Status != message.ProposalStatusInactive {
-		log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
 		return false, nil
 	}
 
@@ -405,7 +404,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	}
 
 	if !statusInactive {
-		log.Info().Msgf("Proposal Status not Inactive, skip VoteProposals")
+		log.Info().Msgf("Proposal exists, skip VoteProposals")
 		return nil
 	}
 
