@@ -126,13 +126,13 @@ func (r *Relayer) route(m *message.Message) {
 				<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
 				log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
 
-				statusInactive, err := destChain.Get(m) // ProposalStatusInactive
+				statusShouldVoteProposals, err := destChain.Get(m) // ProposalStatusShouldVoteProposals
 				if err != nil {
 					log.Error().Msgf(err.Error())
 					return
 				}
 
-				if statusInactive {
+				if statusShouldVoteProposals {
 					log.Debug().Msgf("route case 2 to 1, message %v", m)
 					data, err := middleChain.Read(m) // getSignatures
 					if err != nil {

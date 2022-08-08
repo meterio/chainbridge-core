@@ -380,17 +380,17 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 	return data, nil
 }
 
-func (v *EVMVoter) ProposalStatusInactive(m *message.Message) (bool, error) {
+func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, error) {
 	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
 		return false, err
 	}
 
-	if pps.Status != message.ProposalStatusInactive {
-		return false, nil
+	if pps.Status == message.ProposalStatusInactive || pps.Status == message.ProposalStatusActive {
+		return true, nil
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
@@ -398,13 +398,13 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	<-time.After(time.Second * time.Duration(sleepDuration.Int64()))
 	log.Debug().Msgf("voter after sleep %v", sleepDuration)
 
-	statusInactive, err := v.ProposalStatusInactive(m)
+	statusShouldVoteProposals, err := v.ProposalStatusShouldVoteProposals(m)
 	if err != nil {
 		return err
 	}
 
-	if !statusInactive {
-		log.Info().Msgf("Proposal exists, skip VoteProposals")
+	if !statusShouldVoteProposals {
+		log.Info().Msgf("Proposal status can not VoteProposals, skipped")
 		return nil
 	}
 
