@@ -103,7 +103,7 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, delayVoteProposals *big.Int) (*EVMVoter, error) {
+func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, relayId uint8, delayVoteProposals *big.Int) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
@@ -115,13 +115,15 @@ func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainCl
 		delayVoteProposals:   delayVoteProposals,
 	}
 
-	ch := make(chan common.Hash)
+	if relayId == 0 {
+		ch := make(chan common.Hash)
 
-	_, err := client.SubscribePendingTransactions(context.TODO(), ch)
-	if err != nil {
-		return nil, err
+		_, err := client.SubscribePendingTransactions(context.TODO(), ch)
+		if err != nil {
+			return nil, err
+		}
+		go voter.trackProposalPendingVotes(ch)
 	}
-	go voter.trackProposalPendingVotes(ch)
 
 	return voter, nil
 }

@@ -104,7 +104,7 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId, config.DelayVoteProposals)
+	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId, config.RelayId(), config.DelayVoteProposals)
 	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 
 	if err != nil {
@@ -192,11 +192,8 @@ func (c *EVMChain) DomainID() uint8 {
 	return *c.config.GeneralChainConfig.Id
 }
 
-func (c *EVMChain) MiddleId() uint8 {
-	if c.config.GeneralChainConfig.MiddleId == nil {
-		return 0
-	}
-	return *c.config.GeneralChainConfig.MiddleId
+func (c *EVMChain) RelayId() uint8 {
+	return c.config.RelayId()
 }
 
 func (c *EVMChain) ChainID() (*big.Int, error) {

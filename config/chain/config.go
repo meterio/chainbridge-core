@@ -9,9 +9,9 @@ import (
 
 type GeneralChainConfig struct {
 	Name           string `mapstructure:"name"`
-	Id             *uint8 `mapstructure:"id"`
-	MiddleId       *uint8 `mapstructure:"relayId"`
-	Endpoint       string `mapstructure:"endpoint"`
+	Id       *uint8 `mapstructure:"id"`
+	RelayId  *uint8 `mapstructure:"relayId"`
+	Endpoint string `mapstructure:"endpoint"`
 	From           string `mapstructure:"from"`
 	Type           string `mapstructure:"type"`
 	KeystorePath   string

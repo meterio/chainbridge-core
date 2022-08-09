@@ -157,3 +157,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	return config, nil
 }
+
+func (c *EVMConfig) RelayId() uint8 {
+	if c.GeneralChainConfig.RelayId == nil {
+		return 0
+	}
+	return *c.GeneralChainConfig.RelayId
+}

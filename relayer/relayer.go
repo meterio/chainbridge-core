@@ -21,7 +21,7 @@ type RelayedChain interface {
 	PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message)
 
 	DomainID() uint8
-	MiddleId() uint8
+	RelayId() uint8
 
 	ChainID() (*big.Int, error)
 	BridgeContractAddress() *common.Address
@@ -78,7 +78,7 @@ func (r *Relayer) route(m *message.Message) {
 		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
 		return
 	}
-	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+	middleId := sourceChain.RelayId() // if zero?, use old logic.
 
 	var middleChain RelayedChain
 	if middleId != 0 {
@@ -175,7 +175,7 @@ func (r *Relayer) route(m *message.Message) {
 //		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
 //		return false
 //	}
-//	middleId := sourceChain.MiddleId() // if zero?, use old logic.
+//	middleId := sourceChain.RelayId() // if zero?, use old logic.
 //
 //	middleChain, ok := r.registry[middleId]
 //	if !ok {
@@ -190,7 +190,7 @@ func (r *Relayer) route(m *message.Message) {
 //		}
 //	}
 //
-//	log.Debug().Msgf("Sending message %+v to middle %v", m, sourceChain.MiddleId())
+//	log.Debug().Msgf("Sending message %+v to middle %v", m, sourceChain.RelayId())
 //
 //	if err := middleChain.Submit(m); err != nil {
 //		log.Error().Err(err).Msgf("writing message %+v", m)

@@ -129,7 +129,7 @@ func (m *MockRelayedChain) Submits(message *message.Message, data [][]byte) erro
 	return ret0
 }
 
-func (m *MockRelayedChain) MiddleId() uint8 {
+func (m *MockRelayedChain) RelayId() uint8 {
 	return 0
 }
 
