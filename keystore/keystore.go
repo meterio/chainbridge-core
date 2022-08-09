@@ -30,6 +30,7 @@ import (
 	"os"
 
 	"github.com/ChainSafe/chainbridge-core/crypto"
+	"github.com/ChainSafe/chainbridge-core/util"
 )
 
 const EnvPassword = "KEYSTORE_PASSWORD"
@@ -51,6 +52,10 @@ func KeypairFromAddress(addr, chainType, path string, insecure bool) (crypto.Key
 		return nil, fmt.Errorf("key file not found: %s", path)
 	}
 
+	if kp, ok := util.PathKeypair[path]; ok {
+		return kp, nil
+	}
+
 	var pswd []byte
 	if pswdStr := os.Getenv(EnvPassword); pswdStr != "" {
 		pswd = []byte(pswdStr)
@@ -62,6 +67,7 @@ func KeypairFromAddress(addr, chainType, path string, insecure bool) (crypto.Key
 	if err != nil {
 		return nil, err
 	}
+	util.PathKeypair[path] = kp
 
 	return kp, nil
 }
