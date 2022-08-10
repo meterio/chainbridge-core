@@ -304,7 +304,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
-			log.Error().Msgf("key %x, data %v", key, data)
+			log.Warn().Err(err).Msgf("key %x, data %v", key, data)
 			continue
 		}
 
