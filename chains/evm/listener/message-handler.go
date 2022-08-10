@@ -89,14 +89,9 @@ func (w *EVMMessageHandler) shouldAirDropNative(m message.Message) (bool, uint8,
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
 	recipient := common.BytesToAddress(m.Payload[1].([]byte))
 
-	//bigAmt := big.NewInt(0).SetBytes(m.Payload[0].([]byte))
-	//amount := types.NewU128(*bigAmt)
-	//recipient := types.NewAccountID(m.Payload[1].([]byte))
+	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("AirDrop Native...")
+	log.Debug().Uint8("dest", dest).Hex("recipient", recipient[:]).Str("amount", w.cfg.AirDropAmount.String()).Msg("airdrop parameters")
 
-	log.Info().Msgf("In shouldAirDropNative...", "source", source, "dest", dest, "type", transferType,
-		"nonce", nonce, "amount", amount.String(), "recipient", recipient, "resourceId", resourceId)
-
-	log.Info().Msgf(" the airdrop parameters", "dest", dest, "recipient", recipient, "amount", w.cfg.AirDropAmount)
 	return true, dest, &recipient, w.cfg.AirDropAmount
 }
 
@@ -124,8 +119,7 @@ func (w *EVMMessageHandler) shouldAirDropErc20(m message.Message) (bool, uint8, 
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
 	recipient := common.BytesToAddress(m.Payload[1].([]byte))
-	log.Info().Msgf("In shouldAirDropErc20...", "source", source, "dest", dest, "type", transferType,
-		"nonce", nonce, "amount", amount.String(), "recipient", recipient, "resourceId", resourceId)
+	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("AirDrop Erc20...")
 
 	erc20Contract := w.cfg.AirDropErc20Contract
 	// source from ethereum main, the fee is configured amount
@@ -137,7 +131,6 @@ func (w *EVMMessageHandler) shouldAirDropErc20(m message.Message) (bool, uint8, 
 		erc20Amount = big.NewInt(5e17)
 	}
 
-	log.Info().Msgf(" the airdrop parameters", "dest", dest, "erc20Contract", &erc20Contract,
-		"recipient", recipient, "amount", erc20Amount.String())
+	log.Debug().Uint8("dest", dest).Hex("erc20Contract", erc20Contract[:]).Hex("recipient", recipient[:]).Str("amount", erc20Amount.String()).Msg("airdrop parameters")
 	return true, dest, &erc20Contract, &recipient, erc20Amount
 }
