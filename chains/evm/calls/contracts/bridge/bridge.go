@@ -47,6 +47,18 @@ func (c *BridgeContract) AddRelayer(
 	)
 }
 
+func (c *BridgeContract) RenounceAdmin(
+	adminAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("renounce admin: %s", adminAddr.String())
+	return c.ExecuteTransaction(
+		"renounceAdmin",
+		opts,
+		adminAddr,
+	)
+}
+
 func (c *BridgeContract) AdminSetGenericResource(
 	handler common.Address,
 	rID types.ResourceID,

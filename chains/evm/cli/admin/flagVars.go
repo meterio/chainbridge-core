@@ -34,6 +34,7 @@ var (
 	SignatureAddr common.Address
 	HandlerAddr   common.Address
 	RelayerAddr   common.Address
+	AdminAddr     common.Address
 	RecipientAddr common.Address
 	TokenAddr     common.Address
 	RealAmount    *big.Int
