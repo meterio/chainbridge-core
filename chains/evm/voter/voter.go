@@ -291,7 +291,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	if len(signatures) >= int(threshold) {
-		log.Info().Msgf("signatures length >= threshold, skip SubmitSignature")
+		log.Warn().Msgf("signatures length >= threshold, skip SubmitSignature")
 		return errors.New(util.OVERTHRESHOLD)
 	}
 
@@ -359,17 +359,17 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 		}
 	}
 
-	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
-	if err != nil {
-		return err
-	}
-	log.Info().Str("tx hash", hash.String()).Msgf("SubmitSignature")
-
 	err = v.saveMessage(*m)
 	if err != nil {
 		log.Error().Err(err)
 		return err
 	}
+
+	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+	if err != nil {
+		return err
+	}
+	log.Info().Str("tx hash", hash.String()).Msgf("SubmitSignature")
 
 	return err
 }

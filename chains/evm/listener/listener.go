@@ -281,10 +281,6 @@ func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8
 }
 
 func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Message {
-	//if len(vLogs) != 0 {
-	//	log.Info().Msgf("trackSignturePass vLogs %v", vLogs)
-	//}
-
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
 		if err != nil {
@@ -304,18 +300,9 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
 		data, err := v.db.GetByKey(key)
 		if err != nil {
-			log.Warn().Err(err).Msgf("key %x, data %v", key, data)
+			log.Warn().Msgf("key %x, data %v", key, data)
 			continue
 		}
-
-		//if pel.Status == message.ProposalStatusCanceled {
-		//	v.db.Delete(key)
-		//	continue
-		//}
-		//
-		//if pel.Status != message.ProposalStatusPassed {
-		//	continue
-		//}
 
 		m := message.Message{}
 
