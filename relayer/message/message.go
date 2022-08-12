@@ -43,11 +43,12 @@ type Message struct {
 	Destination  uint8  // Destination chain of message
 	DepositNonce uint64 // Nonce for the deposit
 	ResourceId   types.ResourceID
-	Payload      []interface{} // data associated with event sequence
-	Type         TransferType
+	Data         []byte
+
+	Payload []interface{} // data associated with event sequence
+	Type    TransferType
 
 	FromDB bool
-	Data   []byte
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount
