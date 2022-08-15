@@ -234,6 +234,10 @@ func (l *EVMListener) ListenToEvents(
 	return ch
 }
 
+func (v *EVMListener) HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error) {
+	return v.eventHandler.HandleEvent(sourceID, destID, nonce, resourceID, calldata, handlerResponse)
+}
+
 // buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
 func (v *EVMListener) buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
 	query := ethereum.FilterQuery{
@@ -311,7 +315,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		//	log.Debug().Msgf("Resolved message %+v", mm)
 		//	return mm
 		//}
-		//
+
 		m := message.Message{}
 
 		m.Source = pel.OriginDomainID
@@ -400,7 +404,7 @@ func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log, domainID 
 			return
 		}
 
-		v.mh.CheckAndExecuteAirDrop(m)
+		//v.mh.CheckAndExecuteAirDrop(m)
 		log.Debug().Msgf("trackProposalExecuted CheckAndExecuteAirDrop db.Delete %x", key)
 		v.db.Delete(key)
 	}

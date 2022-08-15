@@ -6,6 +6,7 @@ package relayer
 import (
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
@@ -19,6 +20,7 @@ type Metrics interface {
 
 type RelayedChain interface {
 	PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message)
+	HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
 
 	DomainID() uint8
 	RelayId() uint8
@@ -102,9 +104,15 @@ func (r *Relayer) route(m *message.Message) {
 		if err != nil {
 			log.Error().Msgf(err.Error())
 		}
-		err = destChain.Submits(m, data, middleChain.DelayVoteProposals()) // voteProposals
+
+		mm, err := sourceChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
 		if err != nil {
-			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
+			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
+		}
+
+		err = destChain.Submits(mm, data, middleChain.DelayVoteProposals()) // voteProposals
+		if err != nil {
+			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, mm))
 		}
 
 		return

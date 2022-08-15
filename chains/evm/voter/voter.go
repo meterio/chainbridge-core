@@ -11,6 +11,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
+	"github.com/ChainSafe/chainbridge-core/config/chain"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 	ethereum "github.com/ethereum/go-ethereum"
@@ -94,6 +96,9 @@ type EVMVoter struct {
 	id                   uint8
 	db                   *lvldb.LVLDB
 	delayVoteProposals   *big.Int
+	airDropErc20Contract erc20.ERC20Contract
+	cfg                  chain.EVMConfig
+	t                    transactor.Transactor
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -103,16 +108,19 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, relayId uint8, delayVoteProposals *big.Int) (*EVMVoter, error) {
+func NewVoterWithSubscription(config chain.EVMConfig, db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, relayId uint8, delayVoteProposals *big.Int, t transactor.Transactor) (*EVMVoter, error) {
 	voter := &EVMVoter{
+		cfg:                  config,
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		signatureContract:    signatureContract,
+		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
 		delayVoteProposals:   delayVoteProposals,
+		t:                    t,
 	}
 
 	if relayId == 0 {
@@ -133,16 +141,19 @@ func NewVoterWithSubscription(db *lvldb.LVLDB, mh MessageHandler, client ChainCl
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, id uint8, delayVoteProposals *big.Int) *EVMVoter {
+func NewVoter(config chain.EVMConfig, db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, delayVoteProposals *big.Int, t transactor.Transactor) *EVMVoter {
 	return &EVMVoter{
+		cfg:                  config,
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		signatureContract:    signatureContract,
+		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		db:                   db,
 		delayVoteProposals:   delayVoteProposals,
+		t:                    t,
 	}
 }
 
@@ -182,6 +193,8 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	if err != nil {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
+
+	v.CheckAndExecuteAirDrop(*m)
 
 	// only ERC20 allow to airdrop
 	if m.Type == message.FungibleTransfer {
@@ -416,6 +429,8 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	if err != nil {
 		return err
 	}
+	v.CheckAndExecuteAirDrop(*m)
+
 	log.Info().Str("tx hash", hash.String()).Msgf("VoteProposals")
 
 	return nil

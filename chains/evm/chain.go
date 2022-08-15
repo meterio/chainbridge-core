@@ -10,6 +10,7 @@ import (
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
 	"github.com/ChainSafe/chainbridge-core/lvldb"
+	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
@@ -30,6 +31,7 @@ import (
 
 type EventListener interface {
 	ListenToEvents(startBlock, blockConfirmations *big.Int, blockRetryInterval time.Duration, domainID uint8, blockstore *store.BlockStore, airdrop bool, stopChn <-chan struct{}, errChn chan<- error) <-chan *message.Message
+	HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error)
 }
 
 type ProposalVoter interface {
@@ -104,12 +106,12 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(db, mh, client, bridgeContract, &signatureContract, *domainId, config.RelayId(), config.DelayVoteProposals)
+	evmVoter, err = voter.NewVoterWithSubscription(*config, db, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), config.DelayVoteProposals, t)
 	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(db, mh, client, bridgeContract, &signatureContract, *domainId, config.DelayVoteProposals)
+		evmVoter = voter.NewVoter(*config, db, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.DelayVoteProposals, t)
 
 		//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 	}
@@ -158,6 +160,10 @@ func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsC
 			continue
 		}
 	}
+}
+
+func (c *EVMChain) HandleEvent(sourceID, destID uint8, nonce uint64, resourceID types.ResourceID, calldata, handlerResponse []byte) (*message.Message, error) {
+	return c.listener.HandleEvent(sourceID, destID, nonce, resourceID, calldata, handlerResponse)
 }
 
 func (c *EVMChain) Write(msg *message.Message) error {

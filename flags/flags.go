@@ -15,6 +15,7 @@ var (
 	LatestBlockFlagName = "latest"
 	TestKeyFlagName     = "testkey"
 	LogLevelFlagName    = "loglevel"
+	MetricUrlFlagName   = "metric"
 )
 
 func BindFlags(rootCMD *cobra.Command) {
@@ -41,4 +42,7 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().String(LogLevelFlagName, "info", "Set global logging level")
 	_ = viper.BindPFlag(LogLevelFlagName, rootCMD.PersistentFlags().Lookup(LogLevelFlagName))
+
+	rootCMD.PersistentFlags().String(MetricUrlFlagName, "", "Set OpenTelemetry metrics collector URL")
+	_ = viper.BindPFlag(MetricUrlFlagName, rootCMD.PersistentFlags().Lookup(MetricUrlFlagName))
 }
