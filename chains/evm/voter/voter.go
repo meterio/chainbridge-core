@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"encoding/gob"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -118,7 +117,7 @@ func NewVoterWithSubscription(config chain.EVMConfig, db *lvldb.LVLDB, mh Messag
 		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
-		db:                   db,
+		//db:                   db,
 		delayVoteProposals:   delayVoteProposals,
 		t:                    t,
 	}
@@ -151,7 +150,7 @@ func NewVoter(config chain.EVMConfig, db *lvldb.LVLDB, mh MessageHandler, client
 		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
-		db:                   db,
+		//db:                   db,
 		delayVoteProposals:   delayVoteProposals,
 		t:                    t,
 	}
@@ -197,12 +196,12 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	v.CheckAndExecuteAirDrop(*m)
 
 	// only ERC20 allow to airdrop
-	if m.Type == message.FungibleTransfer {
-		err = v.saveMessage(*m)
-		if err != nil {
-			return err
-		}
-	}
+	//if m.Type == message.FungibleTransfer {
+	//	err = v.saveMessage(*m)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 
 	log.Info().Str("tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Msgf("Voted")
 	return nil
@@ -372,11 +371,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 		}
 	}
 
-	err = v.saveMessage(*m)
-	if err != nil {
-		log.Error().Err(err)
-		return err
-	}
+	//err = v.saveMessage(*m)
+	//if err != nil {
+	//	log.Error().Err(err)
+	//	return err
+	//}
 
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
@@ -436,27 +435,27 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	return nil
 }
 
-func (v *EVMVoter) saveMessage(m message.Message) error {
-	var network bytes.Buffer // Stand-in for the network.
-
-	// Create an encoder and send a value.
-	enc := gob.NewEncoder(&network)
-	err := enc.Encode(m)
-	if err != nil {
-		log.Fatal().Err(err)
-		return err
-	}
-
-	key := []byte{m.Source, 0x00, m.Destination, 0x00, byte(m.DepositNonce)}
-
-	log.Debug().Msgf("saveMessage db.SetByKey %x", key)
-	err = v.db.SetByKey(key, network.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+//func (v *EVMVoter) saveMessage(m message.Message) error {
+//	var network bytes.Buffer // Stand-in for the network.
+//
+//	// Create an encoder and send a value.
+//	enc := gob.NewEncoder(&network)
+//	err := enc.Encode(m)
+//	if err != nil {
+//		log.Fatal().Err(err)
+//		return err
+//	}
+//
+//	key := []byte{m.Source, 0x00, m.Destination, 0x00, byte(m.DepositNonce)}
+//
+//	log.Debug().Msgf("saveMessage db.SetByKey %x", key)
+//	err = v.db.SetByKey(key, network.Bytes())
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
 
 // shouldVoteForProposal checks if proposal already has threshold with pending
 // proposal votes from other relayers.

@@ -4,9 +4,7 @@
 package listener
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"errors"
 	"math/big"
 	"strings"
@@ -102,7 +100,6 @@ func (l *EVMListener) ListenToEvents(
 					}
 					proposalPassedMessage := l.trackSignturePass(logch2)
 					if proposalPassedMessage != nil {
-						//proposalPassedMessage.FromDB = true
 						ch <- proposalPassedMessage
 					}
 
@@ -124,60 +121,60 @@ func (l *EVMListener) ListenToEvents(
 		return ch
 	}
 
-	if airdrop {
-		go func() {
-			log.Info().Msgf("ListenToEvents with airdrop, startBlock %v, domainID %v", startBlock, l.id)
-
-			for {
-				select {
-				case <-stopChn:
-					return
-				default:
-					head, err := l.chainReader.LatestBlock()
-					if err != nil {
-						log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
-						time.Sleep(blockRetryInterval)
-						continue
-					}
-
-					if startBlock == nil {
-						startBlock = head
-					}
-
-					log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
-
-					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
-						time.Sleep(blockRetryInterval)
-						continue
-					}
-
-					query1 := l.buildMultiQuery(l.bridgeAddress, []string{string(util.ProposalEvent), string(util.Deposit)}, startBlock, startBlock)
-					logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
-					if err != nil {
-						log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
-						continue
-					}
-					l.trackProposalExecuted(logch1, domainID, startBlock, ch)
-
-					if startBlock.Int64()%20 == 0 {
-						// Logging process every 20 bocks to exclude spam
-						log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
-					}
-					// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
-					//Write to block store. Not a critical operation, no need to retry
-					err = blockstore.StoreBlock(startBlock, domainID)
-					if err != nil {
-						log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
-					}
-					// Goto next block
-					startBlock.Add(startBlock, big.NewInt(1))
-				}
-			}
-		}()
-
-		return ch
-	}
+	//if airdrop {
+	//	go func() {
+	//		log.Info().Msgf("ListenToEvents with airdrop, startBlock %v, domainID %v", startBlock, l.id)
+	//
+	//		for {
+	//			select {
+	//			case <-stopChn:
+	//				return
+	//			default:
+	//				head, err := l.chainReader.LatestBlock()
+	//				if err != nil {
+	//					log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
+	//					time.Sleep(blockRetryInterval)
+	//					continue
+	//				}
+	//
+	//				if startBlock == nil {
+	//					startBlock = head
+	//				}
+	//
+	//				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
+	//
+	//				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
+	//				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
+	//					time.Sleep(blockRetryInterval)
+	//					continue
+	//				}
+	//
+	//				query1 := l.buildMultiQuery(l.bridgeAddress, []string{string(util.ProposalEvent), string(util.Deposit)}, startBlock, startBlock)
+	//				logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
+	//				if err != nil {
+	//					log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
+	//					continue
+	//				}
+	//				l.trackProposalExecuted(logch1, domainID, startBlock, ch)
+	//
+	//				if startBlock.Int64()%20 == 0 {
+	//					// Logging process every 20 bocks to exclude spam
+	//					log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
+	//				}
+	//				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
+	//				//Write to block store. Not a critical operation, no need to retry
+	//				err = blockstore.StoreBlock(startBlock, domainID)
+	//				if err != nil {
+	//					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
+	//				}
+	//				// Goto next block
+	//				startBlock.Add(startBlock, big.NewInt(1))
+	//			}
+	//		}
+	//	}()
+	//
+	//	return ch
+	//}
 
 	go func() {
 		log.Info().Msgf("ListenToEvents, startBlock %v, domainID %v", startBlock, l.id)
@@ -341,96 +338,96 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 	return nil
 }
 
-func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log, domainID uint8, startBlock *big.Int, ch chan *message.Message) {
-	abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
-	if err != nil {
-		return
-	}
+//func (v *EVMListener) trackProposalExecuted(vLogs []ethereumTypes.Log, domainID uint8, startBlock *big.Int, ch chan *message.Message) {
+//	abiIst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
+//	if err != nil {
+//		return
+//	}
+//
+//	for _, l := range vLogs {
+//		depositLog, err := UnpackDepositEventLog(abiIst, l.Data)
+//		if err != nil {
+//			log.Warn().Msgf("failed unpacking deposit event log: %v", err)
+//			continue
+//		}
+//		log.Debug().Msgf("Found deposit log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, depositLog.SenderAddress)
+//
+//		m, err := v.eventHandler.HandleEvent(domainID, depositLog.DestinationDomainID, depositLog.DepositNonce, depositLog.ResourceID, depositLog.Data, depositLog.HandlerResponse)
+//		if err != nil {
+//			log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
+//		} else {
+//			log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
+//			ch <- m
+//		}
+//	}
+//
+//	for _, vLog := range vLogs {
+//		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
+//		if err != nil {
+//			log.Warn().Msgf("failed unpack Proposal Event Log: %v", err)
+//			continue
+//		}
+//
+//		key := []byte{pel.OriginDomainID, 0x00, v.id, 0x00, byte(pel.DepositNonce)}
+//		log.Debug().Msgf("trackProposalExecuted db.GetByKey %x, Proposal status", key, pel.Status)
+//		data, err := v.db.GetByKey(key)
+//		if err != nil {
+//			continue
+//		}
+//
+//		if pel.Status == message.ProposalStatusCanceled {
+//			log.Debug().Msgf("trackProposalExecuted ProposalStatusCanceled db.Delete %x", key)
+//			v.db.Delete(key)
+//			continue
+//		}
+//
+//		if pel.Status != message.ProposalStatusExecuted {
+//			continue
+//		}
+//
+//		m := message.Message{}
+//
+//		var network bytes.Buffer
+//		// Create a decoder and receive a value.
+//		dec := gob.NewDecoder(&network)
+//		network.Write(data)
+//		err = dec.Decode(&m)
+//		if err != nil {
+//			log.Error().Msgf("failed Decode Message: %v", err)
+//			continue
+//		}
+//
+//		if m.Type != message.FungibleTransfer {
+//			return
+//		}
+//
+//		//v.mh.CheckAndExecuteAirDrop(m)
+//		log.Debug().Msgf("trackProposalExecuted CheckAndExecuteAirDrop db.Delete %x", key)
+//		v.db.Delete(key)
+//	}
+//}
 
-	for _, l := range vLogs {
-		depositLog, err := UnpackDepositEventLog(abiIst, l.Data)
-		if err != nil {
-			log.Warn().Msgf("failed unpacking deposit event log: %v", err)
-			continue
-		}
-		log.Debug().Msgf("Found deposit log in block: %d, TxHash: %s, contractAddress: %s, sender: %s", l.BlockNumber, l.TxHash, l.Address, depositLog.SenderAddress)
+//func UnpackDepositEventLog(abi abi.ABI, data []byte) (*evmclient.DepositLogs, error) {
+//	var dl evmclient.DepositLogs
+//
+//	err := abi.UnpackIntoInterface(&dl, "Deposit", data)
+//	if err != nil {
+//		return &evmclient.DepositLogs{}, err
+//	}
+//
+//	return &dl, nil
+//}
 
-		m, err := v.eventHandler.HandleEvent(domainID, depositLog.DestinationDomainID, depositLog.DepositNonce, depositLog.ResourceID, depositLog.Data, depositLog.HandlerResponse)
-		if err != nil {
-			log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
-		} else {
-			log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
-			ch <- m
-		}
-	}
-
-	for _, vLog := range vLogs {
-		pel, err := unpackProposalEventLog(abiIst, vLog.Data)
-		if err != nil {
-			log.Warn().Msgf("failed unpack Proposal Event Log: %v", err)
-			continue
-		}
-
-		key := []byte{pel.OriginDomainID, 0x00, v.id, 0x00, byte(pel.DepositNonce)}
-		log.Debug().Msgf("trackProposalExecuted db.GetByKey %x, Proposal status", key, pel.Status)
-		data, err := v.db.GetByKey(key)
-		if err != nil {
-			continue
-		}
-
-		if pel.Status == message.ProposalStatusCanceled {
-			log.Debug().Msgf("trackProposalExecuted ProposalStatusCanceled db.Delete %x", key)
-			v.db.Delete(key)
-			continue
-		}
-
-		if pel.Status != message.ProposalStatusExecuted {
-			continue
-		}
-
-		m := message.Message{}
-
-		var network bytes.Buffer
-		// Create a decoder and receive a value.
-		dec := gob.NewDecoder(&network)
-		network.Write(data)
-		err = dec.Decode(&m)
-		if err != nil {
-			log.Error().Msgf("failed Decode Message: %v", err)
-			continue
-		}
-
-		if m.Type != message.FungibleTransfer {
-			return
-		}
-
-		//v.mh.CheckAndExecuteAirDrop(m)
-		log.Debug().Msgf("trackProposalExecuted CheckAndExecuteAirDrop db.Delete %x", key)
-		v.db.Delete(key)
-	}
-}
-
-func UnpackDepositEventLog(abi abi.ABI, data []byte) (*evmclient.DepositLogs, error) {
-	var dl evmclient.DepositLogs
-
-	err := abi.UnpackIntoInterface(&dl, "Deposit", data)
-	if err != nil {
-		return &evmclient.DepositLogs{}, err
-	}
-
-	return &dl, nil
-}
-
-func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
-	var pe evmclient.ProposalEvents
-
-	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
-	if err != nil {
-		return &evmclient.ProposalEvents{}, err
-	}
-
-	return &pe, nil
-}
+//func unpackProposalEventLog(abiIst abi.ABI, data []byte) (*evmclient.ProposalEvents, error) {
+//	var pe evmclient.ProposalEvents
+//
+//	err := abiIst.UnpackIntoInterface(&pe, "ProposalEvent", data)
+//	if err != nil {
+//		return &evmclient.ProposalEvents{}, err
+//	}
+//
+//	return &pe, nil
+//}
 
 func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*evmclient.SignturePass, error) {
 	var pe evmclient.SignturePass

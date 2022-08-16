@@ -169,6 +169,16 @@ func (c *SignaturesContract) GetThreshold(domain uint8) (uint8, error) {
 	return out, nil
 }
 
+func (c *SignaturesContract) HasVote(sig []byte) (bool, error) {
+	log.Debug().Msg("Has Vote?")
+	res, err := c.CallContract("hasVote", sig)
+	if err != nil {
+		return false, err
+	}
+	out := *abi.ConvertType(res[0], new(bool)).(*bool)
+	return out, nil
+}
+
 func (c *SignaturesContract) SetThresholdInput(
 	destinationDomainID uint8,
 	threshold uint64,
