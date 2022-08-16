@@ -2,6 +2,10 @@ package admin
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
@@ -21,12 +25,24 @@ var addAdminCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	RunE: addAdmin,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := initialize.InitializeClient(url, senderKeyPair)
+		if err != nil {
+			return err
+		}
+		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+		if err != nil {
+			return err
+		}
+		return AddAdminCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateAddAdminFlags(cmd, args)
 		if err != nil {
 			return err
 		}
+
+		ProcessAddAdminFlags(cmd, args)
 		return nil
 	},
 }
@@ -40,6 +56,7 @@ func BindAddAdminFlags(cmd *cobra.Command) {
 func init() {
 	BindAddAdminFlags(addAdminCmd)
 }
+
 func ValidateAddAdminFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Admin) {
 		return fmt.Errorf("invalid admin address %s", Admin)
@@ -50,12 +67,25 @@ func ValidateAddAdminFlags(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func addAdmin(cmd *cobra.Command, args []string) error {
+func ProcessAddAdminFlags(cmd *cobra.Command, args []string) {
+	AdminAddr = common.HexToAddress(Admin)
+	BridgeAddr = common.HexToAddress(Bridge)
+}
+
+func AddAdminCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
 Adding admin
 Admin address: %s
 Bridge address: %s`, Admin, Bridge)
-	return nil
+	role, err := contract.DefaultAdminRole()
+	if err != nil {
+		log.Error().Err(fmt.Errorf("failed contract call error: %v", err))
+		return err
+	}
+
+	_, err = contract.GrantRole(role, AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
+
+	return err
 }
 
 /*

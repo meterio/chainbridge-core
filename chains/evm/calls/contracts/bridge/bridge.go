@@ -474,3 +474,17 @@ func (c *BridgeContract) GetRoleMember(role [32]byte, i int64) (common.Address, 
 	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
 	return out, nil
 }
+
+func (c *BridgeContract) GrantRole(
+	role [32]byte,
+	account common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Grant Role role %x to %s", role, account.String())
+	return c.ExecuteTransaction(
+		"grantRole",
+		opts,
+		role,
+		account,
+	)
+}
