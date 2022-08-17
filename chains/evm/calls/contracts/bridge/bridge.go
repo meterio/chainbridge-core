@@ -47,6 +47,18 @@ func (c *BridgeContract) AddRelayer(
 	)
 }
 
+func (c *BridgeContract) RemoveRelayer(
+	relayerAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Remove relayer %s", relayerAddr.String())
+	return c.ExecuteTransaction(
+		"adminRemoveRelayer",
+		opts,
+		relayerAddr,
+	)
+}
+
 func (c *BridgeContract) RenounceAdmin(
 	adminAddr common.Address,
 	opts transactor.TransactOptions,
@@ -483,6 +495,21 @@ func (c *BridgeContract) GrantRole(
 	log.Debug().Msgf("Grant Role role %x to %s", role, account.String())
 	return c.ExecuteTransaction(
 		"grantRole",
+		opts,
+		role,
+		account,
+	)
+}
+
+
+func (c *BridgeContract) RevokeRole(
+	role [32]byte,
+	account common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("revoke role %x from %s", role, account.String())
+	return c.ExecuteTransaction(
+		"revokeRole",
 		opts,
 		role,
 		account,

@@ -2,6 +2,10 @@ package admin
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
@@ -21,12 +25,24 @@ var removeRelayerCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	RunE: removeRelayer,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := initialize.InitializeClient(url, senderKeyPair)
+		if err != nil {
+			return err
+		}
+		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+		if err != nil {
+			return err
+		}
+		return RemoveRelayerEVMCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateRemoveRelayerFlags(cmd, args)
 		if err != nil {
 			return err
 		}
+
+		ProcessRemoveRelayerFlags(cmd, args)
 		return nil
 	},
 }
@@ -39,6 +55,7 @@ func BindRemoveRelayerFlags(cmd *cobra.Command) {
 func init() {
 	BindRemoveRelayerFlags(removeRelayerCmd)
 }
+
 func ValidateRemoveRelayerFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Relayer) {
 		return fmt.Errorf("invalid relayer address %s", Relayer)
@@ -49,12 +66,20 @@ func ValidateRemoveRelayerFlags(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func removeRelayer(cmd *cobra.Command, args []string) error {
+func ProcessRemoveRelayerFlags(cmd *cobra.Command, args []string) {
+	RelayerAddr = common.HexToAddress(Relayer)
+	BridgeAddr = common.HexToAddress(Bridge)
+}
+
+func RemoveRelayerEVMCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
 Removing relayer
 Relayer address: %s
 Bridge address: %s`, Relayer, Bridge)
-	return nil
+
+	_, err := contract.RemoveRelayer(RelayerAddr, transactor.TransactOptions{GasLimit: gasLimit})
+
+	return err
 }
 
 /*
