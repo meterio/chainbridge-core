@@ -85,7 +85,7 @@ Bridge address: %s`, Admin, Bridge)
 		return err
 	}
 
-	_, err = contract.GrantRole(role, AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err = contract.RevokeRole(role, AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
 
 	return err
 }
