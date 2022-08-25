@@ -67,7 +67,7 @@ func (l *EVMListener) ListenToEvents(
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
 			startBlock = big.NewInt(0)
-			log.Info().Msgf("ListenToEvents, relayChain domainID %v", l.id)
+			log.Info().Msgf("ListenToEvents, relayChain %v", util.DomainIdToName[l.id])
 			for {
 				select {
 				case <-stopChn:
@@ -75,7 +75,7 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
+						log.Error().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
 						time.Sleep(blockRetryInterval)
 						continue
 					}
@@ -89,7 +89,7 @@ func (l *EVMListener) ListenToEvents(
 						l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
 					}
 
-					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
+					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
 
 					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -100,7 +100,7 @@ func (l *EVMListener) ListenToEvents(
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
-						log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
+						log.Error().Err(err).Msgf("failed to FilterLogs, chain %v", util.DomainIdToName[l.id])
 						continue
 					}
 					proposalPassedMessage := l.trackSignturePass(logch2)
@@ -182,7 +182,7 @@ func (l *EVMListener) ListenToEvents(
 	//}
 
 	go func() {
-		log.Info().Msgf("ListenToEvents, startBlock %v, domainID %v", startBlock, l.id)
+		log.Info().Msgf("ListenToEvents, startBlock %v, Chain %v", startBlock, util.DomainIdToName[l.id])
 
 		for {
 			select {
@@ -191,7 +191,7 @@ func (l *EVMListener) ListenToEvents(
 			default:
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
-					log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
+					log.Error().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
 					time.Sleep(blockRetryInterval)
 					continue
 				}
@@ -205,7 +205,7 @@ func (l *EVMListener) ListenToEvents(
 					l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
 				}
 
-				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
+				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
 
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
 				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
@@ -230,7 +230,7 @@ func (l *EVMListener) ListenToEvents(
 				//Write to block store. Not a critical operation, no need to retry
 				err = blockstore.StoreBlock(startBlock, domainID)
 				if err != nil {
-					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
+					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, chain %v", util.DomainIdToName[l.id])
 				}
 				// Goto next block
 				startBlock.Add(startBlock, big.NewInt(1))

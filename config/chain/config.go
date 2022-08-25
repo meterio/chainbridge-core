@@ -2,9 +2,8 @@ package chain
 
 import (
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/util"
-
 	"github.com/ChainSafe/chainbridge-core/flags"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/spf13/viper"
 )
 
