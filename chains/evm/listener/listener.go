@@ -12,7 +12,7 @@ import (
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/ChainSafe/chainbridge-core/lvldb"
+	"github.com/ChainSafe/chainbridge-core/opentelemetry"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/store"
 	"github.com/ChainSafe/chainbridge-core/types"
@@ -45,13 +45,13 @@ type EVMListener struct {
 
 	mh EVMMessageHandler
 	id uint8
-	db *lvldb.LVLDB
+	openTelemetryInst *opentelemetry.OpenTelemetry
 }
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, mh EVMMessageHandler, id uint8, db *lvldb.LVLDB) *EVMListener {
-	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress, mh: mh, id: id, db: db}
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, mh EVMMessageHandler, id uint8, openTelemetryInst *opentelemetry.OpenTelemetry) *EVMListener {
+	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress, mh: mh, id: id, openTelemetryInst: openTelemetryInst}
 }
 
 func (l *EVMListener) ListenToEvents(
@@ -82,6 +82,11 @@ func (l *EVMListener) ListenToEvents(
 
 					if startBlock == nil || startBlock.Sign() == 0 {
 						startBlock = big.NewInt(0).Sub(head, blockDelay)
+					}
+
+					if l.openTelemetryInst != nil {
+						l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64())
+						l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
 					}
 
 					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
@@ -193,6 +198,11 @@ func (l *EVMListener) ListenToEvents(
 
 				if startBlock == nil {
 					startBlock = head
+				}
+
+				if l.openTelemetryInst != nil {
+					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64())
+					l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
 				}
 
 				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)

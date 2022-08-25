@@ -2,6 +2,7 @@ package chain
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/util"
 
 	"github.com/ChainSafe/chainbridge-core/flags"
 	"github.com/spf13/viper"
@@ -9,9 +10,9 @@ import (
 
 type GeneralChainConfig struct {
 	Name           string `mapstructure:"name"`
-	Id       *uint8 `mapstructure:"id"`
-	RelayId  *uint8 `mapstructure:"relayId"`
-	Endpoint string `mapstructure:"endpoint"`
+	Id             *uint8 `mapstructure:"id"`
+	RelayId        *uint8 `mapstructure:"relayId"`
+	Endpoint       string `mapstructure:"endpoint"`
 	From           string `mapstructure:"from"`
 	Type           string `mapstructure:"type"`
 	KeystorePath   string
@@ -48,4 +49,12 @@ func (c *GeneralChainConfig) ParseFlags() {
 	c.BlockstorePath = viper.GetString(flags.BlockstoreFlagName)
 	c.FreshStart = viper.GetBool(flags.FreshStartFlagName)
 	c.LatestBlock = viper.GetBool(flags.LatestBlockFlagName)
+}
+
+func (c *GeneralChainConfig) DomainIdToName() {
+	domainId := *c.Id
+
+	if _, ok := util.DomainIdToName[domainId]; !ok {
+		util.DomainIdToName[domainId] = c.Name
+	}
 }

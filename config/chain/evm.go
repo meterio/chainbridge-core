@@ -88,6 +88,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 	}
 
 	c.GeneralChainConfig.ParseFlags()
+	c.GeneralChainConfig.DomainIdToName()
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Erc20Handler:       c.Erc20Handler,

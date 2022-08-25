@@ -17,7 +17,6 @@ import (
 	"github.com/ChainSafe/chainbridge-core/opentelemetry"
 	"github.com/ChainSafe/chainbridge-core/relayer"
 	"github.com/ChainSafe/chainbridge-core/store"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -34,9 +33,14 @@ func Run() error {
 	}
 	blockstore := store.NewBlockStore(db)
 
-	proposalDB, err := lvldb.NewLvlDB(util.PROPOSAL)
-	if err != nil {
-		panic(err)
+	var openTelemetryInst *opentelemetry.OpenTelemetry
+
+	metricsCollectorURL := viper.GetString(flags.MetricUrlFlagName)
+	if metricsCollectorURL != "" {
+		openTelemetryInst, err = opentelemetry.NewOpenTelemetry(metricsCollectorURL)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	chains := []relayer.RelayedChain{}
@@ -44,7 +48,7 @@ func Run() error {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				chain, err := evm.SetupDefaultEVMChain(proposalDB, chainConfig, evmtransaction.NewTransaction, blockstore)
+				chain, err := evm.SetupDefaultEVMChain(openTelemetryInst, chainConfig, evmtransaction.NewTransaction, blockstore)
 				if err != nil {
 					panic(err)
 				}

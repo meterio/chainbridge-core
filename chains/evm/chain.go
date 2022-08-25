@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
-	"github.com/ChainSafe/chainbridge-core/lvldb"
+	"github.com/ChainSafe/chainbridge-core/opentelemetry"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 
@@ -56,7 +56,7 @@ type EVMChain struct {
 }
 
 // SetupDefaultEVMChain sets up an EVMChain with all supported handlers configured
-func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txFabric calls.TxFabric, blockstore *store.BlockStore) (*EVMChain, error) {
+func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawConfig map[string]interface{}, txFabric calls.TxFabric, blockstore *store.BlockStore) (*EVMChain, error) {
 	config, err := chain.NewEVMConfig(rawConfig)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	eventHandler.RegisterEventHandler(config.Erc20Handler, listener.Erc20EventHandler)
 	eventHandler.RegisterEventHandler(config.Erc721Handler, listener.Erc721EventHandler)
 	eventHandler.RegisterEventHandler(config.GenericHandler, listener.GenericEventHandler)
-	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge), config.SignatureContract, *emh, *domainId, db)
+	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge), config.SignatureContract, *emh, *domainId, openTelemetryInst)
 
 	mh := voter.NewEVMMessageHandler(*bridgeContract)
 	mh.RegisterMessageHandler(config.Erc20Handler, voter.ERC20MessageHandler)
@@ -106,12 +106,12 @@ func SetupDefaultEVMChain(db *lvldb.LVLDB, rawConfig map[string]interface{}, txF
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(*config, db, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), config.DelayVoteProposals, t)
+	evmVoter, err = voter.NewVoterWithSubscription(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), config.DelayVoteProposals, t)
 	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 
 	if err != nil {
 		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(*config, db, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.DelayVoteProposals, t)
+		evmVoter = voter.NewVoter(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.DelayVoteProposals, t)
 
 		//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 	}

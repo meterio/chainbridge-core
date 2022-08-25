@@ -31,7 +31,6 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/lvldb"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -93,7 +92,6 @@ type EVMVoter struct {
 	signatureContract    SignatureContract
 	pendingProposalVotes map[common.Hash]uint8
 	id                   uint8
-	db                   *lvldb.LVLDB
 	delayVoteProposals   *big.Int
 	airDropErc20Contract erc20.ERC20Contract
 	cfg                  chain.EVMConfig
@@ -107,7 +105,7 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(config chain.EVMConfig, db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, relayId uint8, delayVoteProposals *big.Int, t transactor.Transactor) (*EVMVoter, error) {
+func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, relayId uint8, delayVoteProposals *big.Int, t transactor.Transactor) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		cfg:                  config,
 		mh:                   mh,
@@ -140,7 +138,7 @@ func NewVoterWithSubscription(config chain.EVMConfig, db *lvldb.LVLDB, mh Messag
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(config chain.EVMConfig, db *lvldb.LVLDB, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, delayVoteProposals *big.Int, t transactor.Transactor) *EVMVoter {
+func NewVoter(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, delayVoteProposals *big.Int, t transactor.Transactor) *EVMVoter {
 	return &EVMVoter{
 		cfg:                  config,
 		mh:                   mh,

@@ -2,11 +2,13 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/rs/zerolog/log"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/metric"
 )
 
 type OpenTelemetry struct {
@@ -44,10 +46,30 @@ func (t *OpenTelemetry) TrackDepositMessage(m *message.Message) {
 	t.metrics.DepositEventCount.Add(context.Background(), 1)
 }
 
-// ConsoleTelemetry is telemetry that logs metrics and should be used
-// when metrics sending to OpenTelemetry should be disabled
-type ConsoleTelemetry struct{}
+func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64) {
+	if _, ok := t.metrics.HeadBlocks[id]; !ok {
+		t.metrics.HeadBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
+			fmt.Sprintf("%s_HeadBlock", util.DomainIdToName[id]),
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				result.Observe(value)
+			},
+			metric.WithDescription(fmt.Sprintf("Head Blocks of %s Chain", util.DomainIdToName[id])),
+		)
+	}
 
-func (t *ConsoleTelemetry) TrackDepositMessage(m *message.Message) {
-	log.Info().Msgf("Relayer route message: %+v", m)
+	t.metrics.HeadBlocks[id].Observation(value)
+}
+
+func (t *OpenTelemetry) TrackStartBlock(id uint8, value int64) {
+	if _, ok := t.metrics.StartBlocks[id]; !ok {
+		t.metrics.StartBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
+			fmt.Sprintf("%s_StartBlock", util.DomainIdToName[id]),
+			func(ctx context.Context, result metric.Int64ObserverResult) {
+				result.Observe(value)
+			},
+			metric.WithDescription(fmt.Sprintf("Start Blocks of %s Chain", util.DomainIdToName[id])),
+		)
+	}
+
+	t.metrics.StartBlocks[id].Observation(value)
 }
