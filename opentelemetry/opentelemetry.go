@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
 	"net/url"
 
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
@@ -46,12 +47,12 @@ func (t *OpenTelemetry) TrackDepositMessage(m *message.Message) {
 	t.metrics.DepositEventCount.Add(context.Background(), 1)
 }
 
-func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64) {
+func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64, fromAddr string) {
 	if _, ok := t.metrics.HeadBlocks[id]; !ok {
 		t.metrics.HeadBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
 			fmt.Sprintf("%s_HeadBlock", util.DomainIdToName[id]),
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value)
+				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)})
 			},
 			metric.WithDescription(fmt.Sprintf("Head Blocks of %s Chain", util.DomainIdToName[id])),
 		)
@@ -60,12 +61,12 @@ func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64) {
 	t.metrics.HeadBlocks[id].Observation(value)
 }
 
-func (t *OpenTelemetry) TrackStartBlock(id uint8, value int64) {
+func (t *OpenTelemetry) TrackStartBlock(id uint8, value int64, fromAddr string) {
 	if _, ok := t.metrics.StartBlocks[id]; !ok {
 		t.metrics.StartBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
 			fmt.Sprintf("%s_StartBlock", util.DomainIdToName[id]),
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value)
+				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)})
 			},
 			metric.WithDescription(fmt.Sprintf("Start Blocks of %s Chain", util.DomainIdToName[id])),
 		)

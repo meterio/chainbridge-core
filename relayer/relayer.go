@@ -73,7 +73,7 @@ func (r *Relayer) Start(stop <-chan struct{}, sysErr chan error) {
 
 // Route function winds destination writer by mapping DestinationID from message to registered writer.
 func (r *Relayer) route(m *message.Message) {
-	r.metrics.TrackDepositMessage(m)
+	//r.metrics.TrackDepositMessage(m)
 
 	sourceChain, ok := r.registry[m.Source]
 	if !ok {

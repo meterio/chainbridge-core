@@ -43,15 +43,17 @@ type EVMListener struct {
 	bridgeAddress    common.Address
 	signatureAddress common.Address
 
-	mh EVMMessageHandler
-	id uint8
+	mh                EVMMessageHandler
+	id                uint8
 	openTelemetryInst *opentelemetry.OpenTelemetry
+	fromAddr          string
 }
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, mh EVMMessageHandler, id uint8, openTelemetryInst *opentelemetry.OpenTelemetry) *EVMListener {
-	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress, mh: mh, id: id, openTelemetryInst: openTelemetryInst}
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, fromAddr string, mh EVMMessageHandler, id uint8, openTelemetryInst *opentelemetry.OpenTelemetry) *EVMListener {
+	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress,
+		fromAddr: fromAddr, mh: mh, id: id, openTelemetryInst: openTelemetryInst}
 }
 
 func (l *EVMListener) ListenToEvents(
@@ -85,8 +87,8 @@ func (l *EVMListener) ListenToEvents(
 					}
 
 					if l.openTelemetryInst != nil {
-						l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64())
-						l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
+						l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
+						l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64(), l.fromAddr)
 					}
 
 					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
@@ -201,8 +203,8 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				if l.openTelemetryInst != nil {
-					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64())
-					l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64())
+					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
+					l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64(), l.fromAddr)
 				}
 
 				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
