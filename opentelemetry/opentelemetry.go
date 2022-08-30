@@ -50,9 +50,12 @@ func (t *OpenTelemetry) TrackDepositMessage(m *message.Message) {
 func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64, fromAddr string) {
 	if _, ok := t.metrics.HeadBlocks[id]; !ok {
 		t.metrics.HeadBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
-			fmt.Sprintf("%s_HeadBlock", util.DomainIdToName[id]),
+			fmt.Sprintf("hb_%v", id),
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)})
+				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)},
+					attribute.KeyValue{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
+					attribute.KeyValue{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
+					attribute.KeyValue{Key: "type", Value: attribute.StringValue("HeadBlock")})
 			},
 			metric.WithDescription(fmt.Sprintf("Head Blocks of %s Chain", util.DomainIdToName[id])),
 		)
@@ -64,9 +67,12 @@ func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64, fromAddr string) {
 func (t *OpenTelemetry) TrackStartBlock(id uint8, value int64, fromAddr string) {
 	if _, ok := t.metrics.StartBlocks[id]; !ok {
 		t.metrics.StartBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
-			fmt.Sprintf("%s_StartBlock", util.DomainIdToName[id]),
+			fmt.Sprintf("sb_%v", id),
 			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)})
+				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)},
+					attribute.KeyValue{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
+					attribute.KeyValue{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
+					attribute.KeyValue{Key: "type", Value: attribute.StringValue("StartBlock")})
 			},
 			metric.WithDescription(fmt.Sprintf("Start Blocks of %s Chain", util.DomainIdToName[id])),
 		)
