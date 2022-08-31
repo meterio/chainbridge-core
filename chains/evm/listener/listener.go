@@ -88,7 +88,7 @@ func (l *EVMListener) ListenToEvents(
 
 					if l.openTelemetryInst != nil {
 						l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
-						l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64(), l.fromAddr)
+						l.openTelemetryInst.TrackSyncBlock(l.id, startBlock.Int64(), l.fromAddr)
 					}
 
 					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
@@ -204,7 +204,7 @@ func (l *EVMListener) ListenToEvents(
 
 				if l.openTelemetryInst != nil {
 					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
-					l.openTelemetryInst.TrackStartBlock(l.id, startBlock.Int64(), l.fromAddr)
+					l.openTelemetryInst.TrackSyncBlock(l.id, startBlock.Int64(), l.fromAddr)
 				}
 
 				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])

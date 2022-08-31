@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"math/big"
 	"time"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type Metrics interface {
@@ -27,6 +28,8 @@ type RelayedChain interface {
 
 	ChainID() (*big.Int, error)
 	BridgeContractAddress() *common.Address
+	SyncBlockLabels() []attribute.KeyValue
+	HeadBlockLabels() []attribute.KeyValue
 
 	Read(message *message.Message) ([][]byte, error)
 	Get(message *message.Message) (bool, error)

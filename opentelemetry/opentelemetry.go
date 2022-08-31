@@ -2,10 +2,9 @@ package opentelemetry
 
 import (
 	"context"
-	"fmt"
-	"go.opentelemetry.io/otel/attribute"
 	"net/url"
 
+	"github.com/ChainSafe/chainbridge-core/relayer"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -48,35 +47,49 @@ func (t *OpenTelemetry) TrackDepositMessage(m *message.Message) {
 }
 
 func (t *OpenTelemetry) TrackHeadBlock(id uint8, value int64, fromAddr string) {
-	if _, ok := t.metrics.HeadBlocks[id]; !ok {
-		t.metrics.HeadBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
-			fmt.Sprintf("hb_%v", id),
-			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)},
-					attribute.KeyValue{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
-					attribute.KeyValue{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
-					attribute.KeyValue{Key: "type", Value: attribute.StringValue("HeadBlock")})
-			},
-			metric.WithDescription(fmt.Sprintf("Head Blocks of %s Chain", util.DomainIdToName[id])),
-		)
-	}
-
-	t.metrics.HeadBlocks[id].Observation(value)
+	util.HEAD_STATS.Store(id, value)
 }
 
-func (t *OpenTelemetry) TrackStartBlock(id uint8, value int64, fromAddr string) {
-	if _, ok := t.metrics.StartBlocks[id]; !ok {
-		t.metrics.StartBlocks[id] = metric.Must(t.metrics.meter).NewInt64GaugeObserver(
-			fmt.Sprintf("sb_%v", id),
-			func(ctx context.Context, result metric.Int64ObserverResult) {
-				result.Observe(value, attribute.KeyValue{Key: "from", Value: attribute.StringValue(fromAddr)},
-					attribute.KeyValue{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
-					attribute.KeyValue{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
-					attribute.KeyValue{Key: "type", Value: attribute.StringValue("StartBlock")})
-			},
-			metric.WithDescription(fmt.Sprintf("Start Blocks of %s Chain", util.DomainIdToName[id])),
-		)
-	}
+func (t *OpenTelemetry) TrackSyncBlock(id uint8, value int64, fromAddr string) {
+	util.SYNC_STATS.Store(id, value)
+}
 
-	t.metrics.StartBlocks[id].Observation(value)
+func (t *OpenTelemetry) MonitorHeadBlocks(chains []relayer.RelayedChain) {
+	meter := t.metrics.meter
+	var counter metric.Int64CounterObserver
+
+	batchObserver := meter.NewBatchObserver(
+		func(ctx context.Context, result metric.BatchObserverResult) {
+			for _, chain := range chains {
+				domainID := chain.DomainID()
+				labels := chain.HeadBlockLabels()
+
+				if value, ok := util.HEAD_STATS.Load(domainID); ok {
+					result.Observe(labels, counter.Observation(value.(int64)))
+				}
+			}
+		})
+
+	counter, _ = batchObserver.NewInt64CounterObserver("head_block")
+}
+
+func (t *OpenTelemetry) MonitorSyncBlocks(chains []relayer.RelayedChain) {
+	meter := t.metrics.meter
+	var counter metric.Int64CounterObserver
+
+	// Arbitrary key/value labels.
+	batchObserver := meter.NewBatchObserver(
+		// SDK periodically calls this function to collect data.
+		func(ctx context.Context, result metric.BatchObserverResult) {
+			for _, chain := range chains {
+				domainID := chain.DomainID()
+				labels := chain.SyncBlockLabels()
+
+				if value, ok := util.SYNC_STATS.Load(domainID); ok {
+					result.Observe(labels, counter.Observation(value.(int64)))
+				}
+			}
+		})
+
+	counter, _ = batchObserver.NewInt64CounterObserver("sync_block")
 }

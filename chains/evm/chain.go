@@ -13,13 +13,12 @@ import (
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/signAndSend"
-
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/listener"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/voter"
 	"github.com/ChainSafe/chainbridge-core/config/chain"
@@ -27,6 +26,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/store"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type EventListener interface {
@@ -210,4 +210,24 @@ func (c *EVMChain) ChainID() (*big.Int, error) {
 
 func (c *EVMChain) BridgeContractAddress() *common.Address {
 	return c.writer.BridgeContractAddress()
+}
+
+func (c *EVMChain) SyncBlockLabels() []attribute.KeyValue {
+	id := *c.config.GeneralChainConfig.Id
+
+	return []attribute.KeyValue{{Key: "from", Value: attribute.StringValue(c.config.GeneralChainConfig.From)},
+		{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
+		{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
+		{Key: "type", Value: attribute.StringValue("SyncBlock")},
+	}
+}
+
+func (c *EVMChain) HeadBlockLabels() []attribute.KeyValue {
+	id := *c.config.GeneralChainConfig.Id
+
+	return []attribute.KeyValue{{Key: "from", Value: attribute.StringValue(c.config.GeneralChainConfig.From)},
+		{Key: "domain_id", Value: attribute.Int64Value(int64(id))},
+		{Key: "name", Value: attribute.StringValue(util.DomainIdToName[id])},
+		{Key: "type", Value: attribute.StringValue("HeadBlock")},
+	}
 }
