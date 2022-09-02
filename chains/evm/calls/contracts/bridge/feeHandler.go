@@ -52,3 +52,15 @@ func (c *FeeHandlerContract) SetSpecialFee(
 		_specialFee,
 	)
 }
+
+func (c *FeeHandlerContract) RenounceAdmin(
+	adminAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("renounce admin: %s", adminAddr.String())
+	return c.ExecuteTransaction(
+		"renounceAdmin",
+		opts,
+		adminAddr,
+	)
+}

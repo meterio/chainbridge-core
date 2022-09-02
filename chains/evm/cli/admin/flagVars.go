@@ -26,6 +26,7 @@ var (
 	Recipient          string
 	Bridge             string
 	Signature          string
+	FeeHandler         bool
 )
 
 //processed flag vars
