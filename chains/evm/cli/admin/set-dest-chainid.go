@@ -49,7 +49,7 @@ var setDestChainIdCmd = &cobra.Command{
 func BindSetDestChainIdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Signature, "signature", "", "Signature contract address")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of Dest")
-	cmd.Flags().Uint8Var(&ChainID, "chainId", 0, "Chain ID of Dest")
+	cmd.Flags().Uint64Var(&ChainID, "chainId", 0, "Chain ID of Dest")
 	flags.MarkFlagsAsRequired(cmd, "signature", "domain", "chainId")
 }
 

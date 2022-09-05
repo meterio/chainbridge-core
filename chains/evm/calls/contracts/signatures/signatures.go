@@ -208,14 +208,14 @@ func (c *SignaturesContract) GrantRole(
 
 func (c *SignaturesContract) AdminSetDestChainId(
 	destinationDomainID uint8,
-	chainId uint8,
+	chainId uint64,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	//log.Debug().Msgf("Setting threshold %d", threshold)
 	return c.ExecuteTransaction(
 		"adminSetDestChainId",
 		opts,
-		destinationDomainID, chainId,
+		destinationDomainID, big.NewInt(int64(chainId)),
 	)
 }
 

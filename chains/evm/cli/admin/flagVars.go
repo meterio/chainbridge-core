@@ -14,7 +14,7 @@ var (
 	Relayer            string
 	DepositNonce       uint64
 	DomainID           uint8
-	ChainID            uint8
+	ChainID            uint64
 	Fee                string
 	RelayerThreshold   uint64
 	SignatureThreshold uint64
