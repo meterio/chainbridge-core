@@ -25,6 +25,7 @@ var (
 	Decimals           uint64
 	Recipient          string
 	Bridge             string
+	Proxy              string
 	Signature          string
 	FeeHandler         bool
 )
@@ -32,6 +33,7 @@ var (
 //processed flag vars
 var (
 	BridgeAddr    common.Address
+	ProxyAddr     common.Address
 	SignatureAddr common.Address
 	HandlerAddr   common.Address
 	RelayerAddr   common.Address

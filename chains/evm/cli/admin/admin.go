@@ -24,6 +24,7 @@ var AdminCmd = &cobra.Command{
 func init() {
 	AdminCmd.AddCommand(addAdminCmd)
 	AdminCmd.AddCommand(renounceAdminCmd)
+	AdminCmd.AddCommand(changeAdminCmd)
 	AdminCmd.AddCommand(addRelayerCmd)
 	AdminCmd.AddCommand(isRelayerCmd)
 	AdminCmd.AddCommand(pauseCmd)
