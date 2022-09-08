@@ -39,6 +39,8 @@ type EVMClient struct {
 	nonceLock  sync.Mutex
 
 	moonbeamFinality bool
+	endpoint         string
+	replica          string
 }
 
 // DepositLogs struct holds event data with all necessary parameters and a handler response
@@ -124,10 +126,33 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 	c.Client = ethclient.NewClient(rpcClient)
 	c.rpClient = rpcClient
 	c.gethClient = gethclient.New(rpcClient)
-
+	c.endpoint = generalConfig.Endpoint
+	c.replica = generalConfig.Replica
 	c.moonbeamFinality = cfg.MoonbeamFinality
 
 	return c, nil
+}
+
+func (c *EVMClient) UpdateEndpoint() error {
+	if c.replica == "" {
+		return errors.New("replica no configuration")
+	}
+
+	endpoint := c.replica
+	replica := c.endpoint
+
+	rpcClient, err := rpc.DialContext(context.TODO(), endpoint)
+	if err != nil {
+		return err
+	}
+	c.Client = ethclient.NewClient(rpcClient)
+	c.rpClient = rpcClient
+	c.gethClient = gethclient.New(rpcClient)
+
+	c.endpoint = endpoint
+	c.replica = replica
+
+	return err
 }
 
 func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error) {

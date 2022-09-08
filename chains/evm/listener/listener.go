@@ -35,6 +35,7 @@ type ChainClient interface {
 	FetchDepositLogs(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*evmclient.DepositLogs, error)
 	CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error)
 	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]ethereumTypes.Log, error)
+	UpdateEndpoint() error
 }
 
 type EVMListener struct {
@@ -66,6 +67,8 @@ func (l *EVMListener) ListenToEvents(
 	errChn chan<- error,
 ) <-chan *message.Message {
 	ch := make(chan *message.Message)
+	errCounter := 0
+
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
 			startBlock = big.NewInt(0)
@@ -77,10 +80,17 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						log.Error().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
+						errCounter += 1
+						log.Error().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
+
+						if errCounter >= consts.DefaultEndpointTries {
+							l.chainReader.UpdateEndpoint()
+						}
+
 						time.Sleep(blockRetryInterval)
 						continue
 					}
+					errCounter = 0
 
 					if startBlock == nil || startBlock.Sign() == 0 {
 						startBlock = big.NewInt(0).Sub(head, blockDelay)
@@ -128,61 +138,6 @@ func (l *EVMListener) ListenToEvents(
 		return ch
 	}
 
-	//if airdrop {
-	//	go func() {
-	//		log.Info().Msgf("ListenToEvents with airdrop, startBlock %v, domainID %v", startBlock, l.id)
-	//
-	//		for {
-	//			select {
-	//			case <-stopChn:
-	//				return
-	//			default:
-	//				head, err := l.chainReader.LatestBlock()
-	//				if err != nil {
-	//					log.Error().Err(err).Msgf("Unable to get latest block, domainID %v", l.id)
-	//					time.Sleep(blockRetryInterval)
-	//					continue
-	//				}
-	//
-	//				if startBlock == nil {
-	//					startBlock = head
-	//				}
-	//
-	//				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, domainID %v", head, startBlock, blockDelay, l.id)
-	//
-	//				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-	//				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
-	//					time.Sleep(blockRetryInterval)
-	//					continue
-	//				}
-	//
-	//				query1 := l.buildMultiQuery(l.bridgeAddress, []string{string(util.ProposalEvent), string(util.Deposit)}, startBlock, startBlock)
-	//				logch1, err := l.chainReader.FilterLogs(context.TODO(), query1)
-	//				if err != nil {
-	//					log.Error().Err(err).Msgf("failed to FilterLogs, domainID %v", l.id)
-	//					continue
-	//				}
-	//				l.trackProposalExecuted(logch1, domainID, startBlock, ch)
-	//
-	//				if startBlock.Int64()%20 == 0 {
-	//					// Logging process every 20 bocks to exclude spam
-	//					log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
-	//				}
-	//				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
-	//				//Write to block store. Not a critical operation, no need to retry
-	//				err = blockstore.StoreBlock(startBlock, domainID)
-	//				if err != nil {
-	//					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, domainID %v", l.id)
-	//				}
-	//				// Goto next block
-	//				startBlock.Add(startBlock, big.NewInt(1))
-	//			}
-	//		}
-	//	}()
-	//
-	//	return ch
-	//}
-
 	go func() {
 		log.Info().Msgf("ListenToEvents, startBlock %v, Chain %v", startBlock, util.DomainIdToName[l.id])
 
@@ -193,10 +148,17 @@ func (l *EVMListener) ListenToEvents(
 			default:
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
-					log.Error().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
+					errCounter += 1
+					log.Error().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
+
+					if errCounter >= consts.DefaultEndpointTries {
+						l.chainReader.UpdateEndpoint()
+					}
+
 					time.Sleep(blockRetryInterval)
 					continue
 				}
+				errCounter = 0
 
 				if startBlock == nil {
 					startBlock = head

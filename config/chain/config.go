@@ -12,6 +12,7 @@ type GeneralChainConfig struct {
 	Id             *uint8 `mapstructure:"id"`
 	RelayId        *uint8 `mapstructure:"relayId"`
 	Endpoint       string `mapstructure:"endpoint"`
+	Replica        string `mapstructure:"replica"`
 	From           string `mapstructure:"from"`
 	Type           string `mapstructure:"type"`
 	KeystorePath   string
