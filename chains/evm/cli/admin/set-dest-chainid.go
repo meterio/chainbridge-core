@@ -48,9 +48,10 @@ var setDestChainIdCmd = &cobra.Command{
 
 func BindSetDestChainIdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Signature, "signature", "", "Signature contract address")
+	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address of Dest")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of Dest")
 	cmd.Flags().Uint64Var(&ChainID, "chainId", 0, "Chain ID of Dest")
-	flags.MarkFlagsAsRequired(cmd, "signature", "domain", "chainId")
+	flags.MarkFlagsAsRequired(cmd, "signature", "bridge", "domain", "chainId")
 }
 
 func init() {
@@ -58,13 +59,17 @@ func init() {
 }
 func ValidateSetDestChainIdFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Signature) {
-		return fmt.Errorf("invalid bridge address %s", Signature)
+		return fmt.Errorf("invalid signature address %s", Signature)
+	}
+	if !common.IsHexAddress(Bridge) {
+		return fmt.Errorf("invalid bridge address %s", Bridge)
 	}
 	return nil
 }
 
 func ProcessSetDestChainIdFlags(cmd *cobra.Command, args []string) {
 	SignatureAddr = common.HexToAddress(Signature)
+	BridgeAddr = common.HexToAddress(Bridge)
 }
 
 func SetDestChainIdCMD(cmd *cobra.Command, args []string, contract *signatures.SignaturesContract) error {
@@ -72,9 +77,10 @@ func SetDestChainIdCMD(cmd *cobra.Command, args []string, contract *signatures.S
 Setting dest ChainID
 DomainID: %v
 ChainID: %v
-Signature address: %s`, DomainID, ChainID, Signature)
+Bridge address: %s
+Signature address: %s`, DomainID, ChainID, Bridge, Signature)
 
-	_, err := contract.AdminSetDestChainId(DomainID, ChainID, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err := contract.AdminSetDestChainId(DomainID, ChainID, BridgeAddr, transactor.TransactOptions{GasLimit: gasLimit})
 	if err != nil {
 		return err
 	}
