@@ -57,9 +57,9 @@ func BindRegisterNativeResourceFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ResourceID, "resource", "", "Resource ID to query")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().StringVar(&Target, "target", "", "Contract address or hash storage to be registered")
-	cmd.Flags().StringVar(&Deposit, "deposit", "0x00000000", "Deposit function signature")
-	cmd.Flags().StringVar(&Execute, "execute", "0x00000000", "Execute proposal function signature")
-	cmd.Flags().BoolVar(&Hash, "hash", false, "Treat signature inputs as function prototype strings, hash and take the first 4 bytes")
+	//cmd.Flags().StringVar(&Deposit, "deposit", "0x00000000", "Deposit function signature")
+	//cmd.Flags().StringVar(&Execute, "execute", "0x00000000", "Execute proposal function signature")
+	//cmd.Flags().BoolVar(&Hash, "hash", false, "Treat signature inputs as function prototype strings, hash and take the first 4 bytes")
 	flags.MarkFlagsAsRequired(cmd, "handler", "resource", "bridge", "target")
 }
 
@@ -99,13 +99,13 @@ func ProcessRegisterNativeResourceFlags(cmd *cobra.Command, args []string) error
 
 	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resourceIdBytes)
 
-	if Hash {
-		DepositSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Deposit))
-		ExecuteSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Execute))
-	} else {
-		copy(DepositSigBytes[:], []byte(Deposit)[:])
-		copy(ExecuteSigBytes[:], []byte(Execute)[:])
-	}
+	//if Hash {
+	//	DepositSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Deposit))
+	//	ExecuteSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Execute))
+	//} else {
+	//	copy(DepositSigBytes[:], []byte(Deposit)[:])
+	//	copy(ExecuteSigBytes[:], []byte(Execute)[:])
+	//}
 
 	return nil
 }
