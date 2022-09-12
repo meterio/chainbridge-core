@@ -501,7 +501,6 @@ func (c *BridgeContract) GrantRole(
 	)
 }
 
-
 func (c *BridgeContract) RevokeRole(
 	role [32]byte,
 	account common.Address,
