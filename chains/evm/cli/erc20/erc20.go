@@ -24,6 +24,9 @@ var ERC20Cmd = &cobra.Command{
 
 func init() {
 	ERC20Cmd.AddCommand(addMinterCmd)
+	ERC20Cmd.AddCommand(removeMinterCmd)
+	ERC20Cmd.AddCommand(addAdminCmd)
+	ERC20Cmd.AddCommand(removeAdminCmd)
 	ERC20Cmd.AddCommand(getAllowanceCmd)
 	ERC20Cmd.AddCommand(approveCmd)
 	ERC20Cmd.AddCommand(balanceCmd)
