@@ -126,7 +126,7 @@ func (c *BridgeContract) AdminSetWtoken(
 ) (*common.Hash, error) {
 	log.Debug().Msgf("Setting wtoken %s", hexutil.Encode(rID[:]))
 	return c.ExecuteTransaction(
-		"adminSetWtoken",
+		"adminSetNative",
 		opts,
 		rID, targetContractAddr, true,
 	)

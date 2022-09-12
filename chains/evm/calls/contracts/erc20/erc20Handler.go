@@ -31,6 +31,6 @@ func (c *ERC20HandlerContract) IsNative(address common.Address) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	b := abi.ConvertType(res[0], new(bool)).(bool)
+	b := *abi.ConvertType(res[0], new(bool)).(*bool)
 	return b, nil
 }
