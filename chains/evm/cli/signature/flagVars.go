@@ -10,21 +10,22 @@ import (
 
 //flag vars
 var (
-	Bridge          string
-	Signature       string
-	DataHash        string
-	DomainID        uint8
-	Data            string
-	DepositNonce    uint64
-	Handler         string
-	ResourceID      string
-	Target          string
-	Deposit         string
-	DepositerOffset uint64
-	Execute         string
-	Hash            bool
-	TokenContract   string
-	Relayer         string
+	Bridge             string
+	Signature          string
+	DataHash           string
+	DomainID           uint8
+	Data               string
+	DepositNonce       uint64
+	Handler            string
+	ResourceID         string
+	Target             string
+	Deposit            string
+	DepositerOffset    uint64
+	Execute            string
+	Hash               bool
+	TokenContract      string
+	Relayer            string
+	Admin              string
 	SignatureThreshold uint64
 )
 
@@ -40,6 +41,7 @@ var (
 	ExecuteSigBytes    [4]byte
 	DataBytes          []byte
 	RelayerAddr        common.Address
+	AdminAddr          common.Address
 )
 
 // global flags

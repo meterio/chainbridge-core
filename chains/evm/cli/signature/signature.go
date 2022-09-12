@@ -24,6 +24,8 @@ var SignatureCmd = &cobra.Command{
 
 func init() {
 	SignatureCmd.AddCommand(adminInfoCmd)
+	SignatureCmd.AddCommand(addAdminCmd)
+	SignatureCmd.AddCommand(removeAdminCmd)
 	SignatureCmd.AddCommand(relayerInfoCmd)
 	SignatureCmd.AddCommand(addRelayerCmd)
 	SignatureCmd.AddCommand(getSignatureThresholdCmd)

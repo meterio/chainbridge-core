@@ -231,3 +231,27 @@ func (c *SignaturesContract) GetDestChainId(
 	//out := *abi.ConvertType(res[0], new(big.Int)).(*big.Int)
 	return out, nil
 }
+
+func (c *SignaturesContract) AddAdmin(
+	admin common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Adding new admin %s", admin.String())
+	role, err := c.DefaultAdminRole()
+	if err != nil {
+		return nil, err
+	}
+	return c.ExecuteTransaction("grantRole", opts, role, admin)
+}
+
+func (c *SignaturesContract) RemoveAdmin(
+	admin common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Revoke admin %s", admin.String())
+	role, err := c.MinterRole()
+	if err != nil {
+		return nil, err
+	}
+	return c.ExecuteTransaction("revokeRole", opts, role, admin)
+}
