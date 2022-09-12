@@ -19,7 +19,7 @@ var (
 	ResourceID      string
 	Target          string
 	Deposit         string
-	DepositerOffset uint64
+	DepositorOffset uint64
 	Execute         string
 	Hash            bool
 	TokenContract   string

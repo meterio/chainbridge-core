@@ -62,6 +62,7 @@ func BindRegisterGenericResourceFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Target, "target", "", "Contract address or hash storage to be registered")
 	cmd.Flags().StringVar(&Deposit, "deposit", "0x00000000", "Deposit function signature")
 	cmd.Flags().StringVar(&Execute, "execute", "0x00000000", "Execute proposal function signature")
+	cmd.Flags().Uint64Var(&DepositorOffset, "depositor-offset", 0, "Depositor Offset")
 	cmd.Flags().BoolVar(&Hash, "hash", false, "Treat signature inputs as function prototype strings, hash and take the first 4 bytes")
 	flags.MarkFlagsAsRequired(cmd, "handler", "resource", "bridge", "target")
 }
@@ -121,7 +122,7 @@ func RegisterGenericResource(cmd *cobra.Command, args []string, contract *bridge
 		ResourceIdBytesArr,
 		TargetContractAddr,
 		DepositSigBytes,
-		big.NewInt(int64(DepositerOffset)),
+		big.NewInt(int64(DepositorOffset)),
 		ExecuteSigBytes,
 		transactor.TransactOptions{GasLimit: gasLimit},
 	)
