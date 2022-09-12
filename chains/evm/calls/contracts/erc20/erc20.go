@@ -146,7 +146,7 @@ func (c *ERC20Contract) RemoveAdmin(
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	log.Debug().Msgf("Revoke admin %s", admin.String())
-	role, err := c.MinterRole()
+	role, err := c.DefaultAdminRole()
 	if err != nil {
 		return nil, err
 	}
