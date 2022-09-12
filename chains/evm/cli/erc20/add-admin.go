@@ -48,7 +48,7 @@ var addAdminCmd = &cobra.Command{
 
 func BindAddAdminFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Erc20Address, "contract", "", "ERC20 contract address")
-	cmd.Flags().StringVar(&Minter, "admin", "", "Admin address")
+	cmd.Flags().StringVar(&Admin, "admin", "", "Admin address")
 	flags.MarkFlagsAsRequired(cmd, "contract", "admin")
 }
 
@@ -60,24 +60,24 @@ func ValidateAddAdminFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Erc20Address) {
 		return fmt.Errorf("invalid ERC20 contract address: %s", Erc20Address)
 	}
-	if !common.IsHexAddress(Minter) {
-		return fmt.Errorf("invalid admin address: %s", Minter)
+	if !common.IsHexAddress(Admin) {
+		return fmt.Errorf("invalid admin address: %s", Admin)
 	}
 	return nil
 }
 
 func ProcessAddAdminFlags(cmd *cobra.Command, args []string) {
 	Erc20Addr = common.HexToAddress(Erc20Address)
-	MinterAddr = common.HexToAddress(Minter)
+	AdminAddr = common.HexToAddress(Admin)
 }
 
 func AddAdminCmd(cmd *cobra.Command, args []string, contract *erc20.ERC20Contract) error {
-	_, err := contract.AddAdmin(MinterAddr, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err := contract.AddAdmin(AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
 	if err != nil {
 		log.Error().Err(err)
 		return err
 	}
 
-	log.Info().Msgf("%s account granted admin roles", MinterAddr.String())
+	log.Info().Msgf("%s account granted admin roles", AdminAddr.String())
 	return nil
 }

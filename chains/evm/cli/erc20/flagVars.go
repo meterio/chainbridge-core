@@ -23,6 +23,7 @@ var (
 	OwnerAddress   string
 	SpenderAddress string
 	Minter         string
+	Admin          string
 )
 
 //processed flag vars
@@ -31,6 +32,7 @@ var (
 	RealAmount         *big.Int
 	Erc20Addr          common.Address
 	MinterAddr         common.Address
+	AdminAddr          common.Address
 	BridgeAddr         common.Address
 	ResourceIdBytesArr types.ResourceID
 )
