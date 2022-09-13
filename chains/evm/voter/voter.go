@@ -177,7 +177,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	}
 
 	if !shouldVote {
-		log.Debug().Msgf("Proposal %+v already satisfies threshold", prop)
+		log.Info().Msgf("Proposal %+v already satisfies threshold", prop)
 		return nil
 	}
 	err = v.repetitiveSimulateVote(prop, 0)
