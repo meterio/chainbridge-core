@@ -33,6 +33,12 @@ func (e *ETHEventHandler) HandleEvent(sourceID, destID uint8, depositNonce uint6
 		return nil, err
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error().Err(err).Msgf("panic occurred while handling deposit")
+		}
+	}()
+
 	eventHandler, err := e.matchAddressWithHandlerFunc(handlerAddr)
 	if err != nil {
 		return nil, err
