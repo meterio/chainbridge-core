@@ -9,12 +9,12 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/util"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -103,12 +103,21 @@ func ProcessRegisterGenericResourceFlags(cmd *cobra.Command, args []string) erro
 
 	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resourceIdBytes)
 
+	DepositBytes, err := hexutil.Decode(Deposit)
+	if err != nil {
+		return err
+	}
+	ExecuteBytes, err := hexutil.Decode(Execute)
+	if err != nil {
+		return err
+	}
+
 	if Hash {
 		DepositSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Deposit))
 		ExecuteSigBytes = callsUtil.GetSolidityFunctionSig([]byte(Execute))
 	} else {
-		copy(DepositSigBytes[:], []byte(Deposit)[:])
-		copy(ExecuteSigBytes[:], []byte(Execute)[:])
+		copy(DepositSigBytes[:], DepositBytes[:])
+		copy(ExecuteSigBytes[:], ExecuteBytes[:])
 	}
 
 	return nil
