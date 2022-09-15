@@ -11,6 +11,7 @@ import (
 //flag vars
 var (
 	Admin              string
+	Implementation     string
 	Relayer            string
 	DepositNonce       uint64
 	DomainID           uint8
@@ -25,6 +26,7 @@ var (
 	Decimals           uint64
 	Recipient          string
 	Bridge             string
+	Account             string
 	Proxy              string
 	Signature          string
 	FeeHandler         bool
@@ -32,15 +34,17 @@ var (
 
 //processed flag vars
 var (
-	BridgeAddr    common.Address
-	ProxyAddr     common.Address
-	SignatureAddr common.Address
-	HandlerAddr   common.Address
-	RelayerAddr   common.Address
-	AdminAddr     common.Address
-	RecipientAddr common.Address
-	TokenAddr     common.Address
-	RealAmount    *big.Int
+	BridgeAddr         common.Address
+	AccountAddr         common.Address
+	ProxyAddr          common.Address
+	SignatureAddr      common.Address
+	HandlerAddr        common.Address
+	RelayerAddr        common.Address
+	AdminAddr          common.Address
+	ImplementationAddr common.Address
+	RecipientAddr      common.Address
+	TokenAddr          common.Address
+	RealAmount         *big.Int
 )
 
 // global flags

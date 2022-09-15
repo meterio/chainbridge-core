@@ -37,3 +37,15 @@ func (c *ProxyContract) ChangeAdmin(
 		adminAddr,
 	)
 }
+
+func (c *ProxyContract) UpgradeTo(
+	newImplementation common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("new Implementation: %s", newImplementation.String())
+	return c.ExecuteTransaction(
+		"upgradeTo",
+		opts,
+		newImplementation,
+	)
+}

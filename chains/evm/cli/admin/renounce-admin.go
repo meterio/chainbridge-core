@@ -51,7 +51,6 @@ var renounceAdminCmd = &cobra.Command{
 func BindRenounceAdminFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Admin, "admin", "", "Address to renounce")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().BoolVar(&FeeHandler, "fee-handler", false, "operate for fee-handler contract")
 	flags.MarkFlagsAsRequired(cmd, "admin", "bridge")
 }
 
@@ -78,30 +77,7 @@ func RenounceAdminEVMCMD(cmd *cobra.Command, args []string, contract *bridge.Bri
 	log.Debug().Msgf(`
 Renounce admin
 Admin address: %s
-Bridge address: %s
-For fee-handler: %v`, Admin, Bridge, FeeHandler)
-
-	if FeeHandler {
-		feeHandlerAddr, err := contract.GetFeeHandler()
-		if err != nil {
-			return err
-		}
-
-		c, err := initialize.InitializeClient(url, senderKeyPair)
-		if err != nil {
-			return err
-		}
-		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
-		if err != nil {
-			return err
-		}
-
-		feeHandlerContract := bridge.NewFeeHandlerContract(c, feeHandlerAddr, t)
-		_, err = feeHandlerContract.RenounceAdmin(AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
-
-		return err
-	}
-
+Bridge address: %s`, Admin, Bridge)
 	_, err := contract.RenounceAdmin(AdminAddr, transactor.TransactOptions{GasLimit: gasLimit})
 	return err
 }

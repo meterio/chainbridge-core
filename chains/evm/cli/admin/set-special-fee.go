@@ -17,17 +17,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var setFeeCmd = &cobra.Command{
-	Use:   "set-fee",
+var setSpecialFeeCmd = &cobra.Command{
+	Use:   "set-special-fee",
 	Short: "Set a new fee for deposits",
-	Long:  "The set-fee subcommand sets a new fee for deposits",
+	Long:  "The set-special-fee subcommand sets a new fee for deposits",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	//RunE: setFee,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := initialize.InitializeClient(url, senderKeyPair)
 		if err != nil {
@@ -37,10 +36,10 @@ var setFeeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return SetFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+		return SetSpecialFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
-		err := ValidateSetFeeFlags(cmd, args)
+		err := ValidateSetSpecialFeeFlags(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -48,7 +47,7 @@ var setFeeCmd = &cobra.Command{
 	},
 }
 
-func BindSetFeeFlags(cmd *cobra.Command) {
+func BindSetSpecialFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
@@ -56,27 +55,26 @@ func BindSetFeeFlags(cmd *cobra.Command) {
 }
 
 func init() {
-	BindSetFeeFlags(setFeeCmd)
+	BindSetSpecialFeeFlags(setFeeCmd)
 }
-func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
+func ValidateSetSpecialFeeFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Bridge) {
 		return fmt.Errorf("invalid bridge address %s", Bridge)
 	}
 	return nil
 }
 
-func SetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
+func SetSpecialFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
 Setting new fee
 Fee amount: %s
 Bridge address: %s`, Fee, Bridge)
-
 	decimals := big.NewInt(int64(Decimals))
 	realAmount, err := callsUtil.UserAmountToWei(Fee, decimals)
 	if err != nil {
 		return err
 	}
 
-	_, err = contract.SetFee(realAmount, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err = contract.SetSpecialFee(DomainID, realAmount, transactor.TransactOptions{GasLimit: gasLimit})
 	return err
 }

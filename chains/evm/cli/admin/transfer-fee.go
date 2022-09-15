@@ -17,17 +17,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var setFeeCmd = &cobra.Command{
-	Use:   "set-fee",
-	Short: "Set a new fee for deposits",
-	Long:  "The set-fee subcommand sets a new fee for deposits",
+var transferFeeCmd = &cobra.Command{
+	Use:   "transfer-fee",
+	Short: "Transfer fee to addr",
+	Long:  "The transfer-fee subcommand Transfer fee to addr",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	//RunE: setFee,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		c, err := initialize.InitializeClient(url, senderKeyPair)
 		if err != nil {
@@ -37,39 +36,51 @@ var setFeeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return SetFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+		return TransferFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
-		err := ValidateSetFeeFlags(cmd, args)
+		err := ValidateTransferFeeFlags(cmd, args)
 		if err != nil {
 			return err
 		}
+
+		ProcessTransferFeeFlags(cmd, args)
 		return nil
 	},
 }
 
-func BindSetFeeFlags(cmd *cobra.Command) {
+func BindTransferFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
+	cmd.Flags().StringVar(&Account, "account", "", "Account address")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
 	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
 }
 
 func init() {
-	BindSetFeeFlags(setFeeCmd)
+	BindTransferFeeFlags(transferFeeCmd)
 }
-func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
+func ValidateTransferFeeFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Bridge) {
 		return fmt.Errorf("invalid bridge address %s", Bridge)
+	}
+
+	if !common.IsHexAddress(Account) {
+		return fmt.Errorf("invalid Account address %s", Account)
 	}
 	return nil
 }
 
-func SetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
+func ProcessTransferFeeFlags(cmd *cobra.Command, args []string) {
+	AccountAddr = common.HexToAddress(Account)
+}
+
+func TransferFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
-Setting new fee
+Transfer fee
 Fee amount: %s
-Bridge address: %s`, Fee, Bridge)
+to account: %s
+Bridge address: %s`, Fee, Account, Bridge)
 
 	decimals := big.NewInt(int64(Decimals))
 	realAmount, err := callsUtil.UserAmountToWei(Fee, decimals)
@@ -77,6 +88,6 @@ Bridge address: %s`, Fee, Bridge)
 		return err
 	}
 
-	_, err = contract.SetFee(realAmount, transactor.TransactOptions{GasLimit: gasLimit})
+	_, err = contract.TransferFee(AccountAddr, realAmount, transactor.TransactOptions{GasLimit: gasLimit})
 	return err
 }

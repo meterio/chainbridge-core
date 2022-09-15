@@ -356,16 +356,6 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 	return out, nil
 }
 
-func (c *BridgeContract) GetFeeHandler() (common.Address, error) {
-	log.Debug().Msg("Getting FeeHandler")
-	res, err := c.CallContract("_feeHandler")
-	if err != nil {
-		return common.Address{}, err
-	}
-	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
-	return out, nil
-}
-
 func (c *BridgeContract) IsRelayer(relayerAddress common.Address) (bool, error) {
 	log.Debug().Msgf("Getting is %s a relayer", relayerAddress.String())
 	res, err := c.CallContract("isRelayer", relayerAddress)
@@ -512,5 +502,45 @@ func (c *BridgeContract) RevokeRole(
 		opts,
 		role,
 		account,
+	)
+}
+
+func (c *BridgeContract) SetFee(
+	newFee *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Set Fee for %d", newFee)
+	return c.ExecuteTransaction(
+		"adminSetFee",
+		opts,
+		newFee,
+	)
+}
+
+func (c *BridgeContract) TransferFee(
+	account common.Address,
+	amount *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Transfer Fee %d to %x", amount, account)
+	return c.ExecuteTransaction(
+		"transferFee",
+		opts,
+		account,
+		amount,
+	)
+}
+
+func (c *BridgeContract) SetSpecialFee(
+	fromDomainID uint8,
+	_specialFee *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting SpecialFee %d for %d", _specialFee, fromDomainID)
+	return c.ExecuteTransaction(
+		"adminSetSpecialFee",
+		opts,
+		fromDomainID,
+		_specialFee,
 	)
 }
