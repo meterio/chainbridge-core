@@ -356,6 +356,28 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 	return out, nil
 }
 
+func (c *BridgeContract) GetFee() (*big.Int, error) {
+	log.Debug().Msg("Getting fee")
+	res, err := c.CallContract("_fee_")
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+	return out, nil
+}
+
+func (c *BridgeContract) GetFeeReserve() (*big.Int, error) {
+	log.Debug().Msg("Getting fee reserve")
+	res, err := c.CallContract("_feeReserve")
+	if err != nil {
+		return nil, err
+	}
+
+	out := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+	return out, nil
+}
+
 func (c *BridgeContract) IsRelayer(relayerAddress common.Address) (bool, error) {
 	log.Debug().Msgf("Getting is %s a relayer", relayerAddress.String())
 	res, err := c.CallContract("isRelayer", relayerAddress)

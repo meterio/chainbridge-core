@@ -55,7 +55,7 @@ func BindUpgradeImplementationFlags(cmd *cobra.Command) {
 }
 
 func init() {
-	BindUpgradeImplementationFlags(changeAdminCmd)
+	BindUpgradeImplementationFlags(upgradeImplementationCmd)
 }
 
 func ValidateUpgradeImplementationFlags(cmd *cobra.Command, args []string) error {

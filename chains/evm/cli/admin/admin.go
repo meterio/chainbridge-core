@@ -23,6 +23,7 @@ var AdminCmd = &cobra.Command{
 
 func init() {
 	AdminCmd.AddCommand(addAdminCmd)
+	AdminCmd.AddCommand(getFeeCmd)
 	AdminCmd.AddCommand(renounceAdminCmd)
 	AdminCmd.AddCommand(changeAdminCmd)
 	AdminCmd.AddCommand(transferFeeCmd)

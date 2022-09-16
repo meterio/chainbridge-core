@@ -2,25 +2,23 @@ package admin
 
 import (
 	"fmt"
-	callsUtil "github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
-	"math/big"
+	"github.com/ChainSafe/chainbridge-core/util"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
-var setFeeCmd = &cobra.Command{
-	Use:   "set-fee",
-	Short: "Set a new fee for deposits",
-	Long:  "The set-fee subcommand sets a new fee for deposits",
+var getFeeCmd = &cobra.Command{
+	Use:   "get-fee",
+	Short: "Get the bridge fee & feeReserve",
+	Long:  "The get-fee subcommand returns the fee of bridge contract",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
@@ -36,52 +34,53 @@ var setFeeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return SetFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+		return GetFeeCMD(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
-		err := ValidateSetFeeFlags(cmd, args)
+		err := ValidateGetFeeFlags(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		ProcessSetFeeFlags(cmd, args)
+		ProcessGetFeeFlags(cmd, args)
 		return nil
 	},
 }
 
-func BindSetFeeFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
+func BindGetFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().Uint64Var(&Decimals, "decimals", 0, "Base token decimals")
-	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
+	flags.MarkFlagsAsRequired(cmd, "bridge")
 }
 
 func init() {
-	BindSetFeeFlags(setFeeCmd)
+	BindGetFeeFlags(getFeeCmd)
 }
-func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
+
+func ValidateGetFeeFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Bridge) {
 		return fmt.Errorf("invalid bridge address %s", Bridge)
 	}
 	return nil
 }
 
-func ProcessSetFeeFlags(cmd *cobra.Command, args []string) {
+func ProcessGetFeeFlags(cmd *cobra.Command, args []string) {
 	BridgeAddr = common.HexToAddress(Bridge)
 }
 
-func SetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
+func GetFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
-Setting new fee
-Fee amount: %s
-Bridge address: %s`, Fee, Bridge)
-
-	decimals := big.NewInt(int64(Decimals))
-	realAmount, err := callsUtil.UserAmountToWei(Fee, decimals)
+getting fee
+Bridge address: %s`, Bridge)
+	fee, err := contract.GetFee()
 	if err != nil {
+		log.Error().Err(fmt.Errorf("transact error: %v", err))
 		return err
 	}
-
-	_, err = contract.SetFee(realAmount, transactor.TransactOptions{GasLimit: gasLimit})
-	return err
+	feeReserve, err := contract.GetFeeReserve()
+	if err != nil {
+		log.Error().Err(fmt.Errorf("transact error: %v", err))
+		return err
+	}
+	log.Info().Msgf("fee & feeReserve for the bridge %v is %v & %v", Bridge, fee, feeReserve)
+	return nil
 }

@@ -19,7 +19,7 @@ import (
 
 var setSpecialFeeCmd = &cobra.Command{
 	Use:   "set-special-fee",
-	Short: "Set a new fee for deposits",
+	Short: "Set a new special fee for deposits",
 	Long:  "The set-special-fee subcommand sets a new fee for deposits",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
@@ -43,6 +43,8 @@ var setSpecialFeeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		ProcessSetSpecialFeeFlags(cmd, args)
 		return nil
 	},
 }
@@ -50,18 +52,23 @@ var setSpecialFeeCmd = &cobra.Command{
 func BindSetSpecialFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
+	cmd.Flags().Uint64Var(&Decimals, "decimals", 0, "Base token decimals")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
-	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
+	flags.MarkFlagsAsRequired(cmd, "fee", "bridge", "domain")
 }
 
 func init() {
-	BindSetSpecialFeeFlags(setFeeCmd)
+	BindSetSpecialFeeFlags(setSpecialFeeCmd)
 }
 func ValidateSetSpecialFeeFlags(cmd *cobra.Command, args []string) error {
 	if !common.IsHexAddress(Bridge) {
 		return fmt.Errorf("invalid bridge address %s", Bridge)
 	}
 	return nil
+}
+
+func ProcessSetSpecialFeeFlags(cmd *cobra.Command, args []string) {
+	BridgeAddr = common.HexToAddress(Bridge)
 }
 
 func SetSpecialFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
