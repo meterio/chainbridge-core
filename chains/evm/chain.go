@@ -109,22 +109,11 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 
 	var evmVoter *voter.EVMVoter
 	evmVoter, err = voter.NewVoterWithSubscription(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), config.DelayVoteProposals, t)
-	//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 
 	if err != nil {
-		log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
+		log.Warn().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
 		evmVoter = voter.NewVoter(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.DelayVoteProposals, t)
-
-		//evmVoter.GetSignature(0, 0, 0, []byte{}, []byte{})
 	}
-
-	// TODO: remove this
-	// resourceId, _ := hex.DecodeString("00000000000000000000008a419ef4941355476cf04933e90bf3bbf2f7381400")
-	// data, _ := hex.DecodeString("00000000000000000000000000000000000000000000000000194d12e71db4000000000000000000000000000000000000000000000000000000000000000014551b6e92f7443e63ec2d0c43471de9574e834169")
-	// err = evmVoter.GetSignature(83, 5, 28, resourceId, data)
-	// if err != nil {
-	// 	log.Error().Msgf("failed to get signature: %s", err.Error())
-	// }
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil
 }

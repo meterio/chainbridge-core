@@ -27,6 +27,7 @@ var (
 	Relayer            string
 	Admin              string
 	SignatureThreshold uint64
+	ChainID            uint64
 )
 
 //processed flag vars

@@ -30,4 +30,5 @@ func init() {
 	SignatureCmd.AddCommand(addRelayerCmd)
 	SignatureCmd.AddCommand(getSignatureThresholdCmd)
 	SignatureCmd.AddCommand(setSignatureThresholdCmd)
+	SignatureCmd.AddCommand(setDestChainIdCmd)
 }
