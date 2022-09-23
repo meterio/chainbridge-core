@@ -79,7 +79,7 @@ type BridgeContract interface {
 
 type SignatureContract interface {
 	ContractAddress() *common.Address
-	SubmitSignature(originDomainID uint8, destinationDomainID uint8, destinationBridge common.Address, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
+	SubmitSignature(originDomainID uint8, destinationDomainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
 
 	GetThreshold(domain uint8) (uint8, error)
 	GetSignatures(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
@@ -116,8 +116,8 @@ func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client 
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		//db:                   db,
-		delayVoteProposals:   delayVoteProposals,
-		t:                    t,
+		delayVoteProposals: delayVoteProposals,
+		t:                  t,
 	}
 
 	if relayId == 0 {
@@ -149,8 +149,8 @@ func NewVoter(config chain.EVMConfig, mh MessageHandler, client ChainClient, bri
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
 		//db:                   db,
-		delayVoteProposals:   delayVoteProposals,
-		t:                    t,
+		delayVoteProposals: delayVoteProposals,
+		t:                  t,
 	}
 }
 
@@ -375,7 +375,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	//	return err
 	//}
 
-	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, *destBridgeAddress, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}

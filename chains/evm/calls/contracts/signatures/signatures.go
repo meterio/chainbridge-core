@@ -41,7 +41,6 @@ type Signature struct {
 //SubmitSignature
 //uint8 originDomainID,
 //uint8 destinationDomainID,
-//address destinationBridge,
 //uint64 depositNonce,
 //bytes32 resourceID,
 //bytes calldata data,
@@ -49,20 +48,18 @@ type Signature struct {
 func (c *SignaturesContract) SubmitSignature(
 	originDomainID uint8,
 	destinationDomainID uint8,
-	destinationBridge common.Address,
 	depositNonce uint64,
 	resourceID [32]byte,
 	data []byte,
 	signature []byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Info().Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, destinationBridge %v, depositNonce %v, resourceID %x", originDomainID, destinationDomainID, destinationBridge, depositNonce, resourceID)
+	log.Info().Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, depositNonce %v, resourceID %x", originDomainID, destinationDomainID, depositNonce, resourceID)
 	return c.ExecuteTransaction(
 		"submitSignature",
 		opts,
 		originDomainID,
 		destinationDomainID,
-		destinationBridge,
 		depositNonce,
 		resourceID,
 		data,

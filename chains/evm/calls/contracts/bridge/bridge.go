@@ -124,11 +124,20 @@ func (c *BridgeContract) AdminRemoveResourceId(
 	targetContractAddr common.Address,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Debug().Msgf("Setting resource %s", hexutil.Encode(rID[:]))
+	log.Debug().Msgf("Remove resource %s", hexutil.Encode(rID[:]))
 	return c.ExecuteTransaction(
 		"adminRemoveResourceId",
 		opts,
 		rID, targetContractAddr,
+	)
+}
+
+func (c *BridgeContract) AdminRemoveNativeResourceId(
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	return c.ExecuteTransaction(
+		"adminRemoveNativeResourceId",
+		opts,
 	)
 }
 
