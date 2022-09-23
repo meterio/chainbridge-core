@@ -33,4 +33,5 @@ func init() {
 	BridgeCmd.AddCommand(voteProposalCmd)
 	BridgeCmd.AddCommand(adminInfoCmd)
 	BridgeCmd.AddCommand(relayerInfoCmd)
+	BridgeCmd.AddCommand(removeResourceCmd)
 }

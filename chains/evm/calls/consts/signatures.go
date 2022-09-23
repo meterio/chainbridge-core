@@ -258,6 +258,13 @@ const SignaturesABI = `[
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "adminPause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint8",
@@ -281,6 +288,13 @@ const SignaturesABI = `[
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "adminUnpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint8",
@@ -291,11 +305,6 @@ const SignaturesABI = `[
           "internalType": "uint8",
           "name": "destinationDomainID",
           "type": "uint8"
-        },
-        {
-          "internalType": "address",
-          "name": "destinationBridge",
-          "type": "address"
         },
         {
           "internalType": "uint64",
@@ -812,11 +821,6 @@ const SignaturesABI = `[
           "internalType": "uint8",
           "name": "destinationDomainID",
           "type": "uint8"
-        },
-        {
-          "internalType": "address",
-          "name": "destinationBridge",
-          "type": "address"
         },
         {
           "internalType": "uint64",

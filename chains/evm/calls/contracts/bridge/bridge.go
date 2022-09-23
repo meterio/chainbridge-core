@@ -119,6 +119,19 @@ func (c *BridgeContract) AdminSetResource(
 	)
 }
 
+func (c *BridgeContract) AdminRemoveResourceId(
+	rID types.ResourceID,
+	targetContractAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting resource %s", hexutil.Encode(rID[:]))
+	return c.ExecuteTransaction(
+		"adminRemoveResourceId",
+		opts,
+		rID, targetContractAddr,
+	)
+}
+
 func (c *BridgeContract) AdminSetWtoken(
 	rID types.ResourceID,
 	targetContractAddr common.Address,

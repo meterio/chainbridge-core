@@ -139,6 +139,31 @@ const BridgeABI = `[
         {
           "indexed": false,
           "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "FeeDistributed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
           "name": "newFeeHandler",
           "type": "address"
         }
@@ -608,12 +633,68 @@ const BridgeABI = `[
     {
       "inputs": [
         {
+          "internalType": "bytes32",
+          "name": "resourceID",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "contractAddress",
+          "type": "address"
+        }
+      ],
+      "name": "adminRemoveGenericResource",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "adminRemoveNativeResourceId",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "relayerAddress",
           "type": "address"
         }
       ],
       "name": "adminRemoveRelayer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "resourceID",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "adminRemoveResourceId",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "destinationDomainID",
+          "type": "uint8"
+        }
+      ],
+      "name": "adminRemoveSpecialFee",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -799,7 +880,7 @@ const BridgeABI = `[
       "inputs": [
         {
           "internalType": "uint8",
-          "name": "fromDomainID",
+          "name": "destinationDomainID",
           "type": "uint8"
         },
         {
@@ -977,6 +1058,25 @@ const BridgeABI = `[
       "name": "executeProposal",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "destinationDomainID",
+          "type": "uint8"
+        }
+      ],
+      "name": "getFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -1304,24 +1404,6 @@ const BridgeABI = `[
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferFee",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address payable[]",
           "name": "addrs",
           "type": "address[]"
@@ -1332,7 +1414,7 @@ const BridgeABI = `[
           "type": "uint256[]"
         }
       ],
-      "name": "transferFunds",
+      "name": "transferFee",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
