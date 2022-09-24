@@ -74,11 +74,12 @@ func (c *SignaturesContract) SubmitSignature(
 //bytes calldata data
 func (c *SignaturesContract) GetSignatures(
 	domainID uint8,
+	destinationDomainID uint8,
 	depositNonce uint64,
 	resourceID [32]byte,
 	data []byte,
 ) ([][]byte, error) {
-	res, err := c.CallContract("getSignatures", domainID, depositNonce, resourceID, data)
+	res, err := c.CallContract("getSignatures", domainID, destinationDomainID, depositNonce, resourceID, data)
 	if err != nil {
 		return nil, err
 	}

@@ -109,7 +109,7 @@ func (l *EVMListener) ListenToEvents(
 						continue
 					}
 
-					query2 := l.buildQuery(l.signatureAddress, string(util.SignturePass), startBlock, startBlock)
+					query2 := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
 						log.Error().Err(err).Msgf("failed to FilterLogs, chain %v", util.DomainIdToName[l.id])
@@ -269,7 +269,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 			continue
 		}
 
-		log.Debug().Msgf("SignturePass %v", pel)
+		log.Debug().Msgf("SignaturePass %v", pel)
 
 		//key := []byte{pel.OriginDomainID, 0x00, pel.DestinationDomainID, 0x00, byte(pel.DepositNonce)}
 		//log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
@@ -403,16 +403,16 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 //	return &pe, nil
 //}
 
-func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*evmclient.SignturePass, error) {
-	var pe evmclient.SignturePass
+func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*evmclient.SignaturePass, error) {
+	var pe evmclient.SignaturePass
 
-	err := abiIst.UnpackIntoInterface(&pe, "SignturePass", data)
+	err := abiIst.UnpackIntoInterface(&pe, "SignaturePass", data)
 	if err != nil {
-		return &evmclient.SignturePass{}, err
+		return &evmclient.SignaturePass{}, err
 	}
 
 	if len(topics) < 4 {
-		return &evmclient.SignturePass{}, errors.New("topics out of index")
+		return &evmclient.SignaturePass{}, errors.New("topics out of index")
 	}
 
 	originDomainID := topics[1]

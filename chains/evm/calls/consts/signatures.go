@@ -526,6 +526,11 @@ const SignaturesABI = `[
           "type": "uint8"
         },
         {
+          "internalType": "uint8",
+          "name": "destinationDomainID",
+          "type": "uint8"
+        },
+        {
           "internalType": "uint64",
           "name": "depositNonce",
           "type": "uint64"

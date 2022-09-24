@@ -69,7 +69,7 @@ type ProposalEvents struct {
 	DataHash       [32]byte
 }
 
-type SignturePass struct {
+type SignaturePass struct {
 	OriginDomainID      uint8
 	DestinationDomainID uint8
 	DepositNonce        uint64
@@ -78,7 +78,7 @@ type SignturePass struct {
 	Signature           []byte
 }
 
-func (s SignturePass) String() string {
+func (s SignaturePass) String() string {
 	return fmt.Sprintf("OriginDomainID %v, DestinationDomainID %v, DepositNonce %v, ResourceID %x, Data %x, Signature %x",
 		s.OriginDomainID, s.DestinationDomainID, s.DepositNonce, s.ResourceID, s.Data, s.Signature)
 }

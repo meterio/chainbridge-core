@@ -82,7 +82,7 @@ type SignatureContract interface {
 	SubmitSignature(originDomainID uint8, destinationDomainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signature []byte, opts transactor.TransactOptions) (*common.Hash, error)
 
 	GetThreshold(domain uint8) (uint8, error)
-	GetSignatures(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
+	GetSignatures(domainID uint8, destinationDomainID uint8, depositNonce uint64, resourceID [32]byte, data []byte) ([][]byte, error)
 }
 
 type EVMVoter struct {
@@ -385,7 +385,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 }
 
 func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
-	data, err := v.signatureContract.GetSignatures(m.Source, m.DepositNonce, m.ResourceId, m.Data)
+	data, err := v.signatureContract.GetSignatures(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
 		return [][]byte{}, err
 	}
