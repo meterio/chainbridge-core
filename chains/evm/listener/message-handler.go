@@ -83,7 +83,7 @@ func (w *EVMMessageHandler) shouldAirDropNative(m message.Message) (bool, uint8,
 	// yes, let do the airDrop
 	// now decode the payload.
 	source := m.Source
-	dest := uint8(m.Destination)
+	dest := m.Destination
 	nonce := m.DepositNonce
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
@@ -114,7 +114,7 @@ func (w *EVMMessageHandler) shouldAirDropErc20(m message.Message) (bool, uint8, 
 	// yes, let do the airDrop
 	// now decode the payload.
 	source := m.Source
-	dest := uint8(m.Destination)
+	dest := m.Destination
 	nonce := m.DepositNonce
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))

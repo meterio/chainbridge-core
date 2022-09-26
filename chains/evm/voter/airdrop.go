@@ -2,6 +2,7 @@ package voter
 
 import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
@@ -58,7 +59,7 @@ func (w *EVMVoter) shouldAirDropNative(m message.Message) (bool, uint8, *common.
 	// yes, let do the airDrop
 	// now decode the payload.
 	source := m.Source
-	dest := uint8(m.Destination)
+	dest := m.Destination
 	nonce := m.DepositNonce
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
@@ -89,7 +90,7 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 	// yes, let do the airDrop
 	// now decode the payload.
 	source := m.Source
-	dest := uint8(m.Destination)
+	dest := m.Destination
 	nonce := m.DepositNonce
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
@@ -103,7 +104,7 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 	if source == 1 {
 		erc20Amount = w.cfg.AirDropErc20Amount
 	} else {
-		erc20Amount = big.NewInt(5e17)
+		erc20Amount = config.AirDropErc20Amount
 	}
 
 	log.Debug().Uint8("dest", dest).Hex("erc20Contract", erc20Contract[:]).Hex("recipient", recipient[:]).Str("amount", erc20Amount.String()).Msg("airdrop parameters")

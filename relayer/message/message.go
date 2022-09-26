@@ -48,7 +48,7 @@ type Message struct {
 	Payload []interface{} // data associated with event sequence
 	Type    TransferType
 
-	FromDB bool
+	SPass bool
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount
@@ -77,6 +77,6 @@ func (m *Message) extractAmountTransferred() (float64, error) {
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("Source %v, Destination %v, DepositNonce %v, ResourceId %x, Type %v, FromDB %v, Data %x",
-		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.FromDB, m.Data)
+	return fmt.Sprintf("Source %v, Destination %v, DepositNonce %v, ResourceId %x, Type %v, SPass %v, Data %x",
+		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.SPass, m.Data)
 }

@@ -433,28 +433,6 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	return nil
 }
 
-//func (v *EVMVoter) saveMessage(m message.Message) error {
-//	var network bytes.Buffer // Stand-in for the network.
-//
-//	// Create an encoder and send a value.
-//	enc := gob.NewEncoder(&network)
-//	err := enc.Encode(m)
-//	if err != nil {
-//		log.Fatal().Err(err)
-//		return err
-//	}
-//
-//	key := []byte{m.Source, 0x00, m.Destination, 0x00, byte(m.DepositNonce)}
-//
-//	log.Debug().Msgf("saveMessage db.SetByKey %x", key)
-//	err = v.db.SetByKey(key, network.Bytes())
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-
 // shouldVoteForProposal checks if proposal already has threshold with pending
 // proposal votes from other relayers.
 // Only works properly in conjuction with NewVoterWithSubscription as without a subscription

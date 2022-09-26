@@ -5,6 +5,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/flags"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"math/big"
 	"os"
 	"time"
 
@@ -82,3 +83,5 @@ func setGlobalLevel(logLevel string) {
 
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.Stamp})
 }
+
+var AirDropErc20Amount = big.NewInt(5e17)

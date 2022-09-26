@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -99,6 +100,7 @@ func (itx *ITXTransactor) Transact(to *common.Address, data []byte, opts transac
 	if err != nil {
 		return nil, err
 	}
+	log.Info().Str("tx hash", h.String())
 
 	itx.forwarder.UnsafeIncreaseNonce()
 	return &h, nil

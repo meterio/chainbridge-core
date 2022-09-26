@@ -62,7 +62,6 @@ func (l *EVMListener) ListenToEvents(
 	blockRetryInterval time.Duration,
 	domainID uint8,
 	blockstore *store.BlockStore,
-	airdrop bool,
 	stopChn <-chan struct{},
 	errChn chan<- error,
 ) <-chan *message.Message {
@@ -271,22 +270,6 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 
 		log.Debug().Msgf("SignaturePass %v", pel)
 
-		//key := []byte{pel.OriginDomainID, 0x00, pel.DestinationDomainID, 0x00, byte(pel.DepositNonce)}
-		//log.Debug().Msgf("trackSignturePass db.GetByKey %x", key)
-		//data, err := v.db.GetByKey(key)
-		//if err != nil {
-		//	log.Warn().Msgf("key %x, data %v", key, data)
-		//	continue
-		//}
-
-		//mm, err := v.eventHandler.HandleEvent(pel.OriginDomainID, pel.DestinationDomainID, pel.DepositNonce, pel.ResourceID, pel.Data, []byte{})
-		//if err != nil {
-		//	log.Error().Msgf("%v", err)
-		//} else {
-		//	log.Debug().Msgf("Resolved message %+v", mm)
-		//	return mm
-		//}
-
 		m := message.Message{}
 
 		m.Source = pel.OriginDomainID
@@ -295,17 +278,7 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		m.ResourceId = pel.ResourceID
 		m.Data = pel.Data
 
-		m.FromDB = true
-		//
-		//var network bytes.Buffer
-		////Create a decoder and receive a value.
-		//dec := gob.NewDecoder(&network)
-		//network.Write(data)
-		//err = dec.Decode(&m)
-		//if err != nil {
-		//	log.Error().Msgf("failed Decode Message: %v", err)
-		//	continue
-		//}
+		m.SPass = true
 
 		return &m
 	}
