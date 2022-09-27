@@ -35,6 +35,7 @@ var (
 	DepositSigBytes    [4]byte
 	ExecuteSigBytes    [4]byte
 	DataBytes          []byte
+	DataHashBytes      [32]byte
 )
 
 // global flags

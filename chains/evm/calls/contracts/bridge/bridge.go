@@ -332,6 +332,24 @@ func (c *BridgeContract) VoteProposals(
 	)
 }
 
+func (c *BridgeContract) CancelProposal(
+	domainID uint8,
+	depositNonce uint64,
+	dataHash [32]byte,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Info().
+		Str("domainID", strconv.Itoa(int(domainID))).
+		Str("depositNonce", strconv.FormatUint(depositNonce, 10)).
+		Str("dataHash", hexutil.Encode(dataHash[:])).
+		Msgf("CancelProposal")
+	return c.ExecuteTransaction(
+		"cancelProposal",
+		opts,
+		domainID, depositNonce, dataHash,
+	)
+}
+
 func (c *BridgeContract) SimulateVoteProposal(proposal *proposal.Proposal) error {
 	log.Debug().
 		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).

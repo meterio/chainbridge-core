@@ -2,8 +2,12 @@ package bridge
 
 import (
 	"fmt"
-
+	callsUtil "github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,12 +25,23 @@ var cancelProposalCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	RunE: cancelProposal,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := initialize.InitializeClient(url, senderKeyPair)
+		if err != nil {
+			return err
+		}
+		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+		if err != nil {
+			return err
+		}
+		return cancelProposal(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateCancelProposalFlags(cmd, args)
 		if err != nil {
 			return err
 		}
+		err = ProcessCancelProposalFlags(cmd, args)
 		return nil
 	},
 }
@@ -50,46 +65,27 @@ func ValidateCancelProposalFlags(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func cancelProposal(cmd *cobra.Command, args []string) error {
+func ProcessCancelProposalFlags(cmd *cobra.Command, args []string) error {
+	DataBytes = common.Hex2Bytes(DataHash)
+	DataHashBytes = callsUtil.SliceTo32Bytes(DataBytes)
 
+	return nil
+}
+
+func cancelProposal(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
-Cancel propsal
+Cancel Proposal
 Bridge address: %s
-Chain ID: %d
+Domain ID: %d
 Deposit nonce: %d
 DataHash: %s
 `, Bridge, DomainID, DepositNonce, DataHash)
+	h, err := contract.CancelProposal(DomainID, DepositNonce, DataHashBytes, transactor.TransactOptions{GasLimit: gasLimit})
+	if err != nil {
+		log.Error().Err(err)
+		return err
+	}
+
+	log.Info().Msgf("Cancel Proposal with transaction: %s", h.Hex())
 	return nil
 }
-
-/*
-func cancelProposal(cctx *cli.Context) error {
-	url := cctx.String("url")
-	gasLimit := cctx.Uint64("gasLimit")
-	gasPrice := cctx.Uint64("gasPrice")
-	sender, err := cliutils.DefineSender(cctx)
-	if err != nil {
-		return err
-	}
-	bridgeAddress, err := cliutils.DefineBridgeAddress(cctx)
-	if err != nil {
-		return err
-	}
-
-	domainID := cctx.Uint64("domainId")
-	depositNonce := cctx.Uint64("depositNonce")
-	dataHash := cctx.String("dataHash")
-	dataHashBytes := utils.SliceTo32Bytes(common.Hex2Bytes(dataHash))
-
-	ethClient, err := client.NewClient(url, false, sender, big.NewInt(0).SetUint64(gasLimit), big.NewInt(0).SetUint64(gasPrice), big.NewFloat(1))
-	if err != nil {
-		return err
-	}
-	err = utils.CancelProposal(ethClient, bridgeAddress, uint8(domainID), depositNonce, dataHashBytes)
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("Setting proposal with domain ID %v and deposit nonce %v status to 'Cancelled", domainID, depositNonce)
-	return nil
-}
-*/
