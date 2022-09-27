@@ -342,6 +342,8 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 	if err != nil {
 		return common.Hash{}, err
 	}
+	log.Info().Msgf("txHash %v", tx.Hash())
+
 	err = c.SendRawTransaction(ctx, rawTx)
 	if err != nil {
 		return common.Hash{}, err
