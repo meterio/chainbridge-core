@@ -179,6 +179,18 @@ func (c *BridgeContract) SetThresholdInput(
 	)
 }
 
+func (c *BridgeContract) AdminSetDomainId(
+	domain uint8,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Setting domain %d", domain)
+	return c.ExecuteTransaction(
+		"adminSetDomainId",
+		opts,
+		domain,
+	)
+}
+
 func (c *BridgeContract) SetBurnableInput(
 	handlerAddr common.Address,
 	tokenContractAddr common.Address,
@@ -371,6 +383,16 @@ func (c *BridgeContract) Withdraw(
 func (c *BridgeContract) GetThreshold() (uint8, error) {
 	log.Debug().Msg("Getting threshold")
 	res, err := c.CallContract("_relayerThreshold")
+	if err != nil {
+		return 0, err
+	}
+	out := *abi.ConvertType(res[0], new(uint8)).(*uint8)
+	return out, nil
+}
+
+func (c *BridgeContract) GetDomainID() (uint8, error) {
+	log.Debug().Msg("Getting domain")
+	res, err := c.CallContract("_domainID")
 	if err != nil {
 		return 0, err
 	}

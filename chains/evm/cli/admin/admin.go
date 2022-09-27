@@ -41,4 +41,6 @@ func init() {
 	AdminCmd.AddCommand(withdrawCmd)
 	AdminCmd.AddCommand(setDepositNonceCmd)
 	AdminCmd.AddCommand(getDestChainIdCmd)
+	AdminCmd.AddCommand(setDomainCmd)
+	AdminCmd.AddCommand(getDomainCmd)
 }

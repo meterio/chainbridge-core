@@ -57,8 +57,7 @@ var registerNativeResourceCmd = &cobra.Command{
 func BindRegisterNativeResourceFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Handler, "handler", "", "Handler contract address, like erc20Handler")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of proposal to cancel")
-	flags.MarkFlagsAsRequired(cmd, "handler", "bridge", "domain")
+	flags.MarkFlagsAsRequired(cmd, "handler", "bridge")
 }
 
 func init() {
@@ -81,20 +80,26 @@ func ProcessRegisterNativeResourceFlags(cmd *cobra.Command, args []string) error
 	HandlerAddr = common.HexToAddress(Handler)
 	BridgeAddr = common.HexToAddress(Bridge)
 
-	zeroAddr := util.ZeroAddress
-	addrBytes := zeroAddr.Bytes()
-	copy(addrBytes[len(addrBytes)-1:], []byte{DomainID})
-	TargetContractAddr = common.BytesToAddress(addrBytes)
-
-	resourceIdBytes := append(addrBytes, DomainID)
-	resid := common.LeftPadBytes(resourceIdBytes, 32)
-	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resid)
-
 	return nil
 }
 
 func RegisterNativeResource(cmd *cobra.Command, args []string, contract *bridge.BridgeContract, handlerContract *erc20.ERC20HandlerContract) error {
 	log.Info().Msgf("Registering contract %s with resource ID %s on handler %s", TargetContractAddr, ResourceID, HandlerAddr)
+
+	domainID, err := contract.GetDomainID()
+	if err != nil {
+		log.Error().Err(err)
+		return err
+	}
+
+	zeroAddr := util.ZeroAddress
+	addrBytes := zeroAddr.Bytes()
+	copy(addrBytes[len(addrBytes)-1:], []byte{domainID})
+	TargetContractAddr = common.BytesToAddress(addrBytes)
+
+	resourceIdBytes := append(addrBytes, domainID)
+	resid := common.LeftPadBytes(resourceIdBytes, 32)
+	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resid)
 
 	getHandlerArr, err := contract.GetHandlerAddressForResourceID(ResourceIdBytesArr)
 	if err != nil {
