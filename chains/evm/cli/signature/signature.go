@@ -31,4 +31,5 @@ func init() {
 	SignatureCmd.AddCommand(getSignatureThresholdCmd)
 	SignatureCmd.AddCommand(setSignatureThresholdCmd)
 	SignatureCmd.AddCommand(setDestChainIdCmd)
+	SignatureCmd.AddCommand(queryProposalCmd)
 }

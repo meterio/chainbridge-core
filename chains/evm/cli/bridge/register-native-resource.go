@@ -109,7 +109,7 @@ func RegisterNativeResource(cmd *cobra.Command, args []string, contract *bridge.
 
 	if !bytes.Equal(getHandlerArr[:], HandlerAddr[:]) {
 		hSetResource, err := contract.AdminSetResource(
-			HandlerAddr, ResourceIdBytesArr, TargetContractAddr, transactor.TransactOptions{GasLimit: gasLimit},
+			HandlerAddr, ResourceIdBytesArr, TargetContractAddr, true, transactor.TransactOptions{GasLimit: gasLimit},
 		)
 		if err != nil {
 			log.Error().Err(err)

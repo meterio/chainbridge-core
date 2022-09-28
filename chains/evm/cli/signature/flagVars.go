@@ -14,6 +14,7 @@ var (
 	Signature          string
 	DataHash           string
 	DomainID           uint8
+	DestDomainID       uint8
 	Data               string
 	DepositNonce       uint64
 	Handler            string
@@ -43,6 +44,7 @@ var (
 	DataBytes          []byte
 	RelayerAddr        common.Address
 	AdminAddr          common.Address
+	DepositHash        [32]byte
 )
 
 // global flags

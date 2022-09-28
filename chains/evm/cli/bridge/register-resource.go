@@ -52,6 +52,7 @@ func BindRegisterResourceFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().StringVar(&Target, "target", "", "Contract address to be registered")
 	cmd.Flags().StringVar(&ResourceID, "resource", "", "Resource ID to be registered")
+	cmd.Flags().BoolVar(&Native, "native", false, "is Native")
 	flags.MarkFlagsAsRequired(cmd, "handler", "bridge", "target", "resource")
 }
 
@@ -88,11 +89,12 @@ Registering resource
 Handler address: %s
 Resource ID: %s
 Target address: %s
+Native: %s
 Bridge address: %s
-`, Handler, ResourceID, Target, Bridge)
+`, Handler, ResourceID, Target, Native, Bridge)
 
 	h, err := contract.AdminSetResource(
-		HandlerAddr, ResourceIdBytesArr, TargetContractAddr, transactor.TransactOptions{GasLimit: gasLimit},
+		HandlerAddr, ResourceIdBytesArr, TargetContractAddr, Native, transactor.TransactOptions{GasLimit: gasLimit},
 	)
 	if err != nil {
 		log.Error().Err(err)

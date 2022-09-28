@@ -51,6 +51,7 @@ func BindRemoveResourceFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().StringVar(&Target, "target", "", "Contract address to be removed")
 	cmd.Flags().StringVar(&ResourceID, "resource", "", "Resource ID to be removed")
+	cmd.Flags().BoolVar(&Native, "native", false, "is Native")
 	flags.MarkFlagsAsRequired(cmd, "bridge", "target", "resource")
 }
 
@@ -85,7 +86,7 @@ Target address: %s
 Bridge address: %s
 `, ResourceID, Target, Bridge)
 	h, err := contract.AdminRemoveResourceId(
-		ResourceIdBytesArr, TargetContractAddr, transactor.TransactOptions{GasLimit: gasLimit},
+		ResourceIdBytesArr, TargetContractAddr, Native, transactor.TransactOptions{GasLimit: gasLimit},
 	)
 	if err != nil {
 		log.Error().Err(err)

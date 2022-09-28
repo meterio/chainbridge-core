@@ -649,13 +649,6 @@ const BridgeABI = `[
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "adminRemoveNativeResourceId",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
@@ -679,6 +672,11 @@ const BridgeABI = `[
           "internalType": "address",
           "name": "tokenAddress",
           "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "isNative",
+          "type": "bool"
         }
       ],
       "name": "adminRemoveResourceId",
@@ -820,42 +818,6 @@ const BridgeABI = `[
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "resourceID",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "address",
-          "name": "nativeAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "bool",
-          "name": "isNative",
-          "type": "bool"
-        }
-      ],
-      "name": "adminSetNative",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "handlerAddress",
-          "type": "address"
-        }
-      ],
-      "name": "adminSetNativeResource",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "handlerAddress",
           "type": "address"
@@ -869,6 +831,11 @@ const BridgeABI = `[
           "internalType": "address",
           "name": "tokenAddress",
           "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "isNative",
+          "type": "bool"
         }
       ],
       "name": "adminSetResource",

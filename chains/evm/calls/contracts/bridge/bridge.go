@@ -88,6 +88,7 @@ func (c *BridgeContract) AdminSetGenericResource(
 	)
 }
 
+//deprecated: AdminSetNativeResource
 func (c *BridgeContract) AdminSetNativeResource(
 	handler common.Address,
 	rID types.ResourceID,
@@ -109,29 +110,32 @@ func (c *BridgeContract) AdminSetResource(
 	handlerAddr common.Address,
 	rID types.ResourceID,
 	targetContractAddr common.Address,
+	native bool,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	log.Debug().Msgf("Setting resource %s", hexutil.Encode(rID[:]))
 	return c.ExecuteTransaction(
 		"adminSetResource",
 		opts,
-		handlerAddr, rID, targetContractAddr,
+		handlerAddr, rID, targetContractAddr, native,
 	)
 }
 
 func (c *BridgeContract) AdminRemoveResourceId(
 	rID types.ResourceID,
 	targetContractAddr common.Address,
+	native bool,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	log.Debug().Msgf("Remove resource %s", hexutil.Encode(rID[:]))
 	return c.ExecuteTransaction(
 		"adminRemoveResourceId",
 		opts,
-		rID, targetContractAddr,
+		rID, targetContractAddr, native,
 	)
 }
 
+//deprecated: AdminRemoveNativeResourceId
 func (c *BridgeContract) AdminRemoveNativeResourceId(
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {

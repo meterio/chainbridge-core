@@ -22,6 +22,7 @@ var (
 	DepositorOffset uint64
 	Execute         string
 	Hash            bool
+	Native          bool
 	TokenContract   string
 )
 

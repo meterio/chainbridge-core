@@ -177,6 +177,44 @@ func (c *SignaturesContract) HasVote(sig []byte) (bool, error) {
 	return out, nil
 }
 
+type Proposal struct {
+	originDomainID      uint8
+	destinationDomainID uint8
+	destinationBridge   common.Address
+	depositNonce        uint64
+	resourceID          [32]byte
+	data                []byte
+	proposalIndex       *big.Int
+}
+
+func (c *SignaturesContract) QueryProposal(
+	depositHash [32]byte,
+) (*Proposal, error) {
+	log.Debug().Msgf("Query Proposal, depositHash %x", depositHash)
+	res, err := c.CallContract("proposals", depositHash)
+	if err != nil {
+		return nil, err
+	}
+	out0 := abi.ConvertType(res[0], new(uint8)).(*uint8)
+	out1 := abi.ConvertType(res[1], new(uint8)).(*uint8)
+	out2 := abi.ConvertType(res[2], new(common.Address)).(*common.Address)
+	out3 := abi.ConvertType(res[3], new(uint64)).(*uint64)
+	out4 := abi.ConvertType(res[4], new([32]byte)).(*[32]byte)
+	out5 := abi.ConvertType(res[5], new([]byte)).(*[]byte)
+	out6 := abi.ConvertType(res[6], new(big.Int)).(*big.Int)
+
+	out := Proposal{
+		*out0,
+		*out1,
+		*out2,
+		*out3,
+		*out4,
+		*out5,
+		out6,
+	}
+	return &out, nil
+}
+
 func (c *SignaturesContract) SetThresholdInput(
 	destinationDomainID uint8,
 	threshold uint64,
