@@ -1,6 +1,7 @@
 package signatures
 
 import (
+	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts"
@@ -187,10 +188,18 @@ type Proposal struct {
 	proposalIndex       *big.Int
 }
 
+func (p *Proposal) String() string {
+	p.destinationBridge.Hex()
+
+	str := fmt.Sprintf("originDomainID %v, destinationDomainID %v, destinationBridge %s, depositNonce %v, resourceID %#x, data %#x, proposalIndex %v",
+		p.originDomainID, p.destinationDomainID, p.destinationBridge.Hex(), p.depositNonce, p.resourceID, p.data, p.proposalIndex)
+	return str
+}
+
 func (c *SignaturesContract) QueryProposal(
 	depositHash [32]byte,
 ) (*Proposal, error) {
-	log.Debug().Msgf("Query Proposal, depositHash %x", depositHash)
+	log.Debug().Msgf("Query Proposal, depositHash %#x", depositHash)
 	res, err := c.CallContract("proposals", depositHash)
 	if err != nil {
 		return nil, err
