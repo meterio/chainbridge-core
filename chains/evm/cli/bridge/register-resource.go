@@ -89,7 +89,7 @@ Registering resource
 Handler address: %s
 Resource ID: %s
 Target address: %s
-Native: %s
+Native: %v
 Bridge address: %s
 `, Handler, ResourceID, Target, Native, Bridge)
 

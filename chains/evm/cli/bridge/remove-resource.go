@@ -83,6 +83,7 @@ func RemoveResourceCmd(cmd *cobra.Command, args []string, contract *bridge.Bridg
 Remove resource
 Resource ID: %s
 Target address: %s
+Native: %v
 Bridge address: %s
 `, ResourceID, Target, Bridge)
 	h, err := contract.AdminRemoveResourceId(
