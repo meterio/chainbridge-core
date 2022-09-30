@@ -2,11 +2,15 @@ package bridge
 
 import (
 	"fmt"
-
+	callsUtil "github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -21,22 +25,34 @@ var queryProposalCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return util.CallPersistentPreRun(cmd, args)
 	},
-	RunE: queryProposal,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		c, err := initialize.InitializeClient(url, senderKeyPair)
+		if err != nil {
+			return err
+		}
+		t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+		if err != nil {
+			return err
+		}
+		return queryProposal(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateQueryProposalFlags(cmd, args)
 		if err != nil {
 			return err
 		}
+		ProcessQueryProposalFlags(cmd, args)
 		return nil
 	},
 }
 
 func BindQueryProposalFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().StringVar(&DataHash, "data-hash", "", "Hash of proposal metadata")
+	cmd.Flags().StringVar(&Data, "data", "", "proposal metadata")
+	cmd.Flags().StringVar(&ResourceID, "resource", "", "Resource ID to query")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Source domain ID of proposal")
 	cmd.Flags().Uint64Var(&DepositNonce, "deposit-nonce", 0, "Deposit nonce of proposal")
-	flags.MarkFlagsAsRequired(cmd, "bridge", "data-hash", "domain", "deposit-nonce")
+	flags.MarkFlagsAsRequired(cmd, "bridge", "data", "domain", "deposit-nonce", "resource")
 }
 
 func init() {
@@ -50,45 +66,36 @@ func ValidateQueryProposalFlags(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func queryProposal(cmd *cobra.Command, args []string) error {
+func ProcessQueryProposalFlags(cmd *cobra.Command, args []string) error {
+	BridgeAddr = common.HexToAddress(Bridge)
+
+	resourceIdBytes, err := hexutil.Decode(ResourceID)
+	if err != nil {
+		return err
+	}
+
+	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resourceIdBytes)
+
+	DataBytes, err = hexutil.Decode(Data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func queryProposal(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
 	log.Debug().Msgf(`
 Querying proposal
 Chain ID: %d
 Deposit nonce: %d
-Data hash: %s
-Bridge address: %s`, DomainID, DepositNonce, DataHash, Bridge)
+Data: %s
+Bridge address: %s`, DomainID, DepositNonce, Data, Bridge)
+
+	proposalStatus, err := contract.GetProposal(DomainID, DepositNonce, ResourceIdBytesArr, DataBytes)
+	if err != nil {
+		return err
+	}
+	log.Info().Msgf("Proposal: %v", proposalStatus.String())
 	return nil
 }
-
-/*
-func queryProposal(cctx *cli.Context) error {
-	url := cctx.String("url")
-	gasLimit := cctx.Uint64("gasLimit")
-	gasPrice := cctx.Uint64("gasPrice")
-	sender, err := cliutils.DefineSender(cctx)
-	if err != nil {
-		return err
-	}
-	bridgeAddress, err := cliutils.DefineBridgeAddress(cctx)
-	if err != nil {
-		return err
-	}
-
-	domainID := cctx.Uint64("domainId")
-	depositNonce := cctx.Uint64("depositNonce")
-	dataHash := cctx.String("dataHash")
-	dataHashBytes := utils.SliceTo32Bytes(common.Hex2Bytes(dataHash))
-
-	ethClient, err := client.NewClient(url, false, sender, big.NewInt(0).SetUint64(gasLimit), big.NewInt(0).SetUint64(gasPrice), big.NewFloat(1))
-	if err != nil {
-		return err
-	}
-
-	prop, err := utils.QueryProposal(ethClient, bridgeAddress, uint8(domainID), depositNonce, dataHashBytes)
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("proposal with domainID %v and depositNonce %v queried. %+v", domainID, depositNonce, prop)
-	return nil
-}
-*/

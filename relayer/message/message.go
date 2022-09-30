@@ -80,3 +80,8 @@ func (m *Message) String() string {
 	return fmt.Sprintf("Source %v, Destination %v, DepositNonce %v, ResourceId %x, Type %v, SPass %v, Data %x",
 		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.SPass, m.Data)
 }
+
+func (p *ProposalStatus) String() string {
+	return fmt.Sprintf("Status %v, YesVotes %v, YesVotesTotal %v, ProposedBlock %v",
+		StatusMap[p.Status], p.YesVotes, p.YesVotesTotal, p.ProposedBlock)
+}
