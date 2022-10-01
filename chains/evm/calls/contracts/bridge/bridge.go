@@ -121,7 +121,7 @@ func (c *BridgeContract) AdminSetResource(
 	)
 }
 
-func (c *BridgeContract) AdminRemoveResourceId(
+func (c *BridgeContract) AdminRemoveResource(
 	rID types.ResourceID,
 	targetContractAddr common.Address,
 	native bool,
@@ -142,6 +142,20 @@ func (c *BridgeContract) AdminRemoveNativeResourceId(
 	return c.ExecuteTransaction(
 		"adminRemoveNativeResourceId",
 		opts,
+	)
+}
+
+func (c *BridgeContract) AdminRemoveGenericResource(
+	rID types.ResourceID,
+	targetContractAddr common.Address,
+	//native bool,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Remove generic resource %s", hexutil.Encode(rID[:]))
+	return c.ExecuteTransaction(
+		"adminRemoveGenericResource",
+		opts,
+		rID, targetContractAddr,
 	)
 }
 

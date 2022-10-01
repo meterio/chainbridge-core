@@ -35,4 +35,5 @@ func init() {
 	BridgeCmd.AddCommand(relayerInfoCmd)
 	BridgeCmd.AddCommand(removeResourceCmd)
 	BridgeCmd.AddCommand(removeNativeResourceCmd)
+	BridgeCmd.AddCommand(removeGenericResourceCmd)
 }
