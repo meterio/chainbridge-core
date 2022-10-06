@@ -23,7 +23,6 @@ func (w *EVMVoter) CheckAndExecuteAirDropNative(m message.Message) {
 	if err != nil {
 		if receipt != nil {
 			log.Warn().Err(err)
-
 		} else {
 			log.Error().Err(err)
 		}
@@ -78,8 +77,8 @@ func (w *EVMVoter) shouldAirDropNative(m message.Message) (bool, uint8, *common.
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
 	recipient := common.BytesToAddress(m.Payload[1].([]byte))
 
-	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("AirDrop Native...")
-	log.Debug().Uint8("dest", dest).Hex("recipient", recipient[:]).Str("amount", w.cfg.AirDropAmount.String()).Msg("airdrop parameters")
+	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("Tx Info")
+	log.Info().Uint8("dest", dest).Hex("recipient", recipient[:]).Str("amount", w.cfg.AirDropAmount.String()).Msg("Native airdrop parameters")
 
 	return true, dest, &recipient, w.cfg.AirDropAmount
 }
@@ -108,7 +107,7 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 	resourceId := m.ResourceId
 	amount := new(big.Int).SetBytes(m.Payload[0].([]byte))
 	recipient := common.BytesToAddress(m.Payload[1].([]byte))
-	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("AirDrop Erc20...")
+	log.Info().Uint8("source", source).Uint8("dest", dest).Str("type", string(transferType)).Uint64("nonce", nonce).Str("amount", amount.String()).Hex("recipient", recipient[:]).Hex("resourceId", resourceId[:]).Msg("Tx Info")
 
 	erc20Contract := w.cfg.AirDropErc20Contract
 	// source from ethereum main, the fee is configured amount
@@ -120,6 +119,6 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 		erc20Amount = config.AirDropErc20Amount
 	}
 
-	log.Debug().Uint8("dest", dest).Hex("erc20Contract", erc20Contract[:]).Hex("recipient", recipient[:]).Str("amount", erc20Amount.String()).Msg("airdrop parameters")
+	log.Info().Uint8("dest", dest).Hex("erc20Contract", erc20Contract[:]).Hex("recipient", recipient[:]).Str("amount", erc20Amount.String()).Msg("Erc20 airdrop parameters")
 	return true, dest, &erc20Contract, &recipient, erc20Amount
 }

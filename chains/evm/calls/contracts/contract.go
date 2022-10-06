@@ -77,7 +77,7 @@ func (c *Contract) ExecuteTransaction(method string, opts transactor.TransactOpt
 	h, r, err := c.Transact(&c.contractAddress, input, opts)
 	if err != nil {
 		if r != nil {
-			log.Warn().Str("contract", c.contractAddress.String()).Err(err).Msgf("error on executing %s", method)
+			log.Warn().Str("contract", c.contractAddress.String()).Err(err).Msgf("error with receipt on executing %s", method)
 		} else {
 			log.Error().Str("contract", c.contractAddress.String()).Err(err).Msgf("error on executing %s", method)
 		}
