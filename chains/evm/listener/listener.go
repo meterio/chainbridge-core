@@ -80,7 +80,7 @@ func (l *EVMListener) ListenToEvents(
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
 						errCounter += 1
-						log.Error().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
+						log.Warn().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
 
 						if errCounter >= consts.DefaultEndpointTries {
 							l.chainReader.UpdateEndpoint()
@@ -111,7 +111,8 @@ func (l *EVMListener) ListenToEvents(
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
-						log.Error().Err(err).Msgf("failed to FilterLogs, chain %v", util.DomainIdToName[l.id])
+						errCounter += 1
+						log.Warn().Err(err).Msgf("failed to Filter Logs, chain %v", util.DomainIdToName[l.id])
 						continue
 					}
 					proposalPassedMessage := l.trackSignturePass(logch2)
@@ -148,7 +149,7 @@ func (l *EVMListener) ListenToEvents(
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
 					errCounter += 1
-					log.Error().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
+					log.Warn().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
 
 					if errCounter >= consts.DefaultEndpointTries {
 						l.chainReader.UpdateEndpoint()
@@ -178,9 +179,10 @@ func (l *EVMListener) ListenToEvents(
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
+					errCounter += 1
 					// Filtering logs error really can appear only on wrong configuration or temporary network problem
 					// so i do no see any reason to break execution
-					log.Error().Err(err).Uint8("DomainID", domainID).Msgf("Unable to filter logs")
+					log.Warn().Err(err).Uint8("DomainID", domainID).Str("chain", util.DomainIdToName[domainID]).Msgf("Unable to filter logs")
 					continue
 				}
 				l.trackDeposit(logs, domainID, startBlock, ch)
