@@ -2,6 +2,7 @@ package prepare
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 
@@ -9,7 +10,7 @@ import (
 )
 
 type Transactor interface {
-	Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, error)
+	Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, *types.Receipt, error)
 }
 type prepareTransactor struct{}
 
@@ -20,7 +21,7 @@ func NewPrepareTransactor() Transactor {
 }
 
 // Outputs calldata to stdout (called when --prepare flag value is set as true from CLI)
-func (t *prepareTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, error) {
+func (t *prepareTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, *types.Receipt, error) {
 	fmt.Printf(`
 ===============================================
 To:
@@ -30,5 +31,5 @@ Calldata:
 %+v
 ===============================================
 `, to, common.Bytes2Hex(data))
-	return &common.Hash{}, nil
+	return &common.Hash{}, nil, nil
 }

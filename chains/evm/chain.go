@@ -94,13 +94,11 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 	domainId := config.GeneralChainConfig.Id
 	fromAddr := config.GeneralChainConfig.From
 
-	emh := listener.NewEVMMessageHandler(*config, airDropErc20Contract, t)
 	eventHandler := listener.NewETHEventHandler(*bridgeContract)
 	eventHandler.RegisterEventHandler(config.Erc20Handler, listener.Erc20EventHandler)
 	eventHandler.RegisterEventHandler(config.Erc721Handler, listener.Erc721EventHandler)
 	eventHandler.RegisterEventHandler(config.GenericHandler, listener.GenericEventHandler)
-	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge), config.SignatureContract,
-		fromAddr, *emh, *domainId, openTelemetryInst)
+	evmListener := listener.NewEVMListener(client, eventHandler, common.HexToAddress(config.Bridge), config.SignatureContract, fromAddr, *domainId, openTelemetryInst)
 
 	mh := voter.NewEVMMessageHandler(*bridgeContract)
 	mh.RegisterMessageHandler(config.Erc20Handler, voter.ERC20MessageHandler)

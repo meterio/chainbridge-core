@@ -19,9 +19,14 @@ func (w *EVMVoter) CheckAndExecuteAirDropNative(m message.Message) {
 	gasLimit := uint64(21000)
 
 	var airData []byte
-	hash, err := w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
+	hash, receipt, err := w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
 	if err != nil {
-		log.Warn().Err(err)
+		if receipt != nil {
+			log.Warn().Err(err)
+
+		} else {
+			log.Error().Err(err)
+		}
 	}
 	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[w.id]).Msgf("AirDropNative")
 

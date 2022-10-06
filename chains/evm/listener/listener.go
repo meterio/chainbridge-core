@@ -44,7 +44,6 @@ type EVMListener struct {
 	bridgeAddress    common.Address
 	signatureAddress common.Address
 
-	mh                EVMMessageHandler
 	id                uint8
 	openTelemetryInst *opentelemetry.OpenTelemetry
 	fromAddr          string
@@ -52,9 +51,9 @@ type EVMListener struct {
 
 // NewEVMListener creates an EVMListener that listens to deposit events on chain
 // and calls event handler when one occurs
-func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, fromAddr string, mh EVMMessageHandler, id uint8, openTelemetryInst *opentelemetry.OpenTelemetry) *EVMListener {
+func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress common.Address, signatureAddress common.Address, fromAddr string, id uint8, openTelemetryInst *opentelemetry.OpenTelemetry) *EVMListener {
 	return &EVMListener{chainReader: chainReader, eventHandler: handler, bridgeAddress: bridgeAddress, signatureAddress: signatureAddress,
-		fromAddr: fromAddr, mh: mh, id: id, openTelemetryInst: openTelemetryInst}
+		fromAddr: fromAddr, id: id, openTelemetryInst: openTelemetryInst}
 }
 
 func (l *EVMListener) ListenToEvents(

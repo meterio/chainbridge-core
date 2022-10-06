@@ -2,6 +2,7 @@ package signAndSend
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
@@ -30,48 +31,48 @@ func NewSignAndSendTransactor(txFabric calls.TxFabric, gasPriceClient calls.GasP
 	}
 }
 
-func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, error) {
+func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, *types.Receipt, error) {
 	defer t.client.UnlockNonce()
 	t.client.LockNonce()
 	n, err := t.client.UnsafeNonce()
 	if err != nil {
-		return &common.Hash{}, err
+		return &common.Hash{}, nil, err
 	}
 
 	err = transactor.MergeTransactionOptions(&opts, &DefaultTransactionOptions)
 	if err != nil {
-		return &common.Hash{}, err
+		return &common.Hash{}, nil, err
 	}
 
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
 		gp, err = t.gasPriceClient.GasPrice()
 		if err != nil {
-			return &common.Hash{}, err
+			return &common.Hash{}, nil, err
 		}
 	}
 
 	tx, err := t.TxFabric(n.Uint64(), to, opts.Value, opts.GasLimit, gp, data)
 	if err != nil {
-		return &common.Hash{}, err
+		return &common.Hash{}, nil, err
 	}
 
 	h, err := t.client.SignAndSendTransaction(context.TODO(), tx)
 	if err != nil {
 		log.Error().Err(err)
-		return &common.Hash{}, err
+		return &common.Hash{}, nil, err
 	}
 	log.Info().Str("sent tx hash", h.String())
 
-	_, err = t.client.WaitAndReturnTxReceipt(h)
+	r, err := t.client.WaitAndReturnTxReceipt(h)
 	if err != nil {
-		return &common.Hash{}, err
+		return &common.Hash{}, r, err
 	}
 
 	err = t.client.UnsafeIncreaseNonce()
 	if err != nil {
-		return &common.Hash{}, err
+		return &common.Hash{}, r, err
 	}
 
-	return &h, nil
+	return &h, r, nil
 }

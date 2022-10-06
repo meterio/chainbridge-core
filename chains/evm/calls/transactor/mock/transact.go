@@ -5,6 +5,7 @@
 package mock_transactor
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
 	reflect "reflect"
 
 	transactor "github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
@@ -36,12 +37,12 @@ func (m *MockTransactor) EXPECT() *MockTransactorMockRecorder {
 }
 
 // Transact mocks base method.
-func (m *MockTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, error) {
+func (m *MockTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, *types.Receipt, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Transact", to, data, opts)
 	ret0, _ := ret[0].(*common.Hash)
 	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0, nil, ret1
 }
 
 // Transact indicates an expected call of Transact.

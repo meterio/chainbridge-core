@@ -77,11 +77,15 @@ func ProcessTransferBaseCurrencyFlags(cmd *cobra.Command, args []string) error {
 	return err
 }
 func TransferBaseCurrency(cmd *cobra.Command, args []string, t transactor.Transactor) error {
-	hash, err := t.Transact(
+	hash, receipt, err := t.Transact(
 		&RecipientAddress, nil, transactor.TransactOptions{Value: WeiAmount, GasLimit: gasLimit},
 	)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("base currency deposit error: %v", err))
+		if receipt != nil {
+			log.Warn().Err(fmt.Errorf("base currency deposit error: %v", err))
+		} else {
+			log.Error().Err(fmt.Errorf("base currency deposit error: %v", err))
+		}
 		return err
 	}
 	log.Debug().Msgf("base currency transaction hash: %s", hash.Hex())
