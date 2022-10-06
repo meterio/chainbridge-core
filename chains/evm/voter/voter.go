@@ -201,7 +201,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	//	}
 	//}
 
-	log.Info().Str("tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Str("chain", util.DomainIdToName[v.id]).Msgf("Voted")
+	log.Info().Str("receipt tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Str("chain", util.DomainIdToName[v.id]).Msgf("Voted")
 	return nil
 }
 
@@ -379,7 +379,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	if err != nil {
 		return err
 	}
-	log.Info().Str("tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("SubmitSignature")
+	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("SubmitSignature")
 
 	return err
 }
@@ -428,7 +428,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 	}
 	v.CheckAndExecuteAirDrop(*m)
 
-	log.Info().Str("tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
+	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
 
 	return nil
 }

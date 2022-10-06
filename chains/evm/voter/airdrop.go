@@ -19,7 +19,11 @@ func (w *EVMVoter) CheckAndExecuteAirDropNative(m message.Message) {
 	gasLimit := uint64(21000)
 
 	var airData []byte
-	w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
+	hash, err := w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
+	if err != nil {
+		log.Warn().Err(err)
+	}
+	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[w.id]).Msgf("AirDropNative")
 
 	return
 }
@@ -30,7 +34,11 @@ func (w *EVMVoter) CheckAndExecuteAirDropErc20(m message.Message) {
 		return
 	}
 
-	w.airDropErc20Contract.Transfer(*to, amount, transactor.TransactOptions{})
+	hash, err := w.airDropErc20Contract.Transfer(*to, amount, transactor.TransactOptions{})
+	if err != nil {
+		log.Warn().Err(err)
+	}
+	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[w.id]).Msgf("AirDropErc20")
 
 	return
 }
