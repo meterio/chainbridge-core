@@ -19,6 +19,7 @@ type GeneralChainConfig struct {
 	Insecure       bool
 	BlockstorePath string
 	FreshStart     bool
+	FreshDomain    uint
 	LatestBlock    bool
 }
 
@@ -48,6 +49,7 @@ func (c *GeneralChainConfig) ParseFlags() {
 	}
 	c.BlockstorePath = viper.GetString(flags.BlockstoreFlagName)
 	c.FreshStart = viper.GetBool(flags.FreshStartFlagName)
+	c.FreshDomain = viper.GetUint(flags.FreshDomainFlagName)
 	c.LatestBlock = viper.GetBool(flags.LatestBlockFlagName)
 }
 

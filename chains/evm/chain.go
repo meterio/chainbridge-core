@@ -127,11 +127,19 @@ func NewEVMChain(listener EventListener, writer ProposalVoter, blockstore *store
 func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message) {
 	log.Info().Msg("Polling Blocks...")
 
+	freshStart := false
+	freshDomain := c.config.GeneralChainConfig.FreshDomain
+	if freshDomain != 0 && uint8(freshDomain) == c.DomainID() {
+		freshStart = true
+	} else {
+		freshStart = c.config.GeneralChainConfig.FreshStart
+	}
+
 	startBlock, err := c.blockstore.GetStartBlock(
 		*c.config.GeneralChainConfig.Id,
 		c.config.StartBlock,
 		c.config.GeneralChainConfig.LatestBlock,
-		c.config.GeneralChainConfig.FreshStart,
+		freshStart,
 	)
 	if err != nil {
 		sysErr <- fmt.Errorf("error %w on getting last stored block", err)

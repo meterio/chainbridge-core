@@ -11,6 +11,7 @@ var (
 	KeystoreFlagName    = "keystore"
 	BlockstoreFlagName  = "blockstore"
 	FreshStartFlagName  = "fresh"
+	FreshDomainFlagName  = "fresh-domain"
 	DryFlagName         = "dry"
 	LatestBlockFlagName = "latest"
 	TestKeyFlagName     = "testkey"
@@ -27,6 +28,9 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().Bool(FreshStartFlagName, false, "Disables loading from blockstore at start. Opts will still be used if specified. (default: false)")
 	_ = viper.BindPFlag(FreshStartFlagName, rootCMD.PersistentFlags().Lookup(FreshStartFlagName))
+
+	rootCMD.PersistentFlags().Uint(FreshDomainFlagName, 0, "Disables domain chain loading from blockstore at start. Opts will still be used if specified. (default: 0)")
+	_ = viper.BindPFlag(FreshDomainFlagName, rootCMD.PersistentFlags().Lookup(FreshDomainFlagName))
 
 	rootCMD.PersistentFlags().Bool(DryFlagName, false, "Dry run mode, do not submit transaction. Opts will still be used if specified. (default: false)")
 	_ = viper.BindPFlag(DryFlagName, rootCMD.PersistentFlags().Lookup(DryFlagName))
