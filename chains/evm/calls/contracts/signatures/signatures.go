@@ -300,3 +300,15 @@ func (c *SignaturesContract) RemoveAdmin(
 	}
 	return c.ExecuteTransaction("revokeRole", opts, role, admin)
 }
+
+func (c *SignaturesContract) RemoveRelayer(
+	relayer common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Revoke relayer %s", relayer.String())
+	role, err := c.RelayerRole()
+	if err != nil {
+		return nil, err
+	}
+	return c.ExecuteTransaction("revokeRole", opts, role, relayer)
+}

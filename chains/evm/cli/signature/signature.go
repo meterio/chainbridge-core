@@ -26,6 +26,7 @@ func init() {
 	SignatureCmd.AddCommand(adminInfoCmd)
 	SignatureCmd.AddCommand(addAdminCmd)
 	SignatureCmd.AddCommand(removeAdminCmd)
+	SignatureCmd.AddCommand(removeRelayerCmd)
 	SignatureCmd.AddCommand(relayerInfoCmd)
 	SignatureCmd.AddCommand(addRelayerCmd)
 	SignatureCmd.AddCommand(getSignatureThresholdCmd)
