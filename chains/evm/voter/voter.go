@@ -395,6 +395,7 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, error) {
 	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
+		log.Error().Err(err)
 		return false, err
 	}
 

@@ -155,6 +155,8 @@ func (r *Relayer) route(m *message.Message) {
 					}
 
 					return
+				} else {
+					log.Info().Msgf("proposal already passed, skip VoteProposals")
 				}
 			}
 			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
