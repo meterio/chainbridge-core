@@ -22,7 +22,7 @@ func (w *EVMVoter) CheckAndExecuteAirDropNative(m message.Message) {
 	hash, receipt, err := w.t.Transact(to, airData, transactor.TransactOptions{Value: amount, GasLimit: gasLimit})
 	if err != nil {
 		if receipt != nil {
-			log.Warn().Err(err)
+			log.Warn().Str("receipt tx hash", receipt.TxHash.String()).Err(err)
 		} else {
 			log.Error().Err(err)
 		}

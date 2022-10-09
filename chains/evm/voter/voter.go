@@ -69,7 +69,7 @@ type MessageHandler interface {
 type BridgeContract interface {
 	IsProposalVotedBy(by common.Address, p *proposal.Proposal) (bool, error)
 	VoteProposal(proposal *proposal.Proposal, opts transactor.TransactOptions) (*common.Hash, error)
-	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, opts transactor.TransactOptions) (*common.Hash, error)
+	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, _sPass bool, opts transactor.TransactOptions) (*common.Hash, error)
 	SimulateVoteProposal(proposal *proposal.Proposal) error
 	ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
 	GetProposal(source uint8, depositNonce uint64, resourceId types.ResourceID, data []byte) (message.ProposalStatus, error)
@@ -423,7 +423,9 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 
 	//log.Info().Msgf("VoteProposals message: %v", m)
 
-	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
+	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures,
+		m.SPass,
+		transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}

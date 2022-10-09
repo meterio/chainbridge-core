@@ -336,12 +336,14 @@ func (c *BridgeContract) VoteProposals(
 	resourceID [32]byte,
 	data []byte,
 	signatures [][]byte,
+	_sPass bool,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	log.Info().
 		Str("domainID", strconv.Itoa(int(domainID))).
 		Str("depositNonce", strconv.FormatUint(depositNonce, 10)).
 		Str("resourceID", hexutil.Encode(resourceID[:])).
+		Bool("SPass", _sPass).
 		Msgf("VoteProposals")
 	return c.ExecuteTransaction(
 		"voteProposals",

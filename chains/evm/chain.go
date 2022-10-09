@@ -67,9 +67,13 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 		return nil, err
 	}
 
+	domainId := config.GeneralChainConfig.Id
+	fromAddr := config.GeneralChainConfig.From
+
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
 	bridgeContract := bridge.NewBridgeContract(client, common.HexToAddress(config.Bridge), t)
+	bridgeContract.SetDomainId(*domainId)
 
 	var airDropErc20Contract erc20.ERC20Contract
 	if config.AirDropErc20Contract != util.ZeroAddress {
@@ -79,6 +83,7 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 		}
 
 		airDropErc20Contract = *erc20.NewERC20Contract(client, config.AirDropErc20Contract, t)
+		airDropErc20Contract.SetDomainId(*domainId)
 	}
 
 	var signatureContract signatures.SignaturesContract
@@ -89,10 +94,8 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 		}
 
 		signatureContract = *signatures.NewSignaturesContract(client, config.SignatureContract, t)
+		signatureContract.SetDomainId(*domainId)
 	}
-
-	domainId := config.GeneralChainConfig.Id
-	fromAddr := config.GeneralChainConfig.From
 
 	eventHandler := listener.NewETHEventHandler(*bridgeContract)
 	eventHandler.RegisterEventHandler(config.Erc20Handler, listener.Erc20EventHandler)

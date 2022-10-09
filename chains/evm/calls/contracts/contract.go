@@ -7,6 +7,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/flags"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,6 +24,8 @@ type Contract struct {
 	bytecode        []byte
 	client          calls.ContractCallerDispatcher
 	transactor.Transactor
+
+	domainId uint8
 }
 
 func NewContract(
@@ -77,9 +80,9 @@ func (c *Contract) ExecuteTransaction(method string, opts transactor.TransactOpt
 	h, r, err := c.Transact(&c.contractAddress, input, opts)
 	if err != nil {
 		if r != nil {
-			log.Warn().Str("contract", c.contractAddress.String()).Err(err).Msgf("error with receipt on executing %s", method)
+			log.Warn().Str("contract", c.contractAddress.String()).Str("chain", util.DomainIdToName[c.domainId]).Str("receipt tx hash", r.TxHash.String()).Err(err).Msgf("error with receipt on executing %s", method)
 		} else {
-			log.Error().Str("contract", c.contractAddress.String()).Err(err).Msgf("error on executing %s", method)
+			log.Error().Str("contract", c.contractAddress.String()).Str("chain", util.DomainIdToName[c.domainId]).Err(err).Msgf("error on executing %s", method)
 		}
 		return nil, err
 	}
@@ -139,4 +142,12 @@ func (c *Contract) DeployContract(params ...interface{}) (common.Address, error)
 		Str("deployedAddress", address.String()).
 		Msgf("successful contract deployment")
 	return address, nil
+}
+
+func (c *Contract) SetDomainId(id uint8) {
+	c.domainId = id
+}
+
+func (c *Contract) GetDomainId() uint8 {
+	return c.domainId
 }
