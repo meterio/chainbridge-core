@@ -69,7 +69,7 @@ type MessageHandler interface {
 type BridgeContract interface {
 	IsProposalVotedBy(by common.Address, p *proposal.Proposal) (bool, error)
 	VoteProposal(proposal *proposal.Proposal, opts transactor.TransactOptions) (*common.Hash, error)
-	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, _sPass bool, opts transactor.TransactOptions) (*common.Hash, error)
+	VoteProposals(domainID uint8, depositNonce uint64, resourceID [32]byte, data []byte, signatures [][]byte, opts transactor.TransactOptions) (*common.Hash, error)
 	SimulateVoteProposal(proposal *proposal.Proposal) error
 	ProposalStatus(p *proposal.Proposal) (message.ProposalStatus, error)
 	GetProposal(source uint8, depositNonce uint64, resourceId types.ResourceID, data []byte) (message.ProposalStatus, error)
@@ -192,14 +192,6 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	}
 
 	v.CheckAndExecuteAirDrop(*m)
-
-	// only ERC20 allow to airdrop
-	//if m.Type == message.FungibleTransfer {
-	//	err = v.saveMessage(*m)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
 
 	log.Info().Str("receipt tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Str("chain", util.DomainIdToName[v.id]).Msgf("Voted")
 	return nil
@@ -369,11 +361,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 		}
 	}
 
-	//err = v.saveMessage(*m)
-	//if err != nil {
-	//	log.Error().Err(err)
-	//	return err
-	//}
+	// ----------------- after checked, execute
 
 	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 	if err != nil {
@@ -392,46 +380,54 @@ func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
 	return data, nil
 }
 
-func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, error) {
+func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, uint8, error) {
 	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
 		log.Error().Err(err)
-		return false, err
+		return false, 0, err
 	}
 
 	if pps.Status == message.ProposalStatusInactive || pps.Status == message.ProposalStatusActive {
-		return true, nil
+		return true, pps.Status, nil
 	}
 
-	return false, nil
+	return false, pps.Status, nil
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
-	log.Debug().Msgf("voter before sleep %v", sleepDuration)
-	<-time.After(time.Second * time.Duration(sleepDuration.Int64()))
-	log.Debug().Msgf("voter after sleep %v", sleepDuration)
+	//statusShouldVoteProposals, status, err := v.ProposalStatusShouldVoteProposals(m)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if !statusShouldVoteProposals {
+	//	log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("Proposal status %v can not VoteProposals, skipped", message.StatusMap[status])
+	//	return nil
+	//}
 
-	statusShouldVoteProposals, err := v.ProposalStatusShouldVoteProposals(m)
+	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
+		log.Error().Err(err)
 		return err
 	}
 
-	if !statusShouldVoteProposals {
-		log.Info().Msgf("Proposal status can not VoteProposals, skipped")
+	if pps.Status != message.ProposalStatusInactive && pps.Status != message.ProposalStatusActive {
+		log.Warn().Str("chain", util.DomainIdToName[v.id]).Msgf("status %v can not VoteProposals, skipped", message.StatusMap[pps.Status])
 		return nil
 	}
 
-	//log.Info().Msgf("VoteProposals message: %v", m)
+	// ----------------- after checked, execute
+
+	log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals message: %v", m.String())
 
 	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures,
-		m.SPass,
 		transactor.TransactOptions{})
 	if err != nil {
 		return err
 	}
-	v.CheckAndExecuteAirDrop(*m)
-
 	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
+
+	v.CheckAndExecuteAirDrop(*m)
 
 	return nil
 }

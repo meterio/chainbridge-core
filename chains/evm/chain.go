@@ -41,7 +41,7 @@ type ProposalVoter interface {
 
 	GetSignatures(message *message.Message) ([][]byte, error)
 	VoteProposals(message *message.Message, data [][]byte, sleepDuration *big.Int) error
-	ProposalStatusShouldVoteProposals(m *message.Message) (bool, error)
+	//ProposalStatusShouldVoteProposals(m *message.Message) (bool, error)
 
 	ChainID() (*big.Int, error)
 	BridgeContractAddress() *common.Address
@@ -177,7 +177,8 @@ func (c *EVMChain) Submit(msg *message.Message, chainID *big.Int, bridgeContract
 }
 
 func (c *EVMChain) Get(msg *message.Message) (bool, error) {
-	return c.writer.ProposalStatusShouldVoteProposals(msg)
+	//return c.writer.ProposalStatusShouldVoteProposals(msg)
+	return false, nil
 }
 
 func (c *EVMChain) Submits(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {

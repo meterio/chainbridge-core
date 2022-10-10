@@ -62,7 +62,7 @@ func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts t
 		log.Error().Err(err)
 		return &common.Hash{}, nil, err
 	}
-	log.Info().Str("sent tx hash", h.String())
+	log.Info().Msgf("sent tx hash %v", h.String())
 
 	r, err := t.client.WaitAndReturnTxReceipt(h)
 	if err != nil {

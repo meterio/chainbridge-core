@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel/attribute"
 	"math/big"
-	"time"
 )
 
 type Metrics interface {
@@ -108,12 +107,12 @@ func (r *Relayer) route(m *message.Message) {
 			log.Error().Msgf(err.Error())
 		}
 
-		mm, err := sourceChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
+		mm, err := sourceChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{}) // fill Payload
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
 		}
 
-		err = destChain.Submits(mm, data, middleChain.DelayVoteProposals()) // voteProposals
+		err = destChain.Submits(mm, data, big.NewInt(0)) // voteProposals
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, mm))
 		}
@@ -131,33 +130,33 @@ func (r *Relayer) route(m *message.Message) {
 		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
-				// case 4
-				delayConfirmations := middleChain.DelayVoteProposals()
-				log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
-				<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
-				log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
+				//delayConfirmations := middleChain.DelayVoteProposals()
+				//log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
+				//<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
+				//log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
 
-				statusShouldVoteProposals, err := destChain.Get(m) // ProposalStatusShouldVoteProposals
+				// case 4
+				//statusShouldVoteProposals, err := destChain.Get(m) // ProposalStatusShouldVoteProposals
+				//if err != nil {
+				//	log.Error().Msgf(err.Error())
+				//	return
+				//}
+
+				//if statusShouldVoteProposals {
+				log.Debug().Msgf("route case 2 to 1, message %v", m)
+				data, err := middleChain.Read(m) // getSignatures
 				if err != nil {
 					log.Error().Msgf(err.Error())
-					return
+				}
+				err = destChain.Submits(m, data, big.NewInt(0)) // voteProposals
+				if err != nil {
+					log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 				}
 
-				if statusShouldVoteProposals {
-					log.Debug().Msgf("route case 2 to 1, message %v", m)
-					data, err := middleChain.Read(m) // getSignatures
-					if err != nil {
-						log.Error().Msgf(err.Error())
-					}
-					err = destChain.Submits(m, data, big.NewInt(0)) // voteProposals
-					if err != nil {
-						log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
-					}
-
-					return
-				} else {
-					log.Info().Msgf("proposal already passed, skip VoteProposals")
-				}
+				return
+				//} else {
+				//	log.Info().Msgf("proposal already passed, skip VoteProposals")
+				//}
 			}
 			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
 		}

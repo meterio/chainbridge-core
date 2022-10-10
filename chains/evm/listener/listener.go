@@ -279,6 +279,9 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Mess
 		m.ResourceId = pel.ResourceID
 		m.Data = pel.Data
 
+		//m.Payload skip
+		//m.Type skip
+
 		m.SPass = true
 
 		return &m
