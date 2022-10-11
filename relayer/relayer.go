@@ -113,7 +113,7 @@ func (r *Relayer) route(m *message.Message) {
 			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
 		}
 
-		err = destChain.Submits(mm, data, big.NewInt(0)) // voteProposals
+		err = destChain.Submits(mm, data, big.NewInt(1)) // voteProposals
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, mm))
 		}
@@ -149,7 +149,7 @@ func (r *Relayer) route(m *message.Message) {
 				if err != nil {
 					log.Error().Msgf(err.Error())
 				}
-				err = destChain.Submits(m, data, big.NewInt(0)) // voteProposals
+				err = destChain.Submits(m, data, big.NewInt(4)) // voteProposals
 				if err != nil {
 					log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 				}

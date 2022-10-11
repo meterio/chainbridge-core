@@ -342,7 +342,7 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 	if err != nil {
 		return common.Hash{}, err
 	}
-	log.Info().Str("chain", id.String()).Msgf("build tx hash %v", tx.Hash())
+	log.Info().Str("chain", id.String()).Str("signer", c.kp.Address()).Msgf("build tx hash %v", tx.Hash())
 
 	err = c.SendRawTransaction(ctx, rawTx)
 	if err != nil {

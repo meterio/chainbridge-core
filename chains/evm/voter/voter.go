@@ -394,7 +394,7 @@ func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, 
 	return false, pps.Status, nil
 }
 
-func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
+func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *big.Int) error {
 	//statusShouldVoteProposals, status, err := v.ProposalStatusShouldVoteProposals(m)
 	//if err != nil {
 	//	return err
@@ -418,7 +418,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, sleepD
 
 	// ----------------- after checked, execute
 
-	log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals message: %v", m.String())
+	log.Info().Str("chain", util.DomainIdToName[v.id]).Int("flag", flag.Sign()).Msgf("VoteProposals message: %v", m.String())
 
 	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures,
 		transactor.TransactOptions{})

@@ -101,7 +101,7 @@ func (itx *ITXTransactor) Transact(to *common.Address, data []byte, opts transac
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Info().Str("sent tx hash", h.String())
+	log.Info().Str("Impl", "itx").Msgf("sent tx hash %v", h.String())
 
 	itx.forwarder.UnsafeIncreaseNonce()
 	return &h, nil, nil
