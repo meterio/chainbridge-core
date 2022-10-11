@@ -293,7 +293,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	if len(signatures) >= int(threshold) {
-		log.Warn().Msgf("signatures length %v >= threshold %v, skip SubmitSignature", len(signatures), int(threshold))
+		log.Warn().Str("chain", util.DomainIdToName[v.id]).Msgf("signatures length %v >= threshold %v, skip SubmitSignature", len(signatures), int(threshold))
 		return errors.New(util.OVERTHRESHOLD)
 	}
 

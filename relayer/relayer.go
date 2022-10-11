@@ -108,6 +108,7 @@ func (r *Relayer) route(m *message.Message) {
 		}
 
 		mm, err := sourceChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{}) // fill Payload
+		mm.SPass = true
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
 		}
