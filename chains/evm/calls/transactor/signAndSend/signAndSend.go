@@ -32,53 +32,56 @@ func NewSignAndSendTransactor(txFabric calls.TxFabric, gasPriceClient calls.GasP
 }
 
 func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, *types.Receipt, error) {
-	defer t.client.UnlockNonce()
-	t.client.LockNonce()
-	n, err := t.client.UnsafeNonce()
+	h, err := t.transact(to, data, opts)
 	if err != nil {
 		return &common.Hash{}, nil, err
 	}
 
+	r, err := t.client.WaitAndReturnTxReceipt(*h)
+	if err != nil {
+		return &common.Hash{}, r, err
+	}
+
+	return h, r, nil
+}
+
+func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts transactor.TransactOptions) (*common.Hash, error) {
+	defer t.client.UnlockNonce()
+	t.client.LockNonce()
+	n, err := t.client.UnsafeNonce()
+	if err != nil {
+		return &common.Hash{}, err
+	}
+
 	err = transactor.MergeTransactionOptions(&opts, &DefaultTransactionOptions)
 	if err != nil {
-		return &common.Hash{}, nil, err
+		return &common.Hash{}, err
 	}
 
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
 		gp, err = t.gasPriceClient.GasPrice()
 		if err != nil {
-			return &common.Hash{}, nil, err
+			return &common.Hash{}, err
 		}
 	}
 
 	tx, err := t.TxFabric(n.Uint64(), to, opts.Value, opts.GasLimit, gp, data)
 	if err != nil {
-		return &common.Hash{}, nil, err
+		return &common.Hash{}, err
 	}
 
 	h, err := t.client.SignAndSendTransaction(context.TODO(), tx)
 	if err != nil {
 		log.Error().Err(err)
-		return &common.Hash{}, nil, err
+		return &common.Hash{}, err
 	}
 	log.Info().Str("Impl", "sas").Str("nonce", n.String()).Msgf("sent tx hash %v", h.String())
 
-	r, err := t.client.WaitAndReturnTxReceipt(h)
-	if err != nil {
-		if r != nil {
-			err = t.client.UnsafeIncreaseNonce()
-			if err != nil {
-				return &common.Hash{}, r, err
-			}
-		}
-		return &common.Hash{}, r, err
-	}
-
 	err = t.client.UnsafeIncreaseNonce()
 	if err != nil {
-		return &common.Hash{}, r, err
+		return &common.Hash{}, err
 	}
 
-	return &h, r, nil
+	return &h, nil
 }
