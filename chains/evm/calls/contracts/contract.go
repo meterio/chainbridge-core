@@ -151,3 +151,7 @@ func (c *Contract) SetDomainId(id uint8) {
 func (c *Contract) GetDomainId() uint8 {
 	return c.domainId
 }
+
+func (c *Contract) Client() calls.ContractCallerDispatcher {
+	return c.client
+}

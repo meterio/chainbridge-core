@@ -43,4 +43,5 @@ func init() {
 	AdminCmd.AddCommand(getDestChainIdCmd)
 	AdminCmd.AddCommand(setDomainCmd)
 	AdminCmd.AddCommand(getDomainCmd)
+	AdminCmd.AddCommand(processProposalCmd)
 }

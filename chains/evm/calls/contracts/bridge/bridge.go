@@ -468,6 +468,7 @@ func (c *BridgeContract) GetProposal(source uint8, depositNonce uint64, resource
 		Str("source", strconv.FormatUint(uint64(source), 10)).
 		Str("depositNonce", strconv.FormatUint(depositNonce, 10)).
 		Str("resourceID", hexutil.Encode(resourceId[:])).
+		Str("data", hexutil.Encode(data[:])).
 		Msg("Getting proposal")
 	res, err := c.CallContract("getProposal", source, depositNonce, resourceId, data)
 	if err != nil {
