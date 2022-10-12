@@ -15,6 +15,8 @@ import (
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -412,7 +414,12 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	}
 
 	if pps.Status != message.ProposalStatusInactive && pps.Status != message.ProposalStatusActive {
-		log.Warn().Str("chain", util.DomainIdToName[v.id]).Msgf("status %v can not VoteProposals, skipped", message.StatusMap[pps.Status])
+		log.Warn().Str("chain", util.DomainIdToName[v.id]).
+			Uint8("source", m.Source).
+			Uint8("destination", m.Destination).
+			Str("depositNonce", strconv.FormatUint(m.DepositNonce, 10)).
+			Str("resourceID", hexutil.Encode(m.ResourceId[:])).
+			Msgf("status %v can not VoteProposals, skipped", message.StatusMap[pps.Status])
 		return nil
 	}
 

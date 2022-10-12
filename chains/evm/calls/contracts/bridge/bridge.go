@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"bytes"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"math/big"
 	"strconv"
 	"strings"
@@ -318,7 +319,8 @@ func (c *BridgeContract) VoteProposal(
 	proposal *proposal.Proposal,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	log.Info().
+	domainId := c.Contract.GetDomainId()
+	log.Info().Str("chain", util.DomainIdToName[domainId]).
 		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).
 		Str("resourceID", hexutil.Encode(proposal.ResourceId[:])).
 		Str("handler", proposal.HandlerAddress.String()).
