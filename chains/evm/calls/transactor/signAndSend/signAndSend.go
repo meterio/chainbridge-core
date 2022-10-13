@@ -42,6 +42,8 @@ func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts t
 		return &common.Hash{}, r, err
 	}
 
+	t.client.UpdateNonce()
+
 	return h, r, nil
 }
 

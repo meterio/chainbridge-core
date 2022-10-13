@@ -251,6 +251,18 @@ func (c *EVMClient) WaitAndReturnTxReceipt(h common.Hash) (*types.Receipt, error
 	return nil, errors.New("tx did not appear")
 }
 
+func (c *EVMClient) UpdateNonce() {
+	c.LockNonce()
+	defer c.UnlockNonce()
+
+	nonce, err := c.PendingNonceAt(context.Background(), c.kp.CommonAddress())
+	if err != nil {
+		return
+	}
+
+	c.nonce.SetUint64(nonce)
+}
+
 func (c *EVMClient) GetTransactionByHash(h common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	return c.Client.TransactionByHash(context.Background(), h)
 }
@@ -342,11 +354,7 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 	if err != nil {
 		return common.Hash{}, err
 	}
-	nonce, err := c.UnsafeNonce()
-	if err != nil {
-		return common.Hash{}, err
-	}
-	log.Info().Str("chain", id.String()).Int("nonce", nonce.Sign()).Str("signer", c.kp.Address()).Msgf("build tx hash %v", tx.Hash())
+	log.Info().Str("chain", id.String()).Str("signer", c.kp.Address()).Msgf("build tx hash %v", tx.Hash())
 
 	err = c.SendRawTransaction(ctx, rawTx)
 	if err != nil {

@@ -31,6 +31,7 @@ type ClientDispatcher interface {
 	Sign(byteData []byte) ([]byte, error)
 	GetTransactionByHash(h common.Hash) (tx *types.Transaction, isPending bool, err error)
 	UnsafeNonce() (*big.Int, error)
+	UpdateNonce()
 	LockNonce()
 	UnlockNonce()
 	UnsafeIncreaseNonce() error

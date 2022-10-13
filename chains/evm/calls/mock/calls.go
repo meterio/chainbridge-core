@@ -250,6 +250,8 @@ func (m *MockClientDispatcher) UnsafeNonce() (*big.Int, error) {
 	return ret0, ret1
 }
 
+func (m *MockClientDispatcher) UpdateNonce() {}
+
 // UnsafeNonce indicates an expected call of UnsafeNonce.
 func (mr *MockClientDispatcherMockRecorder) UnsafeNonce() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -419,6 +421,8 @@ func (m *MockContractCallerDispatcher) UnsafeNonce() (*big.Int, error) {
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
+
+func (m *MockContractCallerDispatcher) UpdateNonce() {}
 
 // UnsafeNonce indicates an expected call of UnsafeNonce.
 func (mr *MockContractCallerDispatcherMockRecorder) UnsafeNonce() *gomock.Call {
