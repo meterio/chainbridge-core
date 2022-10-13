@@ -57,10 +57,19 @@ func UserAmountToWei(amount string, decimal *big.Int) (*big.Int, error) {
 	ethValueFloat := new(big.Float).Mul(amountFloat, big.NewFloat(math.Pow10(int(decimal.Int64()))))
 	ethValueFloatString := strings.Split(ethValueFloat.Text('f', int(decimal.Int64())), ".")
 
-	i, ok := big.NewInt(0).SetString(ethValueFloatString[0], 10)
+	ii, ok := big.NewInt(0).SetString(ethValueFloatString[0], 10)
 	if !ok {
 		return nil, errors.New(ethValueFloat.Text('f', int(decimal.Int64())))
 	}
+	_ = ii
+
+	flt, _, err := big.ParseFloat(ethValueFloat.String(), 10, 0, big.ToZero)
+	if err != nil {
+		return nil, err
+	}
+
+	var i = new(big.Int)
+	i, _ = flt.Int(i)
 
 	return i, nil
 }
