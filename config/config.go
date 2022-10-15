@@ -85,3 +85,5 @@ func setGlobalLevel(logLevel string) {
 }
 
 var AirDropErc20Amount = big.NewInt(5e17)
+
+const BlockDiff = int64(50)

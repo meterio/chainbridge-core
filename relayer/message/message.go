@@ -48,6 +48,9 @@ type Message struct {
 	Payload []interface{} // data associated with event sequence
 	Type    TransferType
 
+	Start *big.Int
+	Head  *big.Int
+
 	SPass bool
 }
 

@@ -5,6 +5,7 @@ package relayer
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
@@ -131,6 +132,10 @@ func (r *Relayer) route(m *message.Message) {
 		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
+				diff := new(big.Int).Sub(m.Head, m.Start).Int64()
+				if diff < config.BlockDiff {
+					return
+				}
 				//delayConfirmations := middleChain.DelayVoteProposals()
 				//log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
 				//<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))

@@ -184,7 +184,7 @@ func (l *EVMListener) ListenToEvents(
 					log.Warn().Err(err).Uint8("DomainID", domainID).Str("chain", util.DomainIdToName[domainID]).Msgf("Unable to filter logs")
 					continue
 				}
-				l.trackDeposit(logs, domainID, startBlock, ch)
+				l.trackDeposit(logs, domainID, startBlock, head, ch)
 
 				if startBlock.Int64()%20 == 0 {
 					// Logging process every 20 bocks to exclude spam
@@ -241,13 +241,16 @@ func (v *EVMListener) buildMultiQuery(contract common.Address, sigArray []string
 	return query
 }
 
-func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8, startBlock *big.Int, ch chan *message.Message) {
+func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8, startBlock, head *big.Int, ch chan *message.Message) {
 	for _, eventLog := range logs {
 		//log.Debug().Msgf("Deposit log found from sender: %s in block: %s with  destinationDomainId: %v, resourceID: %s, depositNonce: %v", eventLog.SenderAddress, startBlock.String(), eventLog.DestinationDomainID, eventLog.ResourceID, eventLog.DepositNonce)
 		m, err := l.eventHandler.HandleEvent(domainID, eventLog.DestinationDomainID, eventLog.DepositNonce, eventLog.ResourceID, eventLog.Data, eventLog.HandlerResponse)
 		if err != nil {
 			log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
 		} else {
+			m.Start = startBlock
+			m.Head = head
+
 			log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
 			ch <- m
 		}
