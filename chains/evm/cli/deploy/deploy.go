@@ -178,7 +178,7 @@ func DeployCLI(cmd *cobra.Command, args []string, txFabric calls.TxFabric, gasPr
 	log.Debug().Msgf("Relayers for deploy %+v", Relayers)
 	log.Debug().Msgf("all bool: %v", DeployAll)
 
-	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, ethClient)
+	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, ethClient, 0)
 
 	deployedContracts := make(map[string]string)
 	for _, v := range Deployments {

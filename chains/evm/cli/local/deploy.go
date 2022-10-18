@@ -58,7 +58,7 @@ func PrepareLocalEVME2EEnv(
 	relayerAddresses []common.Address,
 ) (EVME2EConfig, error) {
 	staticGasPricer := evmgaspricer.NewStaticGasPriceDeterminant(ethClient, nil)
-	t := signAndSend.NewSignAndSendTransactor(fabric, staticGasPricer, ethClient)
+	t := signAndSend.NewSignAndSendTransactor(fabric, staticGasPricer, ethClient, 0)
 
 	bridgeContract := bridge.NewBridgeContract(ethClient, common.Address{}, t)
 	bridgeContractAddress, err := bridgeContract.DeployContract(

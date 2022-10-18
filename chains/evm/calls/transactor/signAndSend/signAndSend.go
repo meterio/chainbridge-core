@@ -2,6 +2,7 @@ package signAndSend
 
 import (
 	"context"
+	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
@@ -21,13 +22,16 @@ type signAndSendTransactor struct {
 	TxFabric       calls.TxFabric
 	gasPriceClient calls.GasPricer
 	client         calls.ClientDispatcher
+
+	domainId uint8
 }
 
-func NewSignAndSendTransactor(txFabric calls.TxFabric, gasPriceClient calls.GasPricer, client calls.ClientDispatcher) transactor.Transactor {
+func NewSignAndSendTransactor(txFabric calls.TxFabric, gasPriceClient calls.GasPricer, client calls.ClientDispatcher, domainId uint8) transactor.Transactor {
 	return &signAndSendTransactor{
 		TxFabric:       txFabric,
 		gasPriceClient: gasPriceClient,
 		client:         client,
+		domainId:       domainId,
 	}
 }
 
@@ -66,6 +70,8 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 		if err != nil {
 			return &common.Hash{}, err
 		}
+
+		util.DomainIdMappingGasPrice[t.domainId] = gp[0]
 	}
 
 	tx, err := t.TxFabric(n.Uint64(), to, opts.Value, opts.GasLimit, gp, data)

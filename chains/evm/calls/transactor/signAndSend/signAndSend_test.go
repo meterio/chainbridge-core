@@ -63,6 +63,7 @@ func (s *TransactorTestSuite) TestTransactor_SignAndSend_Success() {
 		txFabric,
 		s.mockGasPricer,
 		s.mockContractCallerDispatcherClient,
+		0,
 	)
 	txHash, _, err := trans.Transact(
 		&common.Address{},

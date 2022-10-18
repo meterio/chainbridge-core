@@ -44,7 +44,7 @@ func InitializeTransactor(
 			client,
 			&evmgaspricer.GasPricerOpts{UpperLimitFeePerGas: gasPrice},
 		)
-		trans = signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
+		trans = signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client, 0)
 	}
 
 	return trans, nil

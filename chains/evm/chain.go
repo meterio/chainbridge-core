@@ -71,7 +71,7 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 	fromAddr := config.GeneralChainConfig.From
 
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
-	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client)
+	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client, *domainId)
 	bridgeContract := bridge.NewBridgeContract(client, common.HexToAddress(config.Bridge), t)
 	bridgeContract.SetDomainId(*domainId)
 

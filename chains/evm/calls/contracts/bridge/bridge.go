@@ -340,11 +340,25 @@ func (c *BridgeContract) VoteProposals(
 	signatures [][]byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	return c.ExecuteTransaction(
+	result, err := c.ExecuteTransaction(
 		"voteProposals",
 		opts,
 		domainID, depositNonce, resourceID, data, signatures,
 	)
+
+	if err != nil && err.Error() == "transaction underpriced" {
+		gasPriceBig := util.DomainIdMappingGasPrice[c.GetDomainId()]
+		gasPrice := gasPriceBig.Int64() * 12000 / 10000
+		opts.GasPrice = big.NewInt(gasPrice)
+
+		result, err = c.ExecuteTransaction(
+			"voteProposals",
+			opts,
+			domainID, depositNonce, resourceID, data, signatures,
+		)
+	}
+
+	return result, err
 }
 
 func (c *BridgeContract) CancelProposal(
