@@ -2,9 +2,12 @@ package signAndSend
 
 import (
 	"context"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"encoding/json"
+	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
+	"io"
 	"math/big"
+	"net/http"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
@@ -24,6 +27,22 @@ type signAndSendTransactor struct {
 	client         calls.ClientDispatcher
 
 	domainId uint8
+}
+
+const gasStationUrl = "https://gasstation-mainnet.matic.network/v2"
+
+type gasOption struct {
+	MaxPriorityFee float64 `json:"maxPriorityFee"`
+	MaxFee         float64 `json:"maxFee"`
+}
+
+type gasStation struct {
+	SafeLow          gasOption `json:"safeLow"`
+	Standard         gasOption `json:"standard"`
+	Fast             gasOption `json:"fast"`
+	EstimatedBaseFee float64   `json:"estimatedBaseFee"`
+	BlockTime        *big.Int  `json:"blockTime"`
+	BlockNumber      *big.Int  `json:"blockNumber"`
 }
 
 func NewSignAndSendTransactor(txFabric calls.TxFabric, gasPriceClient calls.GasPricer, client calls.ClientDispatcher, domainId uint8) transactor.Transactor {
@@ -46,8 +65,6 @@ func (t *signAndSendTransactor) Transact(to *common.Address, data []byte, opts t
 		return &common.Hash{}, r, err
 	}
 
-	t.client.UpdateNonce()
-
 	return h, r, nil
 }
 
@@ -66,12 +83,38 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
-		gp, err = t.gasPriceClient.GasPrice()
-		if err != nil {
-			return &common.Hash{}, err
-		}
+		if t.client.PolygonGasStation() {
+			resp, err := http.Get(gasStationUrl)
+			if err != nil {
+				return &common.Hash{}, err
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
 
-		util.DomainIdMappingGasPrice[t.domainId] = gp[0]
+			var res gasStation
+			err = json.Unmarshal(body, &res)
+			if err != nil {
+				return &common.Hash{}, err
+			}
+			decimal := new(big.Int).SetUint64(9)
+
+			maxPriorityFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxPriorityFee), decimal)
+			if err != nil {
+				return &common.Hash{}, err
+			}
+			maxFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxFee), decimal)
+			if err != nil {
+				return &common.Hash{}, err
+			}
+
+			gp = append(gp, maxPriorityFee)
+			gp = append(gp, maxFee)
+		} else {
+			gp, err = t.gasPriceClient.GasPrice()
+			if err != nil {
+				return &common.Hash{}, err
+			}
+		}
 	}
 
 	tx, err := t.TxFabric(n.Uint64(), to, opts.Value, opts.GasLimit, gp, data)
@@ -85,11 +128,6 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 		return &common.Hash{}, err
 	}
 	log.Info().Str("Impl", "sas").Str("nonce", n.String()).Msgf("sent tx hash %v", h.String())
-
-	err = t.client.UnsafeIncreaseNonce()
-	if err != nil {
-		return &common.Hash{}, err
-	}
 
 	return &h, nil
 }

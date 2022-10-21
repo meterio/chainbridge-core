@@ -208,6 +208,17 @@ func (mr *MockClientDispatcher) Sign(byteData []byte) ([]byte, error) {
 	return []byte{}, nil
 }
 
+func (m *MockClientDispatcher) PolygonGasStation() bool {
+	return false
+}
+
+func (mr *MockClientDispatcherMockRecorder) PolygonGasStation() bool {
+	return false
+}
+
+func (m *MockContractCallerDispatcher) PolygonGasStation() bool {
+	return false
+}
 
 // SignAndSendTransaction indicates an expected call of SignAndSendTransaction.
 func (mr *MockClientDispatcherMockRecorder) SignAndSendTransaction(ctx, tx interface{}) *gomock.Call {

@@ -38,9 +38,10 @@ type EVMClient struct {
 	nonce      *big.Int
 	nonceLock  sync.Mutex
 
-	moonbeamFinality bool
-	endpoint         string
-	replica          string
+	moonbeamFinality  bool
+	polygonGasStation bool
+	endpoint          string
+	replica           string
 }
 
 // DepositLogs struct holds event data with all necessary parameters and a handler response
@@ -129,6 +130,7 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 	c.endpoint = generalConfig.Endpoint
 	c.replica = generalConfig.Replica
 	c.moonbeamFinality = cfg.MoonbeamFinality
+	c.polygonGasStation = cfg.PolygonGasStation
 
 	return c, nil
 }
@@ -383,16 +385,16 @@ func (c *EVMClient) UnlockNonce() {
 func (c *EVMClient) UnsafeNonce() (*big.Int, error) {
 	var err error
 	for i := 0; i <= 10; i++ {
-		if c.nonce == nil {
-			nonce, err := c.PendingNonceAt(context.Background(), c.kp.CommonAddress())
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			c.nonce = big.NewInt(0).SetUint64(nonce)
-			return c.nonce, nil
+		//if c.nonce == nil {
+		nonce, err := c.PendingNonceAt(context.Background(), c.kp.CommonAddress())
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
 		}
+		c.nonce = big.NewInt(0).SetUint64(nonce)
 		return c.nonce, nil
+		//}
+		//return c.nonce, nil
 	}
 	return nil, err
 }
@@ -412,6 +414,10 @@ func (c *EVMClient) BaseFee() (*big.Int, error) {
 		return nil, err
 	}
 	return head.BaseFee, nil
+}
+
+func (c *EVMClient) PolygonGasStation() bool {
+	return c.polygonGasStation
 }
 
 func toBlockNumArg(number *big.Int) string {

@@ -28,6 +28,7 @@ type EVMConfig struct {
 	AirDropErc20Contract common.Address
 	AirDropErc20Amount   *big.Int
 	MoonbeamFinality     bool // blocks are needed to implicitly confirm the finality
+	PolygonGasStation    bool
 
 	SignatureContract common.Address
 	SignatureSubmit   bool
@@ -50,6 +51,7 @@ type RawEVMConfig struct {
 	AirDropErc20ContractOpt string `mapstructure:"airDropErc20Contract"`
 	AirDropErc20AmountOpt   int64  `mapstructure:"airDropErc20Amount"`
 	MoonbeamFinalityOpt     bool   `mapstructure:"moonbeamFinality"`
+	PolygonGasStationOpt    bool   `mapstructure:"polygonGasStation"`
 
 	SignatureContractOpt string `mapstructure:"signatureContract"`
 	SignatureSubmit      bool   `mapstructure:"signatureSubmit"`
@@ -107,6 +109,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		AirDropErc20Contract: common.Address{},
 		AirDropErc20Amount:   big.NewInt(0),
 		MoonbeamFinality:     false,
+		PolygonGasStation:    false,
 
 		SignatureContract: common.Address{},
 		SignatureSubmit:   c.SignatureSubmit,
@@ -150,6 +153,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.MoonbeamFinalityOpt {
 		config.MoonbeamFinality = c.MoonbeamFinalityOpt
+	}
+
+	if c.PolygonGasStationOpt {
+		config.PolygonGasStation = c.PolygonGasStationOpt
 	}
 
 	if c.SignatureContractOpt != "" {

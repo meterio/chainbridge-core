@@ -36,6 +36,7 @@ type ClientDispatcher interface {
 	UnlockNonce()
 	UnsafeIncreaseNonce() error
 	From() common.Address
+	PolygonGasStation() bool
 }
 
 type ContractCallerDispatcher interface {
