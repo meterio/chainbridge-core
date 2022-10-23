@@ -107,6 +107,8 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 				return &common.Hash{}, err
 			}
 
+			log.Info().Uint64("maxPriorityFee", maxPriorityFee.Uint64()).Uint64("maxFee", maxFee.Uint64()).Msg("Polygon GasStation")
+
 			gp = append(gp, maxPriorityFee)
 			gp = append(gp, maxFee)
 		} else {

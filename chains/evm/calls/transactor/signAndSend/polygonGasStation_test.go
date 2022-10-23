@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/rs/zerolog/log"
 	"io"
 	"math/big"
 	"net/http"
@@ -36,6 +37,8 @@ func Test_PolygonGasStation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	log.Info().Uint64("maxPriorityFee", maxPriorityFee.Uint64()).Uint64("maxFee", maxFee.Uint64()).Msg("Polygon GasStation")
 
 	gp = append(gp, maxPriorityFee)
 	gp = append(gp, maxFee)
