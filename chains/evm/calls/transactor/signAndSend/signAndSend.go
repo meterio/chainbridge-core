@@ -84,7 +84,7 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
 		if t.client.PolygonGasStation() {
-			gp = make([]*big.Int, 0)
+			gp = make([]*big.Int, 2)
 
 			resp, err := http.Get(gasStationUrl)
 			if err != nil {
@@ -111,8 +111,8 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 
 			log.Info().Uint64("maxPriorityFee", maxPriorityFee.Uint64()).Uint64("maxFee", maxFee.Uint64()).Msg("Polygon GasStation")
 
-			gp = append(gp, maxPriorityFee)
-			gp = append(gp, maxFee)
+			gp[0] = maxPriorityFee
+			gp[1] = maxFee
 		} else {
 			gp, err = t.gasPriceClient.GasPrice()
 			if err != nil {
