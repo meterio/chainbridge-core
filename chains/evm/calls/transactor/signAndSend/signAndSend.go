@@ -84,6 +84,8 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
 		if t.client.PolygonGasStation() {
+			gp = make([]*big.Int, 0)
+
 			resp, err := http.Get(gasStationUrl)
 			if err != nil {
 				return &common.Hash{}, err
