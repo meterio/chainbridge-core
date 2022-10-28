@@ -20,3 +20,5 @@ var SYNC_STATS = sync.Map{} // make(map[uint8]int64)
 
 var PathKeypair = make(map[string]crypto.Keypair)
 var DomainIdToName = make(map[uint8]string)
+
+var DomainIdMappingErrCounter = sync.Map{}

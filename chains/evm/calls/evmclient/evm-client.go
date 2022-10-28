@@ -453,6 +453,27 @@ func (c *EVMClient) EnsureHasBytecode(addr common.Address) error {
 	return nil
 }
 
+var DomainIdMappingEVMClient = make(map[uint8]*EVMClient)
+
 func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
 	return c.kp.PrivateKey()
+}
+
+func IncErrCounterLogic(domainId uint8, shouldInc bool) {
+	if !shouldInc {
+		util.DomainIdMappingErrCounter.Store(domainId, 0)
+		return
+	}
+
+	errCounter := 0
+	if value, ok := util.DomainIdMappingErrCounter.Load(domainId); ok {
+		errCounter = value.(int)
+		errCounter++
+		util.DomainIdMappingErrCounter.Store(domainId, errCounter)
+	}
+
+	if errCounter >= consts.DefaultEndpointTries {
+		evmClient := DomainIdMappingEVMClient[domainId]
+		evmClient.UpdateEndpoint()
+	}
 }

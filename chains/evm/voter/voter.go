@@ -199,90 +199,6 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	return nil
 }
 
-func (v *EVMVoter) GetSignature(chainId int64, domainId int64, depositNonce int64, resourceId []byte, data []byte) error {
-	chainId = 3
-	domainId = 5
-	depositNonce = 22
-	//privKey := v.client.PrivateKey()
-	resourceId, err := hex.DecodeString("00000000000000000000008a419ef4941355476cf04933e90bf3bbf2f7381400")
-	if err != nil {
-		return err
-	}
-	data, err = hex.DecodeString("00000000000000000000000000000000000000000000000000194cb424068e000000000000000000000000000000000000000000000000000000000000000014551b6e92f7443e63ec2d0c43471de9574e834169")
-	if err != nil {
-		return err
-	}
-	privKey, err := crypto.HexToECDSA("b6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659")
-	if err != nil {
-		return err
-	}
-	_ = privKey
-	//cid, _ := v.client.ChainID(context.TODO())
-	//log.Info().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), cid.Int64())
-
-	name := "PermitBridge"
-	version := "1.0"
-	verifyingContract := common.HexToAddress("4eBc9d4Dd56278a4a8480a21f27CBA345668bdc4") // v.bridgeContract.ContractAddress()
-
-	log.Info().Msgf("name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, chainId, verifyingContract.String())
-
-	log.Info().Msgf("domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId), hex.EncodeToString(data))
-
-	typedData := &apitypes.TypedData{
-		Types: apitypes.Types{
-			"EIP712Domain": {
-				apitypes.Type{Name: "name", Type: "string"},
-				apitypes.Type{Name: "version", Type: "string"},
-				apitypes.Type{Name: "chainId", Type: "uint256"},
-				apitypes.Type{Name: "verifyingContract", Type: "address"},
-			},
-			"PermitBridge": {
-				apitypes.Type{Name: "domainID", Type: "uint8"},
-				apitypes.Type{Name: "depositNonce", Type: "uint64"},
-				apitypes.Type{Name: "resourceID", Type: "bytes32"},
-				apitypes.Type{Name: "data", Type: "bytes"}}},
-		PrimaryType: "PermitBridge",
-		Domain: apitypes.TypedDataDomain{
-			Name:              name,
-			Version:           version,
-			ChainId:           math.NewHexOrDecimal256(chainId),
-			VerifyingContract: verifyingContract.String()},
-		Message: apitypes.TypedDataMessage{
-			"domainID":     math.NewHexOrDecimal256(domainId),
-			"depositNonce": math.NewHexOrDecimal256(depositNonce),
-			"resourceID":   resourceId[:],
-			"data":         data,
-		}}
-	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
-	if err != nil {
-		return err
-	}
-	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
-	if err != nil {
-		return err
-	}
-	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
-	sighash := crypto.Keccak256(rawData)
-
-	sig, err := v.client.Sign(sighash)
-
-	// Convert to Ethereum signature format with 'recovery id' v at the end.
-	//vSuffix := []byte{0x1c}
-	//copy(sig, sig[1:])
-	sig[64] = 0x1c
-	//return signature, nil
-	//sig = append(sig, vSuffix...)
-
-	//signer := beecrypto.NewDefaultSigner(privKey)
-	//sig, err := signer.Sign(sighash)
-	if err != nil {
-		return err
-	}
-
-	log.Info().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
-	return err
-}
-
 func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, destBridgeAddress *common.Address) error {
 	signatures, err := v.GetSignatures(m)
 	if err != nil {
@@ -365,21 +281,33 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 
 	// ----------------- after checked, execute
 
-	hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
-	if err != nil {
-		return err
+	for i := 0; i < consts.TxRetryLimit; i++ {
+		hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
+		if err != nil {
+			time.Sleep(consts.TxRetryInterval)
+			continue
+		} else {
+			log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("SubmitSignature")
+			break
+		}
 	}
-	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("SubmitSignature")
 
 	return err
 }
 
 func (v *EVMVoter) GetSignatures(m *message.Message) ([][]byte, error) {
-	data, err := v.signatureContract.GetSignatures(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data)
-	if err != nil {
-		return [][]byte{}, err
+	for i := 0; i < consts.TxRetryLimit; i++ {
+		data, err := v.signatureContract.GetSignatures(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data)
+
+		if err != nil {
+			time.Sleep(consts.TxRetryInterval)
+			continue
+		} else {
+			return data, nil
+		}
 	}
-	return data, nil
+
+	return nil, nil
 }
 
 func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, uint8, error) {
@@ -397,16 +325,6 @@ func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, 
 }
 
 func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *big.Int) error {
-	//statusShouldVoteProposals, status, err := v.ProposalStatusShouldVoteProposals(m)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if !statusShouldVoteProposals {
-	//	log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("Proposal status %v can not VoteProposals, skipped", message.StatusMap[status])
-	//	return nil
-	//}
-
 	pps, err := v.bridgeContract.GetProposal(m.Source, m.DepositNonce, m.ResourceId, m.Data)
 	if err != nil {
 		log.Error().Err(err)
@@ -427,12 +345,16 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 
 	log.Info().Str("chain", util.DomainIdToName[v.id]).Int("flag", flag.Sign()).Msgf("VoteProposals message: %v", m.String())
 
-	hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures,
-		transactor.TransactOptions{})
-	if err != nil {
-		return err
+	for i := 0; i < consts.TxRetryLimit; i++ {
+		hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
+		if err != nil {
+			time.Sleep(consts.TxRetryInterval)
+			continue
+		} else {
+			log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
+			break
+		}
 	}
-	log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
 
 	v.CheckAndExecuteAirDrop(*m)
 

@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"bytes"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"math/big"
 	"strconv"
@@ -319,17 +320,26 @@ func (c *BridgeContract) VoteProposal(
 	proposal *proposal.Proposal,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	domainId := c.Contract.GetDomainId()
+	domainId := c.Contract.DomainId()
 	log.Info().Str("chain", util.DomainIdToName[domainId]).
 		Str("depositNonce", strconv.FormatUint(proposal.DepositNonce, 10)).
 		Str("resourceID", hexutil.Encode(proposal.ResourceId[:])).
 		Str("handler", proposal.HandlerAddress.String()).
 		Msgf("Vote proposal")
-	return c.ExecuteTransaction(
+
+	res, err := c.ExecuteTransaction(
 		"voteProposal",
 		opts,
 		proposal.Source, proposal.DepositNonce, proposal.ResourceId, proposal.Data,
 	)
+
+	if err != nil {
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
+	}
+
+	return res, err
 }
 
 func (c *BridgeContract) VoteProposals(
@@ -340,11 +350,19 @@ func (c *BridgeContract) VoteProposals(
 	signatures [][]byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	return c.ExecuteTransaction(
+	res, err := c.ExecuteTransaction(
 		"voteProposals",
 		opts,
 		domainID, depositNonce, resourceID, data, signatures,
 	)
+
+	if err != nil {
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
+	}
+
+	return res, err
 }
 
 func (c *BridgeContract) CancelProposal(
@@ -417,7 +435,10 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 	log.Debug().Msg("Getting threshold")
 	res, err := c.CallContract("_relayerThreshold")
 	if err != nil {
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
 		return 0, err
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
 	}
 	out := *abi.ConvertType(res[0], new(uint8)).(*uint8)
 	return out, nil
@@ -472,10 +493,15 @@ func (c *BridgeContract) GetProposal(source uint8, depositNonce uint64, resource
 		Str("resourceID", hexutil.Encode(resourceId[:])).
 		Str("data", hexutil.Encode(data[:])).
 		Msg("Getting proposal")
+
 	res, err := c.CallContract("getProposal", source, depositNonce, resourceId, data)
 	if err != nil {
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
 		return message.ProposalStatus{}, err
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
 	}
+
 	out := *abi.ConvertType(res[0], new(message.ProposalStatus)).(*message.ProposalStatus)
 	return out, nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -56,11 +57,11 @@ func (c *SignaturesContract) SubmitSignature(
 	signature []byte,
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
-	domainId := c.Contract.GetDomainId()
+	domainId := c.Contract.DomainId()
 	log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, depositNonce %v, resourceID %#x, data %#x",
 		originDomainID, destinationDomainID, depositNonce, resourceID, data)
 
-	return c.ExecuteTransaction(
+	res, err := c.ExecuteTransaction(
 		"submitSignature",
 		opts,
 		originDomainID,
@@ -70,6 +71,14 @@ func (c *SignaturesContract) SubmitSignature(
 		data,
 		signature,
 	)
+
+	if err != nil {
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
+	}
+
+	return res, err
 }
 
 //GetSignatures
@@ -86,7 +95,9 @@ func (c *SignaturesContract) GetSignatures(
 ) ([][]byte, error) {
 	res, err := c.CallContract("getSignatures", domainID, destinationDomainID, depositNonce, resourceID, data)
 	if err != nil {
-		return nil, err
+		evmclient.IncErrCounterLogic(c.DomainId(), true)
+	} else {
+		evmclient.IncErrCounterLogic(c.DomainId(), false)
 	}
 
 	out := *abi.ConvertType(res[0], new([][]byte)).(*[][]byte)

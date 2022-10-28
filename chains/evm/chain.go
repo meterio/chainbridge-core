@@ -62,13 +62,15 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 		return nil, err
 	}
 
+	domainId := config.GeneralChainConfig.Id
+	fromAddr := config.GeneralChainConfig.From
+
 	client, err := evmclient.NewEVMClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	domainId := config.GeneralChainConfig.Id
-	fromAddr := config.GeneralChainConfig.From
+	evmclient.DomainIdMappingEVMClient[*domainId] = client
 
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client, *domainId)

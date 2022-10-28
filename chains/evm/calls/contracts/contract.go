@@ -148,7 +148,7 @@ func (c *Contract) SetDomainId(id uint8) {
 	c.domainId = id
 }
 
-func (c *Contract) GetDomainId() uint8 {
+func (c *Contract) DomainId() uint8 {
 	return c.domainId
 }
 

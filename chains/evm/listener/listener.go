@@ -66,6 +66,9 @@ func (l *EVMListener) ListenToEvents(
 ) <-chan *message.Message {
 	ch := make(chan *message.Message)
 	errCounter := 0
+	if value, ok := util.DomainIdMappingErrCounter.Load(domainID); ok {
+		errCounter = value.(int)
+	}
 
 	if l.signatureAddress != util.ZeroAddress {
 		go func() {
@@ -78,17 +81,14 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						errCounter += 1
-						log.Warn().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
+						evmclient.IncErrCounterLogic(domainID, true)
 
-						if errCounter >= consts.DefaultEndpointTries {
-							l.chainReader.UpdateEndpoint()
-						}
+						log.Warn().Err(err).Msgf("Unable to get latest block, relayChain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
 
 						time.Sleep(blockRetryInterval)
 						continue
 					}
-					errCounter = 0
+					evmclient.IncErrCounterLogic(domainID, false)
 
 					if startBlock == nil || startBlock.Sign() == 0 {
 						startBlock = big.NewInt(0).Sub(head, blockDelay)
@@ -110,10 +110,12 @@ func (l *EVMListener) ListenToEvents(
 					query2 := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
 					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
 					if err != nil {
-						errCounter += 1
+						evmclient.IncErrCounterLogic(domainID, true)
 						log.Warn().Err(err).Msgf("failed to Filter Logs, chain %v", util.DomainIdToName[l.id])
 						continue
 					}
+					evmclient.IncErrCounterLogic(domainID, false)
+
 					proposalPassedMessage := l.trackSignturePass(logch2)
 					if proposalPassedMessage != nil {
 						ch <- proposalPassedMessage
@@ -147,17 +149,14 @@ func (l *EVMListener) ListenToEvents(
 			default:
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
-					errCounter += 1
+					evmclient.IncErrCounterLogic(domainID, true)
 					log.Warn().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
-
-					if errCounter >= consts.DefaultEndpointTries {
-						l.chainReader.UpdateEndpoint()
-					}
 
 					time.Sleep(blockRetryInterval)
 					continue
+				} else {
+					evmclient.IncErrCounterLogic(domainID, false)
 				}
-				errCounter = 0
 
 				if startBlock == nil {
 					startBlock = head
@@ -178,12 +177,13 @@ func (l *EVMListener) ListenToEvents(
 
 				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
 				if err != nil {
-					errCounter += 1
+					evmclient.IncErrCounterLogic(domainID, true)
 					// Filtering logs error really can appear only on wrong configuration or temporary network problem
 					// so i do no see any reason to break execution
 					log.Warn().Err(err).Uint8("DomainID", domainID).Str("chain", util.DomainIdToName[domainID]).Msgf("Unable to filter logs")
 					continue
 				}
+				evmclient.IncErrCounterLogic(domainID, false)
 				l.trackDeposit(logs, domainID, startBlock, head, ch)
 
 				if startBlock.Int64()%20 == 0 {
