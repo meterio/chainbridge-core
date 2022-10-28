@@ -81,7 +81,7 @@ func (l *EVMListener) ListenToEvents(
 				default:
 					head, err := l.chainReader.LatestBlock()
 					if err != nil {
-						evmclient.IncErrCounterLogic(domainID, true)
+						errCounter = evmclient.IncErrCounterLogic(domainID, true)
 
 						log.Warn().Err(err).Msgf("Unable to get latest block, relayChain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
 
@@ -149,7 +149,7 @@ func (l *EVMListener) ListenToEvents(
 			default:
 				head, err := l.chainReader.LatestBlock()
 				if err != nil {
-					evmclient.IncErrCounterLogic(domainID, true)
+					errCounter = evmclient.IncErrCounterLogic(domainID, true)
 					log.Warn().Err(err).Msgf("Unable to get latest block, chain %v, err Counter %v", util.DomainIdToName[l.id], errCounter)
 
 					time.Sleep(blockRetryInterval)

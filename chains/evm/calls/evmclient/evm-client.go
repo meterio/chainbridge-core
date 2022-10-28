@@ -459,10 +459,10 @@ func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
 	return c.kp.PrivateKey()
 }
 
-func IncErrCounterLogic(domainId uint8, shouldInc bool) {
+func IncErrCounterLogic(domainId uint8, shouldInc bool) int {
 	if !shouldInc {
 		util.DomainIdMappingErrCounter.Store(domainId, 0)
-		return
+		return 0
 	}
 
 	errCounter := 0
@@ -473,7 +473,13 @@ func IncErrCounterLogic(domainId uint8, shouldInc bool) {
 	}
 
 	if errCounter >= consts.DefaultEndpointTries {
+		util.DomainIdMappingErrCounter.Store(domainId, 0)
+
 		evmClient := DomainIdMappingEVMClient[domainId]
 		evmClient.UpdateEndpoint()
+
+		return 0
 	}
+
+	return errCounter
 }
