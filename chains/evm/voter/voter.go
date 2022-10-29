@@ -284,6 +284,10 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		hash, err := v.signatureContract.SubmitSignature(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, sig, transactor.TransactOptions{})
 		if err != nil {
+			if strings.Contains(err.Error(), "transaction failed on chain") {
+				break
+			}
+
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
@@ -348,6 +352,10 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
 		if err != nil {
+			if strings.Contains(err.Error(), "transaction failed on chain") {
+				break
+			}
+
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
