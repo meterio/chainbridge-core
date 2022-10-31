@@ -472,13 +472,16 @@ func ErrCounterLogic(domainId uint8) {
 		fiveMinutesAgo := timeNow - 5*60
 		if newErrCounterArr[0] >= fiveMinutesAgo {
 			evmClient := DomainIdMappingEVMClient[domainId]
-			endpoint, err := evmClient.UpdateEndpoint()
-			if err != nil {
+			if endpoint, err := evmClient.UpdateEndpoint(); err != nil {
+				log.Warn().Str("chain", util.DomainIdToName[domainId]).Str("endpoint", endpoint).Err(err).Msg("Switch replica")
+			} else {
+				util.DomainIdMappingErrCounter[domainId] = [consts.DefaultEndpointTries]int64{}
 				log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("Switch endpoint to %v", endpoint)
 				return
 			}
-
-			//log.Warn().Str("chain", util.DomainIdToName[domainId]).Str("endpoint", endpoint).Msg("should config replica")
 		}
+	} else {
+		newErrCounterArr[consts.DefaultEndpointTries-1] = timeNow
+		util.DomainIdMappingErrCounter[domainId] = newErrCounterArr
 	}
 }
