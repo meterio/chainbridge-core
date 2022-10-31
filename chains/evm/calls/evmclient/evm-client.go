@@ -459,7 +459,11 @@ func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
 	return c.kp.PrivateKey()
 }
 
-func ErrCounterLogic(domainId uint8) {
+func ErrCounterLogic(errStr string, domainId uint8) {
+	if strings.Contains(errStr, consts.ErrNonceTooLow) || strings.Contains(errStr, consts.ErrTxUnderpriced) {
+		return
+	}
+
 	timeNow := time.Now().Unix()
 	var newErrCounterArr [consts.DefaultEndpointTries]int64
 

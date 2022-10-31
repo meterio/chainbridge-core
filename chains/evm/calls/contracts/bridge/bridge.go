@@ -334,7 +334,7 @@ func (c *BridgeContract) VoteProposal(
 	)
 
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 	}
 
 	return res, err
@@ -355,7 +355,7 @@ func (c *BridgeContract) VoteProposals(
 	)
 
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 	}
 
 	return res, err
@@ -431,7 +431,7 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 	log.Debug().Msg("Getting threshold")
 	res, err := c.CallContract("_relayerThreshold")
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 		return 0, err
 	}
 
@@ -491,7 +491,7 @@ func (c *BridgeContract) GetProposal(source uint8, depositNonce uint64, resource
 
 	res, err := c.CallContract("getProposal", source, depositNonce, resourceId, data)
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 		return message.ProposalStatus{}, err
 	}
 

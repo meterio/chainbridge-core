@@ -16,3 +16,10 @@ const TxRetryInterval = time.Second * 2
 
 // Maximum number of tx retries before exiting
 const TxRetryLimit = 5
+
+const (
+	TxFailedOnChain = "transaction failed on chain"
+
+	ErrNonceTooLow   = "nonce too low"
+	ErrTxUnderpriced = "replacement transaction underpriced"
+)

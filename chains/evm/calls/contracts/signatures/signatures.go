@@ -73,7 +73,7 @@ func (c *SignaturesContract) SubmitSignature(
 	)
 
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 	}
 
 	return res, err
@@ -93,7 +93,7 @@ func (c *SignaturesContract) GetSignatures(
 ) ([][]byte, error) {
 	res, err := c.CallContract("getSignatures", domainID, destinationDomainID, depositNonce, resourceID, data)
 	if err != nil {
-		evmclient.ErrCounterLogic(c.DomainId())
+		evmclient.ErrCounterLogic(err.Error(), c.DomainId())
 	}
 
 	out := *abi.ConvertType(res[0], new([][]byte)).(*[][]byte)
