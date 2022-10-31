@@ -135,9 +135,9 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 	return c, nil
 }
 
-func (c *EVMClient) UpdateEndpoint() error {
+func (c *EVMClient) UpdateEndpoint() (string, error) {
 	if c.replica == "" {
-		return errors.New("replica no configuration")
+		return c.endpoint, errors.New("replica no configuration")
 	}
 
 	endpoint := c.replica
@@ -145,7 +145,7 @@ func (c *EVMClient) UpdateEndpoint() error {
 
 	rpcClient, err := rpc.DialContext(context.TODO(), endpoint)
 	if err != nil {
-		return err
+		return replica, err
 	}
 	c.Client = ethclient.NewClient(rpcClient)
 	c.rpClient = rpcClient
@@ -154,7 +154,7 @@ func (c *EVMClient) UpdateEndpoint() error {
 	c.endpoint = endpoint
 	c.replica = replica
 
-	return err
+	return endpoint, err
 }
 
 func (c *EVMClient) SubscribePendingTransactions(ctx context.Context, ch chan<- common.Hash) (*rpc.ClientSubscription, error) {
@@ -459,27 +459,26 @@ func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
 	return c.kp.PrivateKey()
 }
 
-func IncErrCounterLogic(domainId uint8, shouldInc bool) int {
-	if !shouldInc {
-		util.DomainIdMappingErrCounter.Store(domainId, 0)
-		return 0
+func ErrCounterLogic(domainId uint8) {
+	timeNow := time.Now().Unix()
+	var newErrCounterArr [consts.DefaultEndpointTries]int64
+
+	if errCounterArr, ok := util.DomainIdMappingErrCounter[domainId]; ok {
+		errCounterSlice := append(errCounterArr[1:], timeNow)
+		copy(newErrCounterArr[:], errCounterSlice[:])
+
+		util.DomainIdMappingErrCounter[domainId] = newErrCounterArr
+
+		fiveMinutesAgo := timeNow - 5*60
+		if newErrCounterArr[0] >= fiveMinutesAgo {
+			evmClient := DomainIdMappingEVMClient[domainId]
+			endpoint, err := evmClient.UpdateEndpoint()
+			if err != nil {
+				log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("Switch endpoint to %v", endpoint)
+				return
+			}
+
+			//log.Warn().Str("chain", util.DomainIdToName[domainId]).Str("endpoint", endpoint).Msg("should config replica")
+		}
 	}
-
-	errCounter := 0
-	if value, ok := util.DomainIdMappingErrCounter.Load(domainId); ok {
-		errCounter = value.(int)
-		errCounter++
-		util.DomainIdMappingErrCounter.Store(domainId, errCounter)
-	}
-
-	if errCounter >= consts.DefaultEndpointTries {
-		util.DomainIdMappingErrCounter.Store(domainId, 0)
-
-		evmClient := DomainIdMappingEVMClient[domainId]
-		evmClient.UpdateEndpoint()
-
-		return 0
-	}
-
-	return errCounter
 }

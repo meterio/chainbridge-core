@@ -334,9 +334,7 @@ func (c *BridgeContract) VoteProposal(
 	)
 
 	if err != nil {
-		evmclient.IncErrCounterLogic(c.DomainId(), true)
-	} else {
-		evmclient.IncErrCounterLogic(c.DomainId(), false)
+		evmclient.ErrCounterLogic(c.DomainId())
 	}
 
 	return res, err
@@ -357,9 +355,7 @@ func (c *BridgeContract) VoteProposals(
 	)
 
 	if err != nil {
-		evmclient.IncErrCounterLogic(c.DomainId(), true)
-	} else {
-		evmclient.IncErrCounterLogic(c.DomainId(), false)
+		evmclient.ErrCounterLogic(c.DomainId())
 	}
 
 	return res, err
@@ -435,11 +431,10 @@ func (c *BridgeContract) GetThreshold() (uint8, error) {
 	log.Debug().Msg("Getting threshold")
 	res, err := c.CallContract("_relayerThreshold")
 	if err != nil {
-		evmclient.IncErrCounterLogic(c.DomainId(), true)
+		evmclient.ErrCounterLogic(c.DomainId())
 		return 0, err
-	} else {
-		evmclient.IncErrCounterLogic(c.DomainId(), false)
 	}
+
 	out := *abi.ConvertType(res[0], new(uint8)).(*uint8)
 	return out, nil
 }
@@ -496,10 +491,8 @@ func (c *BridgeContract) GetProposal(source uint8, depositNonce uint64, resource
 
 	res, err := c.CallContract("getProposal", source, depositNonce, resourceId, data)
 	if err != nil {
-		evmclient.IncErrCounterLogic(c.DomainId(), true)
+		evmclient.ErrCounterLogic(c.DomainId())
 		return message.ProposalStatus{}, err
-	} else {
-		evmclient.IncErrCounterLogic(c.DomainId(), false)
 	}
 
 	out := *abi.ConvertType(res[0], new(message.ProposalStatus)).(*message.ProposalStatus)

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/crypto"
 	"github.com/spf13/cobra"
 	"sync"
@@ -21,4 +22,4 @@ var SYNC_STATS = sync.Map{} // make(map[uint8]int64)
 var PathKeypair = make(map[string]crypto.Keypair)
 var DomainIdToName = make(map[uint8]string)
 
-var DomainIdMappingErrCounter = sync.Map{}
+var DomainIdMappingErrCounter = make(map[uint8][consts.DefaultEndpointTries]int64)
