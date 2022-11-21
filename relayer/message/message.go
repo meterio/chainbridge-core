@@ -80,8 +80,23 @@ func (m *Message) extractAmountTransferred() (float64, error) {
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("Message(%v->%v:%v) resourceId:%#x, type:%v, sPass:%v, data:%#x",
-		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.SPass, m.Data)
+	if m.SPass {
+		return fmt.Sprintf("SignaturePass(%v->%v:%v) resourceId:%#x",
+			m.Source, m.Destination, m.DepositNonce, m.ResourceId)
+	} else {
+		return fmt.Sprintf("%v(%v->%v:%v) resourceId:%#x",
+			m.Type, m.Source, m.Destination, m.DepositNonce, m.ResourceId)
+	}
+}
+
+func (m *Message) ID() string {
+	if m.SPass {
+		return fmt.Sprintf("SignaturePass(%v->%v:%v)",
+			m.Source, m.Destination, m.DepositNonce)
+	} else {
+		return fmt.Sprintf("%v(%v->%v:%v)",
+			m.Type, m.Source, m.Destination, m.DepositNonce)
+	}
 }
 
 func (p *ProposalStatus) String() string {

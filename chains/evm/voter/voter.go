@@ -7,16 +7,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
 	"github.com/ChainSafe/chainbridge-core/config/chain"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
 	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -177,7 +175,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		log.Error().Err(err)
 		return err
 	}
-
+	chainName := util.DomainIdToName[v.id]
 	if !shouldVote {
 		log.Info().Msgf("Proposal %+v already satisfies threshold", prop)
 		return nil
@@ -187,7 +185,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		log.Error().Err(err)
 		return err
 	}
-
+	log.Debug().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v", chainName)
 	hash, err := v.bridgeContract.VoteProposal(prop, transactor.TransactOptions{})
 	if err != nil {
 		return fmt.Errorf("voting failed. Err: %w", err)
@@ -195,7 +193,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 
 	v.CheckAndExecuteAirDrop(*m)
 
-	log.Info().Str("receipt tx hash", hash.String()).Uint64("nonce", prop.DepositNonce).Str("chain", util.DomainIdToName[v.id]).Msgf("Voted")
+	log.Info().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v succeeded %v", chainName, hash.String())
 	return nil
 }
 
@@ -210,15 +208,18 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 		return err
 	}
 
+	relayChainName := util.DomainIdToName[v.id]
+	log.Debug().Str("msg", m.ID()).Msgf("submit signature to relay chain %v", relayChainName)
+
 	if len(signatures) >= int(threshold) {
-		log.Warn().Str("chain", util.DomainIdToName[v.id]).Msgf("signatures length %v >= threshold %v, skip SubmitSignature", len(signatures), int(threshold))
+		log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("signatures length %v >= threshold %v, skip SubmitSignature", len(signatures), int(threshold))
 		return errors.New(util.OVERTHRESHOLD)
 	}
 
-	privKey := v.client.PrivateKey()
+	// privKey := v.client.PrivateKey()
 
 	//chainId, _ := v.client.ChainID(context.TODO())
-	log.Debug().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), destChainId)
+	// log.Debug().Msgf("signer address %v, chainID: %v", crypto.PubkeyToAddress(privKey.PublicKey).Hex(), destChainId)
 
 	name := "PermitBridge"
 	version := "1.0"
@@ -227,9 +228,9 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	resourceId := m.ResourceId
 	data := m.Data
 
-	log.Debug().Msgf("[Domain] name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, destChainId, destBridgeAddress.String())
+	// log.Debug().Msgf("[Domain] name: %v, version: %v, chainId: %v, verifyingContract: %v", name, version, destChainId, destBridgeAddress.String())
 
-	log.Debug().Msgf("[Message] domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
+	// log.Debug().Msgf("[Message] domainID: %v, depositNonce: %v, resourceID: %v, data: %v", domainId, depositNonce, hex.EncodeToString(resourceId[:]), hex.EncodeToString(data))
 
 	typedData := &apitypes.TypedData{
 		Types: apitypes.Types{
@@ -267,11 +268,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
 	sighash := crypto.Keccak256(rawData)
 
-	log.Debug().Msgf("rawData: %x sighash: %x", rawData, sighash)
+	// log.Debug().Msgf("rawData: %x sighash: %x", rawData, sighash)
 	sig, err := v.client.Sign(sighash)
 	sig[64] += 27
 
-	log.Debug().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
+	// log.Debug().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
 
 	for _, signature := range signatures {
 		if bytes.Equal(signature, sig) {
@@ -288,10 +289,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 				break
 			}
 
+			log.Warn().Str("msg", m.ID()).Err(err).Msgf("submit sig to relay chain %v failed %v time(s), try again later ...", relayChainName, i+1)
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("SubmitSignature")
+			log.Info().Str("msg", m.ID()).Msgf("submit sig to relay chain %v succeeded with %v", relayChainName, hash.String())
 			break
 		}
 	}
@@ -336,18 +338,14 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	}
 
 	if pps.Status != message.ProposalStatusInactive && pps.Status != message.ProposalStatusActive {
-		log.Warn().Str("chain", util.DomainIdToName[v.id]).
-			Uint8("source", m.Source).
-			Uint8("destination", m.Destination).
-			Str("depositNonce", strconv.FormatUint(m.DepositNonce, 10)).
-			Str("resourceID", hexutil.Encode(m.ResourceId[:])).
-			Msgf("status %v can not VoteProposals, skipped", message.StatusMap[pps.Status])
+		log.Info().Str("msg", m.ID()).Msgf("proposal status %v, skipped ...", message.StatusMap[pps.Status])
 		return nil
 	}
 
 	// ----------------- after checked, execute
 
-	log.Info().Str("chain", util.DomainIdToName[v.id]).Int("flag", flag.Sign()).Msgf("VoteProposals message: %v", m.String())
+	chainName := util.DomainIdToName[v.id]
+	log.Debug().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
 
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
@@ -356,10 +354,11 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 				break
 			}
 
+			log.Warn().Str("msg", m.ID()).Err(err).Msgf("submit all sigs to dest chain %v failed %v time(s), try again later ...", chainName, i+1)
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("receipt tx hash", hash.String()).Str("chain", util.DomainIdToName[v.id]).Msgf("VoteProposals")
+			log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v succeeded with %s", chainName, hash)
 			break
 		}
 	}
