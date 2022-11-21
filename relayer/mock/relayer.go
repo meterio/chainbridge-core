@@ -122,7 +122,7 @@ func (m *MockRelayedChain) Submit(message *message.Message, int2 *big.Int, addre
 }
 
 // Write mocks base method.
-func (m *MockRelayedChain) Submits(message *message.Message, data [][]byte) error {
+func (m *MockRelayedChain) SubmitAggregatedSignatures(message *message.Message, data [][]byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Submit", message)
 	ret0, _ := ret[0].(error)

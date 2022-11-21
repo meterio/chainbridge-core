@@ -3,6 +3,7 @@ package evmclient
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -80,8 +81,8 @@ type SignaturePass struct {
 }
 
 func (s SignaturePass) String() string {
-	return fmt.Sprintf("OriginDomainID %v, DestinationDomainID %v, DepositNonce %v, ResourceID %x, Data %x, Signature %x",
-		s.OriginDomainID, s.DestinationDomainID, s.DepositNonce, s.ResourceID, s.Data, s.Signature)
+	return fmt.Sprintf("SignaturePass(%v->%v:%v) resourceID:%x, data:%x, signature %x",
+		s.OriginDomainID, s.DestinationDomainID, s.DepositNonce, hex.EncodeToString(s.ResourceID[:]), hex.EncodeToString(s.Data), hex.EncodeToString(s.Signature))
 }
 
 type CommonTransaction interface {

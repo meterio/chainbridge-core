@@ -5,6 +5,8 @@ package relayer
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/types"
@@ -12,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel/attribute"
-	"math/big"
 )
 
 type Metrics interface {
@@ -35,7 +36,7 @@ type RelayedChain interface {
 	Get(message *message.Message) (bool, error)
 	Write(message *message.Message) error
 	Submit(message *message.Message, chainID *big.Int, address *common.Address) error
-	Submits(message *message.Message, data [][]byte, sleepDuration *big.Int) error
+	SubmitAggregatedSignatures(message *message.Message, data [][]byte, sleepDuration *big.Int) error
 	SignatureSubmit() bool
 	DelayVoteProposals() *big.Int
 }
@@ -80,7 +81,7 @@ func (r *Relayer) route(m *message.Message) {
 
 	sourceChain, ok := r.registry[m.Source]
 	if !ok {
-		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+		log.Error().Msgf("no resolver for sourceID %v to send message registered", m.Destination)
 		return
 	}
 	middleId := sourceChain.RelayId() // if zero?, use old logic.
@@ -89,7 +90,7 @@ func (r *Relayer) route(m *message.Message) {
 	if middleId != 0 {
 		middleChain, ok = r.registry[middleId]
 		if !ok {
-			log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
+			log.Error().Msgf("no resolver for middleID %v to send message registered", m.Destination)
 			return
 		}
 	}
@@ -100,9 +101,10 @@ func (r *Relayer) route(m *message.Message) {
 		return
 	}
 
-	// case 1
+	// scenario #1: SignaturePass event received on relay chain
+	// submit merged signature to destination chain directly
 	if m.SPass && middleChain.SignatureSubmit() {
-		log.Debug().Msgf("route case 1, signaturePass, message %v", m)
+		log.Debug().Msgf("Recv: SignaturePass %v, submit aggregated signatures to dest chain %v", m, m.Destination)
 		data, err := middleChain.Read(m) // getSignatures
 		if err != nil {
 			log.Error().Msgf(err.Error())
@@ -114,17 +116,18 @@ func (r *Relayer) route(m *message.Message) {
 			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
 		}
 
-		err = destChain.Submits(mm, data, big.NewInt(1)) // voteProposals
+		err = destChain.SubmitAggregatedSignatures(mm, data, big.NewInt(1)) // voteProposals
 		if err != nil {
-			log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, mm))
+			log.Error().Err(fmt.Errorf("error SubmitAggregatedSignatures %w processing mesage %v", err, mm))
 		}
 
 		return
 	}
 
-	// case 2
+	// scenario #2: Deposit event received on source chain, and relay chain is enabled
+	// submit signature to relay chain
 	if middleChain != nil {
-		log.Debug().Msgf("route case 2, deposit with relayChain, message %v", m)
+		log.Debug().Msgf("Recv: Deposit %v w/ relay chain enabled, submit signature to relay chain", m)
 		destChainID, err := destChain.ChainID()
 		if err != nil {
 			log.Error().Err(fmt.Errorf("error Submit %w get destChainID %v", err, m))
@@ -136,41 +139,28 @@ func (r *Relayer) route(m *message.Message) {
 				if diff < config.BlockDiff {
 					return
 				}
-				//delayConfirmations := middleChain.DelayVoteProposals()
-				//log.Debug().Msgf("middleChain before sleep %v", delayConfirmations)
-				//<-time.After(time.Second * time.Duration(delayConfirmations.Int64()))
-				//log.Debug().Msgf("middleChain after sleep %v", delayConfirmations)
 
-				// case 4
-				//statusShouldVoteProposals, err := destChain.Get(m) // ProposalStatusShouldVoteProposals
-				//if err != nil {
-				//	log.Error().Msgf(err.Error())
-				//	return
-				//}
-
-				//if statusShouldVoteProposals {
-				log.Debug().Msgf("route case 2 to 1, message %v", m)
+				log.Debug().Msgf("signature count on relay chain is over threshold, submit aggregated signatures to dest chain directly")
 				data, err := middleChain.Read(m) // getSignatures
 				if err != nil {
 					log.Error().Msgf(err.Error())
 				}
-				err = destChain.Submits(m, data, big.NewInt(4)) // voteProposals
+				err = destChain.SubmitAggregatedSignatures(m, data, big.NewInt(4)) // voteProposals
 				if err != nil {
 					log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
 				}
 
 				return
-				//} else {
-				//	log.Info().Msgf("proposal already passed, skip VoteProposals")
-				//}
+
 			}
-			log.Error().Err(fmt.Errorf("error Submit %w processing mesage %v", err, m))
+			log.Error().Err(fmt.Errorf("error Submit %w processing Deposit %v", err, m))
 		}
 		return
 	}
 
-	// case 3
-	log.Debug().Msgf("route case 3, deposit without relayChain, message %v", m)
+	// scenario #3: Deposit event received and middle chain is not enabled
+	// submit signature to dest chain directly
+	log.Debug().Msgf("Recv: Deposit %v without relay chain enabled, submit signature to dest chain", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
@@ -184,7 +174,6 @@ func (r *Relayer) route(m *message.Message) {
 		log.Error().Err(err).Msgf("writing message %+v", m)
 		return
 	}
-	return
 }
 
 func (r *Relayer) addRelayedChain(c RelayedChain) {

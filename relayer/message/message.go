@@ -80,7 +80,7 @@ func (m *Message) extractAmountTransferred() (float64, error) {
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("Source %v, Destination %v, DepositNonce %v, ResourceId %#x, Type %v, SPass %v, Data %#x",
+	return fmt.Sprintf("Message(%v->%v:%v) resourceId:%#x, type:%v, sPass:%v, data:%#x",
 		m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Type, m.SPass, m.Data)
 }
 

@@ -183,7 +183,7 @@ func (c *EVMChain) Get(msg *message.Message) (bool, error) {
 	return false, nil
 }
 
-func (c *EVMChain) Submits(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
+func (c *EVMChain) SubmitAggregatedSignatures(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
 	return c.writer.VoteProposals(msg, signatures, sleepDuration) // VoteProposals
 }
 

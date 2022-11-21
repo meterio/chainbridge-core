@@ -66,73 +66,7 @@ func (l *EVMListener) ListenToEvents(
 ) <-chan *message.Message {
 	ch := make(chan *message.Message)
 
-	if l.signatureAddress != util.ZeroAddress {
-		go func() {
-			startBlock = big.NewInt(0)
-			log.Info().Msgf("ListenToEvents, relayChain %v", util.DomainIdToName[l.id])
-			for {
-				select {
-				case <-stopChn:
-					return
-				default:
-					head, err := l.chainReader.LatestBlock()
-					if err != nil {
-						evmclient.ErrCounterLogic(err.Error(), domainID)
-
-						log.Warn().Err(err).Msgf("Unable to get latest block, relayChain %v", util.DomainIdToName[l.id])
-
-						time.Sleep(blockRetryInterval)
-						continue
-					}
-
-					if startBlock == nil || startBlock.Sign() == 0 {
-						startBlock = big.NewInt(0).Sub(head, blockDelay)
-					}
-
-					if l.openTelemetryInst != nil {
-						l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
-						l.openTelemetryInst.TrackSyncBlock(l.id, startBlock.Int64(), l.fromAddr)
-					}
-
-					log.Debug().Msgf("trackSignturePass head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
-
-					// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-					if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
-						time.Sleep(blockRetryInterval)
-						continue
-					}
-
-					query2 := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
-					logch2, err := l.chainReader.FilterLogs(context.TODO(), query2)
-					if err != nil {
-						evmclient.ErrCounterLogic(err.Error(), domainID)
-						log.Warn().Err(err).Msgf("failed to Filter Logs, chain %v", util.DomainIdToName[l.id])
-						continue
-					}
-
-					proposalPassedMessage := l.trackSignturePass(logch2)
-					if proposalPassedMessage != nil {
-						ch <- proposalPassedMessage
-					}
-
-					if startBlock.Int64()%20 == 0 {
-						// Logging process every 20 bocks to exclude spam
-						log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
-					}
-					// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
-					//Write to block store. Not a critical operation, no need to retry
-					//err = blockstore.StoreBlock(startBlock, domainID)
-					//if err != nil {
-					//	log.Error().Str("block", startBlock.String()).Err(err).Msg("Failed to write latest block to blockstore")
-					//}
-					// Goto next block
-					startBlock.Add(startBlock, big.NewInt(1))
-				}
-			}
-		}()
-		return ch
-	}
-
+	middleChainInited := l.signatureAddress != util.ZeroAddress
 	go func() {
 		log.Info().Msgf("ListenToEvents, startBlock %v, Chain %v", startBlock, util.DomainIdToName[l.id])
 
@@ -177,9 +111,23 @@ func (l *EVMListener) ListenToEvents(
 				}
 				l.trackDeposit(logs, domainID, startBlock, head, ch)
 
+				hint := "Queried block for deposit events"
+				if middleChainInited {
+					hint = "Queried block for deposit and signaturePass events"
+					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
+					spassLogs, err := l.chainReader.FilterLogs(context.TODO(), query)
+					if err != nil {
+						evmclient.ErrCounterLogic(err.Error(), domainID)
+						log.Warn().Err(err).Msgf("Failed to filter SignaturePass log, chain %v", util.DomainIdToName[l.id])
+						continue
+					}
+
+					l.trackSignturePass(spassLogs, ch)
+				}
+
 				if startBlock.Int64()%20 == 0 {
 					// Logging process every 20 bocks to exclude spam
-					log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg("Queried block for deposit events")
+					log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg(hint)
 				}
 				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
 				//Write to block store. Not a critical operation, no need to retry
@@ -249,38 +197,37 @@ func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8
 	//return ch
 }
 
-func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log) *message.Message {
+func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log, startBlock *big.Int, ch chan *message.Message) {
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
 		if err != nil {
-			log.Error().Msgf("strings.NewReader consts.SignaturesABI err %v", err)
+			log.Error().Msgf("Failed to get ABI for SignaturesPass: %v", err)
 			continue
 		}
 
-		pel, err := unpackSignturePassLog(abiIst, vLog.Data, vLog.Topics)
+		sigPass, err := unpackSignturePassLog(abiIst, vLog.Data, vLog.Topics)
 		if err != nil {
-			log.Error().Msgf("failed unpackSignturePassLog: %v", err)
+			log.Error().Msgf("Failed to unpack SignturePass: %v", err)
 			continue
 		}
 
-		log.Debug().Msgf("SignaturePass %v", pel)
+		log.Debug().Msgf("Resolved event %+v in block %s", sigPass, startBlock.String())
 
-		m := message.Message{}
+		m := &message.Message{}
 
-		m.Source = pel.OriginDomainID
-		m.Destination = pel.DestinationDomainID
-		m.DepositNonce = pel.DepositNonce
-		m.ResourceId = pel.ResourceID
-		m.Data = pel.Data
+		m.Source = sigPass.OriginDomainID
+		m.Destination = sigPass.DestinationDomainID
+		m.DepositNonce = sigPass.DepositNonce
+		m.ResourceId = sigPass.ResourceID
+		m.Data = sigPass.Data
 
 		//m.Payload, no data, skipped
 		//m.Type skip
 
 		m.SPass = true
 
-		return &m
+		ch <- m
 	}
-	return nil
 }
 
 func unpackSignturePassLog(abiIst abi.ABI, data []byte, topics []common.Hash) (*evmclient.SignaturePass, error) {
