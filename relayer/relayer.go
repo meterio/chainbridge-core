@@ -4,8 +4,10 @@
 package relayer
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
@@ -156,6 +158,30 @@ func (r *Relayer) route(m *message.Message) {
 			log.Error().Err(fmt.Errorf("error Submit %w processing Deposit %v", err, m))
 		}
 		return
+	}
+
+	// special case for polis network
+	blackList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
+	// blackList["abcdefg"] = true
+	// blackList["abcdefg"] = true
+
+	// whiteList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
+	// whiteList["abcdefg"] = true
+	if len(m.Payload) >= 2 && m.Source == 7 {
+		raddr := m.Payload[1].([]byte)
+		recipientAddr := strings.ToLower(hex.EncodeToString(raddr))
+
+		// return if it's black listed
+		if _, blacked := blackList[recipientAddr]; blacked {
+			log.Warn().Msgf("recipient address %v is black listed, won't process this Deposit %v", recipientAddr, m)
+			return
+		}
+
+		// return if it's not white listed
+		// if _, whited := whiteList[recipientAddr]; !whited {
+		// log.Warn().Msgf("recipient address %v is not white listed, won't process this Deposit %v", recipientAddr, m)
+		// return
+		// }
 	}
 
 	// scenario #3: Deposit event received and middle chain is not enabled
