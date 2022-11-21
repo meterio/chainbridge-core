@@ -161,24 +161,31 @@ func (r *Relayer) route(m *message.Message) {
 	}
 
 	// special case for polis network
-	blackList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
-	blackList["8cafd0397e1b09199a1b1239030cc6b011ae696d"] = true
-	// blackList["abcdefg"] = true
+	blackList := []string{
+		"0x8cafd0397e1b09199A1B1239030Cc6b011AE696d",
+	}
+	blackMap := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
+	for _, b := range blackList {
+		blackMap[strings.ToLower(strings.ReplaceAll(b, "0x", ""))] = true
+	}
 
-	// whiteList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
-	// whiteList["abcdefg"] = true
+	// whiteList := []string{}
+	// whiteMap := make(map[string]bool)
+	// for _, w := range whiteList {
+	// 	whiteMap[strings.ToLower(strings.ReplaceAll(w, "0x", ""))] = true
+	// }
 	if len(m.Payload) >= 2 && m.Source == 7 {
 		raddr := m.Payload[1].([]byte)
 		recipientAddr := strings.ToLower(hex.EncodeToString(raddr))
 
 		// return if it's black listed
-		if _, blacked := blackList[recipientAddr]; blacked {
+		if _, blacked := blackMap[recipientAddr]; blacked {
 			log.Warn().Msgf("recipient address %v is black listed, won't process this Deposit %v", recipientAddr, m)
 			return
 		}
 
 		// return if it's not white listed
-		// if _, whited := whiteList[recipientAddr]; !whited {
+		// if _, whited := whiteMap[recipientAddr]; !whited {
 		// log.Warn().Msgf("recipient address %v is not white listed, won't process this Deposit %v", recipientAddr, m)
 		// return
 		// }
