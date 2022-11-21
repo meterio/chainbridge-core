@@ -122,7 +122,7 @@ func (l *EVMListener) ListenToEvents(
 						continue
 					}
 
-					l.trackSignturePass(spassLogs, ch)
+					l.trackSignturePass(spassLogs, startBlock, ch)
 				}
 
 				if startBlock.Int64()%20 == 0 {
