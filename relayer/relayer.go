@@ -162,7 +162,7 @@ func (r *Relayer) route(m *message.Message) {
 
 	// special case for polis network
 	blackList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
-	// blackList["abcdefg"] = true
+	blackList["8cafd0397e1b09199a1b1239030cc6b011ae696d"] = true
 	// blackList["abcdefg"] = true
 
 	// whiteList := make(map[string]bool) // key: address in lower case without 0x-prefix, value: true
