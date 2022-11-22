@@ -76,7 +76,7 @@ func (s *RouteTestSuite) TestLogsErrorIfMessageProcessorReturnsError() {
 func (s *RouteTestSuite) TestLogsErrorIfWriteReturnsError() {
 	s.mockMetrics.EXPECT().TrackDepositMessage(gomock.Any())
 	s.mockRelayedChain.EXPECT().DomainID().Return(uint8(1))
-	s.mockRelayedChain.EXPECT().Write(gomock.Any()).Return(fmt.Errorf("Error"))
+	s.mockRelayedChain.EXPECT().VoteOnDest(gomock.Any()).Return(fmt.Errorf("Error"))
 	relayer := NewRelayer(
 		[]RelayedChain{},
 		s.mockMetrics,

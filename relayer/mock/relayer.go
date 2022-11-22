@@ -98,33 +98,33 @@ func (mr *MockRelayedChainMockRecorder) PollEvents(stop, sysErr, eventsChan inte
 }
 
 // Write mocks base method.
-func (m *MockRelayedChain) Write(message *message.Message) error {
+func (m *MockRelayedChain) VoteOnDest(message *message.Message) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", message)
+	ret := m.ctrl.Call(m, "voteProposal", message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Write mocks base method.
-func (m *MockRelayedChain) Read(message *message.Message) ([][]byte, error) {
+func (m *MockRelayedChain) GetSignatures(message *message.Message) ([][]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", message)
+	ret := m.ctrl.Call(m, "getSignatures", message)
 	ret0, _ := ret[0].(error)
 	return [][]byte{}, ret0
 }
 
 // Write mocks base method.
-func (m *MockRelayedChain) Submit(message *message.Message, int2 *big.Int, address *common.Address) error {
+func (m *MockRelayedChain) VoteOnRelay(message *message.Message, int2 *big.Int, address *common.Address) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Submit", message)
+	ret := m.ctrl.Call(m, "submitSignature", message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Write mocks base method.
-func (m *MockRelayedChain) SubmitAggregatedSignatures(message *message.Message, data [][]byte) error {
+func (m *MockRelayedChain) ExecOnDest(message *message.Message, data [][]byte) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Submit", message)
+	ret := m.ctrl.Call(m, "voteProposals", message)
 	ret0, _ := ret[0].(error)
 	return ret0
 }

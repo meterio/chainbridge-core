@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ChainSafe/chainbridge-core/config"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ChainSafe/chainbridge-core/util"
@@ -34,13 +33,12 @@ type RelayedChain interface {
 	SyncBlockLabels() []attribute.KeyValue
 	HeadBlockLabels() []attribute.KeyValue
 
-	Read(message *message.Message) ([][]byte, error)
+	GetSignatures(message *message.Message) ([][]byte, error)
 	Get(message *message.Message) (bool, error)
-	Write(message *message.Message) error
-	Submit(message *message.Message, chainID *big.Int, address *common.Address) error
-	SubmitAggregatedSignatures(message *message.Message, data [][]byte, sleepDuration *big.Int) error
+	VoteOnDest(message *message.Message) error
+	VoteOnRelay(message *message.Message, chainID *big.Int, address *common.Address) error
+	ExecOnDest(message *message.Message, data [][]byte, sleepDuration *big.Int) error
 	SignatureSubmit() bool
-	DelayVoteProposals() *big.Int
 }
 
 func NewRelayer(chains []RelayedChain, metrics Metrics, messageProcessors ...message.MessageProcessor) *Relayer {
@@ -69,7 +67,7 @@ func (r *Relayer) Start(stop <-chan struct{}, sysErr chan error) {
 	for {
 		select {
 		case m := <-messagesChannel:
-			go r.route(m)
+			go r.route(m, messagesChannel)
 			continue
 		case <-stop:
 			return
@@ -78,7 +76,7 @@ func (r *Relayer) Start(stop <-chan struct{}, sysErr chan error) {
 }
 
 // Route function winds destination writer by mapping DestinationID from message to registered writer.
-func (r *Relayer) route(m *message.Message) {
+func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 	//r.metrics.TrackDepositMessage(m)
 
 	sourceChain, ok := r.registry[m.Source]
@@ -102,60 +100,41 @@ func (r *Relayer) route(m *message.Message) {
 		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
 		return
 	}
-
-	// scenario #1: SignaturePass event received on relay chain
-	// submit merged signature to destination chain directly
-	if m.SPass && middleChain.SignatureSubmit() {
-		log.Debug().Msgf("Recv: SignaturePass %v, submit aggregated signatures to dest chain %v", m, m.Destination)
-		data, err := middleChain.Read(m) // getSignatures
-		if err != nil {
-			log.Error().Msgf(err.Error())
-		}
-
-		mm, err := sourceChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{}) // fill Payload
-		mm.SPass = true
-		if err != nil {
-			log.Error().Err(fmt.Errorf("error HandleEvent %w processing mesage %v", err, m))
-		}
-
-		err = destChain.SubmitAggregatedSignatures(mm, data, big.NewInt(1)) // voteProposals
-		if err != nil {
-			log.Error().Err(fmt.Errorf("error SubmitAggregatedSignatures %w processing mesage %v", err, mm))
-		}
-
-		return
+	destChainID, err := destChain.ChainID()
+	if err != nil {
+		log.Error().Err(fmt.Errorf("error getting chainId: %w on dest chain %v", err, m.Destination))
 	}
 
-	// scenario #2: Deposit event received on source chain, and relay chain is enabled
-	// submit signature to relay chain
-	if middleChain != nil {
-		log.Debug().Msgf("Recv: Deposit %v w/ relay chain enabled, submit signature to relay chain", m)
-		destChainID, err := destChain.ChainID()
-		if err != nil {
-			log.Error().Err(fmt.Errorf("error Submit %w get destChainID %v", err, m))
-		}
-		err = middleChain.Submit(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
-		if err != nil {
-			if err.Error() == util.OVERTHRESHOLD && middleChain.SignatureSubmit() {
-				diff := new(big.Int).Sub(m.Head, m.Start).Int64()
-				if diff < config.BlockDiff {
-					return
-				}
+	if middleChain != nil && middleChain.SignatureSubmit() {
+		// relay chain enabled
 
-				log.Debug().Msgf("signature count on relay chain is over threshold, submit aggregated signatures to dest chain directly")
-				data, err := middleChain.Read(m) // getSignatures
-				if err != nil {
-					log.Error().Msgf(err.Error())
-				}
-				err = destChain.SubmitAggregatedSignatures(m, data, big.NewInt(4)) // voteProposals
-				if err != nil {
-					log.Error().Err(fmt.Errorf("error Submits %w processing mesage %v", err, m))
-				}
-
-				return
-
+		// scenario #1: SignaturePass event received on relay chain
+		// submit merged signature to destination chain directly
+		if m.Type == message.SignaturePass || m.Type == message.ArtificialPass {
+			log.Debug().Str("relay", "enabled").Msgf("Recv: %v, submit signatures to dest chain %v", m, m.Destination)
+			sigs, err := middleChain.GetSignatures(m) // getSignatures
+			if err != nil {
+				log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
 			}
-			log.Error().Err(fmt.Errorf("error Submit %w processing Deposit %v", err, m))
+
+			err = destChain.ExecOnDest(m, sigs, big.NewInt(1)) // voteProposals
+			if err != nil {
+				log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error exec on dest chain: %w", err))
+			}
+
+			return
+		}
+
+		// scenario #2: Deposit event received on source chain, and relay chain is enabled
+		// submit signature to relay chain
+		log.Debug().Str("relay", "enabled").Msgf("Recv: %v, vote on relay chain %v", m, middleId)
+		err = middleChain.VoteOnRelay(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
+		if err != nil {
+			if err == util.ErrAlreadyPassed {
+				m.Type = message.ArtificialPass
+				msgCh <- m
+			}
+			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error vote on relay chain: %w", err))
 		}
 		return
 	}
@@ -193,18 +172,16 @@ func (r *Relayer) route(m *message.Message) {
 
 	// scenario #3: Deposit event received and middle chain is not enabled
 	// submit signature to dest chain directly
-	log.Debug().Msgf("Recv: Deposit %v without relay chain enabled, submit signature to dest chain", m)
+	log.Debug().Str("relay", "disabled").Msgf("Recv: %v, submit signature to dest chain", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
-			log.Error().Err(fmt.Errorf("error %w processing mesage %v", err, m))
+			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error processing: %w ", err))
 			return
 		}
 	}
 
-	log.Debug().Msgf("Sending message %+v to destination %v", m, m.Destination)
-
-	if err := destChain.Write(m); err != nil { // voteProposal
-		log.Error().Err(err).Msgf("writing message %+v", m)
+	if err := destChain.VoteOnDest(m); err != nil { // voteProposal
+		log.Error().Str("msg", m.ID()).Err(err).Msgf("error vote on dest chain: %w", err)
 		return
 	}
 }

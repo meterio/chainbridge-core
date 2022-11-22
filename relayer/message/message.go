@@ -9,6 +9,8 @@ import (
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type TransferType string
@@ -17,6 +19,9 @@ const (
 	FungibleTransfer    TransferType = "FungibleTransfer"
 	NonFungibleTransfer TransferType = "NonFungibleTransfer"
 	GenericTransfer     TransferType = "GenericTransfer"
+
+	SignaturePass  TransferType = "SignaturePass"
+	ArtificialPass TransferType = "ArtificialPass"
 )
 
 type ProposalStatus struct {
@@ -50,8 +55,6 @@ type Message struct {
 
 	Start *big.Int
 	Head  *big.Int
-
-	SPass bool
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount
@@ -80,23 +83,17 @@ func (m *Message) extractAmountTransferred() (float64, error) {
 }
 
 func (m *Message) String() string {
-	if m.SPass {
-		return fmt.Sprintf("SignaturePass(%v->%v:%v) resourceId:%#x",
-			m.Source, m.Destination, m.DepositNonce, m.ResourceId)
-	} else {
-		return fmt.Sprintf("%v(%v->%v:%v) resourceId:%#x",
-			m.Type, m.Source, m.Destination, m.DepositNonce, m.ResourceId)
-	}
+	return fmt.Sprintf("%v(%v->%v:%v) resourceId:%#x",
+		m.Type, m.Source, m.Destination, m.DepositNonce, m.ResourceId)
 }
 
 func (m *Message) ID() string {
-	if m.SPass {
-		return fmt.Sprintf("SignaturePass(%v->%v:%v)",
-			m.Source, m.Destination, m.DepositNonce)
-	} else {
-		return fmt.Sprintf("%v(%v->%v:%v)",
-			m.Type, m.Source, m.Destination, m.DepositNonce)
-	}
+	return fmt.Sprintf("%v(%v->%v:%v)",
+		m.Type, m.Source, m.Destination, m.DepositNonce)
+}
+
+func (m *Message) GetHash() common.Hash {
+	return crypto.Keccak256Hash(append([]byte{m.Source, m.Destination}, byte(m.DepositNonce)))
 }
 
 func (p *ProposalStatus) String() string {
