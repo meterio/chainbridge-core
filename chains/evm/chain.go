@@ -111,11 +111,11 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 	mh.RegisterMessageHandler(config.GenericHandler, voter.GenericMessageHandler)
 
 	var evmVoter *voter.EVMVoter
-	evmVoter, err = voter.NewVoterWithSubscription(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), config.DelayVoteProposals, t)
+	evmVoter, err = voter.NewVoterWithSubscription(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.RelayId(), t)
 
 	if err != nil {
 		log.Warn().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-		evmVoter = voter.NewVoter(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, config.DelayVoteProposals, t)
+		evmVoter = voter.NewVoter(*config, mh, client, bridgeContract, &signatureContract, airDropErc20Contract, *domainId, t)
 	}
 
 	return NewEVMChain(evmListener, evmVoter, blockstore, config), nil
@@ -166,15 +166,15 @@ func (c *EVMChain) HandleEvent(sourceID, destID uint8, nonce uint64, resourceID 
 	return c.listener.HandleEvent(sourceID, destID, nonce, resourceID, calldata, handlerResponse)
 }
 
-func (c *EVMChain) Write(msg *message.Message) error {
+func (c *EVMChain) VoteOnDest(msg *message.Message) error {
 	return c.writer.VoteProposal(msg)
 }
 
-func (c *EVMChain) Read(msg *message.Message) ([][]byte, error) {
+func (c *EVMChain) GetSignatures(msg *message.Message) ([][]byte, error) {
 	return c.writer.GetSignatures(msg) // GetSignatures
 }
 
-func (c *EVMChain) Submit(msg *message.Message, chainID *big.Int, bridgeContractAddress *common.Address) error {
+func (c *EVMChain) VoteOnRelay(msg *message.Message, chainID *big.Int, bridgeContractAddress *common.Address) error {
 	return c.writer.SubmitSignature(msg, chainID, bridgeContractAddress) // SubmitSignature
 }
 
@@ -183,16 +183,12 @@ func (c *EVMChain) Get(msg *message.Message) (bool, error) {
 	return false, nil
 }
 
-func (c *EVMChain) SubmitAggregatedSignatures(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
+func (c *EVMChain) ExecOnDest(msg *message.Message, signatures [][]byte, sleepDuration *big.Int) error {
 	return c.writer.VoteProposals(msg, signatures, sleepDuration) // VoteProposals
 }
 
 func (c *EVMChain) SignatureSubmit() bool {
 	return c.config.SignatureSubmit
-}
-
-func (c *EVMChain) DelayVoteProposals() *big.Int {
-	return c.config.DelayVoteProposals
 }
 
 func (c *EVMChain) DomainID() uint8 {

@@ -2,9 +2,10 @@ package chain
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/mitchellh/mapstructure"
@@ -21,7 +22,6 @@ type EVMConfig struct {
 	GasLimit           *big.Int
 	StartBlock         *big.Int
 	BlockConfirmations *big.Int
-	DelayVoteProposals *big.Int
 	BlockRetryInterval time.Duration
 
 	AirDropAmount        *big.Int
@@ -55,7 +55,6 @@ type RawEVMConfig struct {
 
 	SignatureContractOpt string `mapstructure:"signatureContract"`
 	SignatureSubmit      bool   `mapstructure:"signatureSubmit"`
-	DelayVoteProposals   int64  `mapstructure:"delayVoteProposals"`
 }
 
 func (c *RawEVMConfig) Validate() error {
@@ -69,9 +68,7 @@ func (c *RawEVMConfig) Validate() error {
 	if c.BlockConfirmations != 0 && c.BlockConfirmations < 1 {
 		return fmt.Errorf("blockConfirmations has to be >=1")
 	}
-	if c.DelayVoteProposals != 0 && c.DelayVoteProposals < 1 {
-		return fmt.Errorf("DelayVoteProposals has to be >=1")
-	}
+
 	return nil
 }
 
@@ -103,7 +100,6 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(c.StartBlock),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
-		DelayVoteProposals: big.NewInt(consts.DefaultDelayConfirmations),
 
 		AirDropAmount:        big.NewInt(0),
 		AirDropErc20Contract: common.Address{},
@@ -129,10 +125,6 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.BlockConfirmations != 0 {
 		config.BlockConfirmations = big.NewInt(c.BlockConfirmations)
-	}
-
-	if c.DelayVoteProposals != 0 {
-		config.DelayVoteProposals = big.NewInt(c.DelayVoteProposals)
 	}
 
 	if c.BlockRetryInterval != 0 {

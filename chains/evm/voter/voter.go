@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
@@ -91,8 +90,8 @@ type EVMVoter struct {
 	bridgeContract       BridgeContract
 	signatureContract    SignatureContract
 	pendingProposalVotes map[common.Hash]uint8
+	pendingOnDest        map[common.Hash]bool
 	id                   uint8
-	delayVoteProposals   *big.Int
 	airDropErc20Contract erc20.ERC20Contract
 	cfg                  chain.EVMConfig
 	t                    transactor.Transactor
@@ -105,7 +104,7 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, relayId uint8, delayVoteProposals *big.Int, t transactor.Transactor) (*EVMVoter, error) {
+func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, relayId uint8, t transactor.Transactor) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		cfg:                  config,
 		mh:                   mh,
@@ -114,10 +113,10 @@ func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client 
 		signatureContract:    signatureContract,
 		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		pendingOnDest:        make(map[common.Hash]bool),
 		id:                   id,
 		//db:                   db,
-		delayVoteProposals: delayVoteProposals,
-		t:                  t,
+		t: t,
 	}
 
 	if relayId == 0 {
@@ -138,7 +137,7 @@ func NewVoterWithSubscription(config chain.EVMConfig, mh MessageHandler, client 
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, delayVoteProposals *big.Int, t transactor.Transactor) *EVMVoter {
+func NewVoter(config chain.EVMConfig, mh MessageHandler, client ChainClient, bridgeContract BridgeContract, signatureContract SignatureContract, airDropErc20Contract erc20.ERC20Contract, id uint8, t transactor.Transactor) *EVMVoter {
 	return &EVMVoter{
 		cfg:                  config,
 		mh:                   mh,
@@ -148,9 +147,10 @@ func NewVoter(config chain.EVMConfig, mh MessageHandler, client ChainClient, bri
 		airDropErc20Contract: airDropErc20Contract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
 		id:                   id,
+
+		pendingOnDest: make(map[common.Hash]bool),
 		//db:                   db,
-		delayVoteProposals: delayVoteProposals,
-		t:                  t,
+		t: t,
 	}
 }
 
@@ -185,15 +185,21 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		log.Error().Err(err)
 		return err
 	}
-	log.Debug().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v", chainName)
-	hash, err := v.bridgeContract.VoteProposal(prop, transactor.TransactOptions{})
+	log.Debug().Str("msg", m.ID()).Msgf("vote on dest chain %v", chainName)
+	hash := m.GetHash()
+	if _, pending := v.pendingOnDest[hash]; pending {
+		return nil
+	}
+	defer delete(v.pendingOnDest, hash)
+	v.pendingOnDest[hash] = true
+	txhash, err := v.bridgeContract.VoteProposal(prop, transactor.TransactOptions{})
 	if err != nil {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
 
 	v.CheckAndExecuteAirDrop(*m)
 
-	log.Info().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v succeeded %v", chainName, hash.String())
+	log.Info().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v succeeded %v", chainName, txhash.String())
 	return nil
 }
 
@@ -209,11 +215,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	relayChainName := util.DomainIdToName[v.id]
-	log.Debug().Str("msg", m.ID()).Msgf("submit signature to relay chain %v", relayChainName)
+	log.Debug().Str("msg", m.ID()).Msgf("vote on relay chain %v", relayChainName)
 
 	if len(signatures) >= int(threshold) {
-		log.Info().Str("chain", util.DomainIdToName[v.id]).Msgf("signatures length %v >= threshold %v, skip SubmitSignature", len(signatures), int(threshold))
-		return errors.New(util.OVERTHRESHOLD)
+		log.Warn().Str("msg", m.ID()).Str("chain", util.DomainIdToName[v.id]).Msgf("len(sigs) %v >= threshold %v, skip vote ...", len(signatures), int(threshold))
+		return util.ErrAlreadyPassed
 	}
 
 	// privKey := v.client.PrivateKey()
@@ -276,7 +282,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 
 	for _, signature := range signatures {
 		if bytes.Equal(signature, sig) {
-			return errors.New("relayer already voted")
+			return util.ErrAlreadyVoted
 		}
 	}
 
@@ -289,11 +295,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 				break
 			}
 
-			log.Warn().Str("msg", m.ID()).Err(err).Msgf("submit sig to relay chain %v failed %v time(s), try again later ...", relayChainName, i+1)
+			log.Warn().Str("msg", m.ID()).Err(err).Msgf("vote on relay chain %v failed %v time(s), try again later ...", relayChainName, i+1)
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("msg", m.ID()).Msgf("submit sig to relay chain %v succeeded with %v", relayChainName, hash.String())
+			log.Info().Str("msg", m.ID()).Msgf("vote on relay chain %v succeeded with %v", relayChainName, hash.String())
 			break
 		}
 	}
@@ -322,7 +328,6 @@ func (v *EVMVoter) ProposalStatusShouldVoteProposals(m *message.Message) (bool, 
 		log.Error().Err(err)
 		return false, 0, err
 	}
-
 	if pps.Status == message.ProposalStatusInactive || pps.Status == message.ProposalStatusActive {
 		return true, pps.Status, nil
 	}
@@ -337,7 +342,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 		return err
 	}
 
-	if pps.Status != message.ProposalStatusInactive && pps.Status != message.ProposalStatusActive {
+	if pps.Status == message.ProposalStatusExecuted || pps.Status == message.ProposalStatusCanceled {
 		log.Info().Str("msg", m.ID()).Msgf("proposal status %v, skipped ...", message.StatusMap[pps.Status])
 		return nil
 	}
@@ -345,10 +350,17 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	// ----------------- after checked, execute
 
 	chainName := util.DomainIdToName[v.id]
-	log.Debug().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
 
+	hash := m.GetHash()
+	if _, pending := v.pendingOnDest[hash]; pending {
+		return nil
+	}
+	defer delete(v.pendingOnDest, hash)
+
+	log.Debug().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
 	for i := 0; i < consts.TxRetryLimit; i++ {
-		hash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
+		v.pendingOnDest[hash] = true
+		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), consts.TxFailedOnChain) {
 				break
@@ -358,7 +370,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v succeeded with %s", chainName, hash)
+			log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v succeeded with %s", chainName, txhash)
 			break
 		}
 	}

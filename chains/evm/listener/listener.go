@@ -194,10 +194,9 @@ func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8
 			ch <- m
 		}
 	}
-	//return ch
 }
 
-func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log, startBlock *big.Int, ch chan *message.Message) {
+func (l *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log, startBlock *big.Int, ch chan *message.Message) {
 	for _, vLog := range vLogs {
 		abiIst, err := abi.JSON(strings.NewReader(consts.SignaturesABI))
 		if err != nil {
@@ -213,18 +212,8 @@ func (v *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log, startBlock *b
 
 		log.Debug().Msgf("Resolved event %+v in block %s", sigPass, startBlock.String())
 
-		m := &message.Message{}
-
-		m.Source = sigPass.OriginDomainID
-		m.Destination = sigPass.DestinationDomainID
-		m.DepositNonce = sigPass.DepositNonce
-		m.ResourceId = sigPass.ResourceID
-		m.Data = sigPass.Data
-
-		//m.Payload, no data, skipped
-		//m.Type skip
-
-		m.SPass = true
+		m, err := l.HandleEvent(sigPass.OriginDomainID, sigPass.DestinationDomainID, sigPass.DepositNonce, sigPass.ResourceID, sigPass.Data, []byte{})
+		m.Type = message.SignaturePass
 
 		ch <- m
 	}
