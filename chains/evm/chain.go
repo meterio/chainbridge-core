@@ -128,7 +128,7 @@ func NewEVMChain(listener EventListener, writer ProposalVoter, blockstore *store
 // PollEvents is the goroutine that polls blocks and searches Deposit events in them.
 // Events are then sent to eventsChan.
 func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message) {
-	log.Info().Msg("Polling events started...")
+	// log.Info().Msg("Polling events started...")
 
 	freshStart := false
 	freshDomain := c.config.GeneralChainConfig.FreshDomain
@@ -137,12 +137,14 @@ func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsC
 	} else {
 		freshStart = c.config.GeneralChainConfig.FreshStart
 	}
+	isRelayChain := c.config.SignatureContract != util.ZeroAddress
 
 	startBlock, err := c.blockstore.GetStartBlock(
 		*c.config.GeneralChainConfig.Id,
 		c.config.StartBlock,
 		c.config.GeneralChainConfig.LatestBlock,
 		freshStart,
+		isRelayChain,
 	)
 	if err != nil {
 		sysErr <- fmt.Errorf("error %w on getting last stored block", err)

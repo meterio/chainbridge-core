@@ -67,15 +67,14 @@ func (l *EVMListener) ListenToEvents(
 ) <-chan *message.Message {
 	ch := make(chan *message.Message)
 
-	middleChainInited := l.signatureAddress != util.ZeroAddress
+	isRelayChain := l.signatureAddress != util.ZeroAddress
 	go func() {
 		chainName := util.DomainIdToName[l.id]
-		log.Info().Msgf("Start to listen events on %v from %v", chainName, startBlock)
 		var (
 			endBlock   = big.NewInt(0)
 			lastReport = time.Now()
-			rpcCount   = 0
 		)
+		log.Info().Msgf("Start to listen events on %v from %v", chainName, startBlock)
 
 		for {
 			select {
@@ -83,7 +82,6 @@ func (l *EVMListener) ListenToEvents(
 				return
 			default:
 				head, err := l.chainReader.LatestBlock()
-				rpcCount++
 				if err != nil {
 					evmclient.ErrCounterLogic(err.Error(), domainID)
 					log.Warn().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
@@ -91,12 +89,12 @@ func (l *EVMListener) ListenToEvents(
 					time.Sleep(blockRetryInterval)
 					continue
 				}
-				chainName := util.DomainIdToName[l.id]
 
 				if startBlock == nil {
 					startBlock = head
 				}
 				endBlock.Add(startBlock, blockWindow)
+				endBlock.Sub(endBlock, big.NewInt(1))
 
 				if l.openTelemetryInst != nil {
 					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
@@ -110,14 +108,13 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				eventName := "Deposit"
-				if middleChainInited {
+				if isRelayChain {
 					eventName = "SignaturePass"
 				}
-				log.Debug().Str("chain", chainName).Msgf("Query %v in blocks [%v,%v)", eventName, startBlock.Uint64(), endBlock.Uint64())
+				log.Debug().Str("chain", chainName).Msgf("Query %v in blocks [%v,%v]", eventName, startBlock.Uint64(), endBlock.Uint64())
 
-				if middleChainInited {
-					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, new(big.Int).Sub(endBlock, big.NewInt(1)))
-					rpcCount++
+				if isRelayChain {
+					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, endBlock)
 					spassLogs, err := l.chainReader.FilterLogs(context.TODO(), query)
 					if err != nil {
 						evmclient.ErrCounterLogic(err.Error(), domainID)
@@ -127,8 +124,7 @@ func (l *EVMListener) ListenToEvents(
 
 					l.trackSignturePass(spassLogs, startBlock, ch)
 				} else {
-					rpcCount++
-					logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, new(big.Int).Sub(endBlock, big.NewInt(1)))
+					logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, endBlock)
 					if err != nil {
 						evmclient.ErrCounterLogic(err.Error(), domainID)
 						// Filtering logs error really can appear only on wrong configuration or temporary network problem
@@ -141,16 +137,16 @@ func (l *EVMListener) ListenToEvents(
 
 				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
 				//Write to block store. Not a critical operation, no need to retry
-				err = blockstore.StoreBlock(endBlock, domainID)
-				if err != nil {
-					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, chain %v", util.DomainIdToName[l.id])
-				}
 				// Goto next block
 				// startBlock.Add(startBlock, big.NewInt(1))
 				startBlock.Add(startBlock, blockWindow)
+				err = blockstore.StoreBlock(startBlock, domainID)
+				if err != nil {
+					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, chain %v", util.DomainIdToName[l.id])
+				}
 
-				if time.Since(lastReport) > time.Second*15 {
-					log.Info().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Int("rpcCall", rpcCount).Uint64("head", startBlock.Uint64()).Msgf("Still querying %v", eventName)
+				if time.Since(lastReport) > time.Second*60 {
+					log.Info().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Msgf("Still querying %v", eventName)
 					lastReport = time.Now()
 				}
 			}

@@ -56,8 +56,8 @@ func (bs *BlockStore) GetLastStoredBlock(domainID uint8) (*big.Int, error) {
 
 // GetStartBlock queries the blockstore for the latest known block. If the latest block is
 // greater than configured startBlock, then startBlock is replaced with the latest known block.
-func (bs *BlockStore) GetStartBlock(domainID uint8, startBlock *big.Int, latest bool, fresh bool) (*big.Int, error) {
-	if latest {
+func (bs *BlockStore) GetStartBlock(domainID uint8, startBlock *big.Int, latest bool, fresh bool, isRelayChain bool) (*big.Int, error) {
+	if latest || isRelayChain {
 		return nil, nil
 	}
 
