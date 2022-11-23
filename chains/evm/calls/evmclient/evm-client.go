@@ -62,6 +62,9 @@ type DepositLogs struct {
 	// ERC721Handler: responds with deposited token metadata acquired by calling a tokenURI method in the token contract
 	// GenericHandler: responds with the raw bytes returned from the call to the target contract
 	HandlerResponse []byte
+
+	BlockHash   common.Hash
+	BlockNumber uint64
 }
 
 type ProposalEvents struct {
@@ -284,6 +287,8 @@ func (c *EVMClient) FetchDepositLogs(ctx context.Context, contractAddress common
 
 	for _, l := range logs {
 		dl, err := c.UnpackDepositEventLog(abi, l.Data)
+		dl.BlockNumber = l.BlockNumber
+		dl.BlockHash = l.BlockHash
 		if err != nil {
 			log.Error().Msgf("failed unpacking deposit event log: %v", err)
 			continue

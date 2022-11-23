@@ -2,11 +2,12 @@ package listener
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/rs/zerolog/log"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -32,6 +33,7 @@ func (e *ETHEventHandler) HandleEvent(sourceID, destID uint8, depositNonce uint6
 	if err != nil {
 		return nil, err
 	}
+	log.Info().Msgf("Got handler %v with resourceID %v", handlerAddr, resourceID)
 
 	defer func() {
 		if r := recover(); r != nil {

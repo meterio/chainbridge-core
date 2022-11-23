@@ -203,10 +203,10 @@ func (l *EVMListener) trackDeposit(logs []*evmclient.DepositLogs, domainID uint8
 		if err != nil {
 			log.Error().Str("block", startBlock.String()).Uint8("domainID", domainID).Msgf("%v", err)
 		} else {
-			m.Start = startBlock
-			m.Head = head
+			m.BlockNumber = eventLog.BlockNumber
+			m.BlockHash = eventLog.BlockHash
 
-			log.Debug().Msgf("Resolved message %+v in block %s", m, startBlock.String())
+			log.Debug().Msgf("Resolved message %+v in block %s", m, eventLog.BlockNumber)
 			ch <- m
 		}
 	}
@@ -228,8 +228,17 @@ func (l *EVMListener) trackSignturePass(vLogs []ethereumTypes.Log, startBlock *b
 
 		log.Debug().Msgf("Resolved event %+v in block %s", sigPass, startBlock.String())
 
-		m, err := l.HandleEvent(sigPass.OriginDomainID, sigPass.DestinationDomainID, sigPass.DepositNonce, sigPass.ResourceID, sigPass.Data, []byte{})
-		m.Type = message.SignaturePass
+		m := &message.Message{
+			Source:       sigPass.OriginDomainID,
+			Destination:  sigPass.DestinationDomainID,
+			DepositNonce: sigPass.DepositNonce,
+			ResourceId:   sigPass.ResourceID,
+			Data:         sigPass.Data,
+			Type:         message.SignaturePass,
+			Payload:      make([]interface{}, 0),
+			BlockNumber:  vLog.BlockNumber,
+			BlockHash:    vLog.BlockHash,
+		}
 
 		ch <- m
 	}

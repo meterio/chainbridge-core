@@ -53,8 +53,8 @@ type Message struct {
 	Payload []interface{} // data associated with event sequence
 	Type    TransferType
 
-	Start *big.Int
-	Head  *big.Int
+	BlockNumber uint64
+	BlockHash   common.Hash
 }
 
 // extractAmountTransferred is a private method to extract and transform the transfer amount
