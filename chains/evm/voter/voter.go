@@ -185,7 +185,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		log.Error().Err(err)
 		return err
 	}
-	log.Info().Str("msg", m.ID()).Msgf("vote on dest chain %v", chainName)
+	log.Info().Str("msg", m.ID()).Str("chain", chainName).Msgf("start to vote on dest chain")
 	hash := m.GetHash()
 	if _, pending := v.pendingOnDest[hash]; pending {
 		return nil
@@ -199,7 +199,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 
 	v.CheckAndExecuteAirDrop(*m)
 
-	log.Info().Str("msg", m.ID()).Msgf("vote proposal on dest chain %v succeeded %v", chainName, txhash.String())
+	log.Info().Str("msg", m.ID()).Str("chain", chainName).Msgf("vote on dest chain succeeded with %v", txhash.String())
 	return nil
 }
 
@@ -215,10 +215,10 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	relayChainName := util.DomainIdToName[v.id]
-	log.Info().Str("msg", m.ID()).Msgf("vote on relay chain %v", relayChainName)
+	log.Info().Str("msg", m.ID()).Str("chain", relayChainName).Msgf("start to vote on relay chain")
 
 	if len(signatures) >= int(threshold) {
-		log.Warn().Str("msg", m.ID()).Str("chain", util.DomainIdToName[v.id]).Msgf("len(sigs) %v >= threshold %v, skip vote ...", len(signatures), int(threshold))
+		log.Warn().Str("msg", m.ID()).Str("chain", relayChainName).Msgf("len(sigs) %v >= threshold %v, skip vote ...", len(signatures), int(threshold))
 		return util.ErrAlreadyPassed
 	}
 
@@ -295,11 +295,11 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 				break
 			}
 
-			log.Warn().Str("msg", m.ID()).Err(err).Msgf("vote on relay chain %v failed %v time(s), try again later ...", relayChainName, i+1)
+			log.Warn().Str("msg", m.ID()).Str("chain", relayChainName).Err(err).Msgf("vote on relay chain failed %v time(s), try again later ...", i+1)
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("msg", m.ID()).Msgf("vote on relay chain %v succeeded with %v", relayChainName, hash.String())
+			log.Info().Str("msg", m.ID()).Str("chain", relayChainName).Msgf("vote on relay chain succeeded with %v", hash.String())
 			break
 		}
 	}
@@ -343,7 +343,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	}
 
 	if pps.Status == message.ProposalStatusExecuted || pps.Status == message.ProposalStatusCanceled {
-		log.Info().Str("msg", m.ID()).Msgf("proposal status %v, skipped ...", message.StatusMap[pps.Status])
+		log.Info().Str("msg", m.ID()).Msgf("proposal status %v, skipped exec on dest chain ...", message.StatusMap[pps.Status])
 		return nil
 	}
 
@@ -357,7 +357,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	}
 	defer delete(v.pendingOnDest, hash)
 
-	log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
+	log.Info().Str("msg", m.ID()).Str("chain", chainName).Msgf("prepare to exec on dest chain")
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		v.pendingOnDest[hash] = true
 		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
@@ -366,11 +366,11 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 				break
 			}
 
-			log.Warn().Str("msg", m.ID()).Err(err).Msgf("submit all sigs to dest chain %v failed %v time(s), try again later ...", chainName, i+1)
+			log.Warn().Str("msg", m.ID()).Str("chain", chainName).Err(err).Msgf("exec on dest chain failed %v time(s), try again later ...", i+1)
 			time.Sleep(consts.TxRetryInterval)
 			continue
 		} else {
-			log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v succeeded with %s", chainName, txhash)
+			log.Info().Str("msg", m.ID()).Str("chain", chainName).Msgf("exec on dest chain succeeded with %s", txhash)
 			break
 		}
 	}

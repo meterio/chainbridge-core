@@ -105,43 +105,45 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 		log.Error().Err(fmt.Errorf("error getting chainId: %w on dest chain %v", err, m.Destination))
 	}
 
-	if middleChain != nil && middleChain.SignatureSubmit() {
+	if middleChain != nil {
 		// relay chain enabled
 
 		// scenario #1: SignaturePass event received on relay chain
 		// submit merged signature to destination chain directly
 		if m.Type == message.SignaturePass || m.Type == message.ArtificialPass {
-			mm, err := destChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
-			if err != nil {
-				log.Error().Msgf("could not handle SigPass: %v", err)
-				panic("help")
-			}
-			mm.Type = m.Type
-			log.Info().Str("relay", "enabled").Msgf("Recv: %v, submit signatures to dest chain %v", m, m.Destination)
-			sigs, err := middleChain.GetSignatures(m) // getSignatures
-			if err != nil {
-				log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
-			}
-			log.Info().Msgf("signature length: %v", len(sigs))
-			for _, sig := range sigs {
-				log.Info().Msgf("Signature: %v", hex.EncodeToString(sig))
-			}
+			if middleChain.SignatureSubmit() {
+				mm, err := destChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
+				if err != nil {
+					log.Error().Msgf("could not handle SigPass: %v", err)
+					panic("help")
+				}
+				mm.Type = m.Type
+				sigs, err := middleChain.GetSignatures(m) // getSignatures
+				if err != nil {
+					log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
+				}
+				log.Info().Str("relay", "enabled").Str("call", "execOnDest").Msgf("Recv: %v", m)
 
-			err = destChain.ExecOnDest(mm, sigs, big.NewInt(1)) // voteProposals
-			if err != nil {
-				log.Error().Str("msg", mm.ID()).Err(fmt.Errorf("error exec on dest chain: %w", err))
-			}
+				err = destChain.ExecOnDest(mm, sigs, big.NewInt(1)) // voteProposals
+				if err != nil {
+					log.Error().Str("msg", mm.ID()).Err(fmt.Errorf("error exec on dest chain: %w", err))
+				}
 
-			return
+				return
+			} else {
+				log.Info().Str("relay", "enabledWOSubmit").Msgf("Recv: %v, skip processing ...", m)
+				return
+			}
 		}
 
 		// scenario #2: Deposit event received on source chain, and relay chain is enabled
 		// submit signature to relay chain
-		log.Info().Str("relay", "enabled").Msgf("Recv: %v, vote on relay chain %v", m, middleId)
+		log.Info().Str("relay", "enabled").Str("call", "voteOnRelay").Msgf("Recv: %v", m)
 		err = middleChain.VoteOnRelay(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err == util.ErrAlreadyPassed {
 				m.Type = message.ArtificialPass
+				log.Info().Str("msg", m.ID()).Msgf("generate an ArtificialPass")
 				msgCh <- m
 			}
 			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error vote on relay chain: %w", err))
@@ -182,7 +184,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 	// scenario #3: Deposit event received and middle chain is not enabled
 	// submit signature to dest chain directly
-	log.Debug().Str("relay", "disabled").Msgf("Recv: %v, submit signature to dest chain", m)
+	log.Debug().Str("relay", "disabled").Str("call", "voteOnDest").Msgf("Recv: %v", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error processing: %w ", err))

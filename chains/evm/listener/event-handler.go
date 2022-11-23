@@ -33,7 +33,6 @@ func (e *ETHEventHandler) HandleEvent(sourceID, destID uint8, depositNonce uint6
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Got handler %v with resourceID %v", handlerAddr, resourceID)
 
 	defer func() {
 		if r := recover(); r != nil {
