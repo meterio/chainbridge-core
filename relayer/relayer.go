@@ -122,7 +122,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 				if err != nil {
 					log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
 				}
-				log.Info().Str("relay", "enabled").Str("call", "execOnDest").Msgf("Recv: %v", m)
+				log.Info().Str("relay", "enabled").Str("call", "execOnDest").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 
 				err = destChain.ExecOnDest(mm, sigs, big.NewInt(1)) // voteProposals
 				if err != nil {
@@ -131,14 +131,14 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 				return
 			} else {
-				log.Info().Str("relay", "enabledWOSubmit").Msgf("Recv: %v, skip processing ...", m)
+				log.Info().Str("relay", "enabledWOSubmit").Uint64("block", m.BlockNumber).Msgf("Recv: %v, skip processing ...", m)
 				return
 			}
 		}
 
 		// scenario #2: Deposit event received on source chain, and relay chain is enabled
 		// submit signature to relay chain
-		log.Info().Str("relay", "enabled").Str("call", "voteOnRelay").Msgf("Recv: %v", m)
+		log.Info().Str("relay", "enabled").Str("call", "voteOnRelay").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 		err = middleChain.VoteOnRelay(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err == util.ErrAlreadyPassed {
@@ -184,7 +184,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 	// scenario #3: Deposit event received and middle chain is not enabled
 	// submit signature to dest chain directly
-	log.Debug().Str("relay", "disabled").Str("call", "voteOnDest").Msgf("Recv: %v", m)
+	log.Debug().Str("relay", "disabled").Str("call", "voteOnDest").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error processing: %w ", err))

@@ -132,7 +132,7 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 		log.Error().Err(err)
 		return &common.Hash{}, err
 	}
-	log.Info().Str("chain", opts.ChainID.String()).Str("nonce", n.String()).Msgf("sent tx %v", h.String())
+	log.Info().Uint8("domainID", t.domainId).Str("nonce", n.String()).Msgf("sent tx %v", h.String())
 
 	return &h, nil
 }
