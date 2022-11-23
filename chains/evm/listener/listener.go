@@ -111,7 +111,7 @@ func (l *EVMListener) ListenToEvents(
 				if isRelayChain {
 					eventName = "SignaturePass"
 				}
-				log.Debug().Str("chain", chainName).Msgf("Query %v in blocks [%v,%v]", eventName, startBlock.Uint64(), endBlock.Uint64())
+				// log.Debug().Str("chain", chainName).Msgf("Query %v in blocks [%v,%v]", eventName, startBlock.Uint64(), endBlock.Uint64())
 
 				if isRelayChain {
 					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, endBlock)
@@ -146,7 +146,7 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				if time.Since(lastReport) > time.Second*60*5 {
-					log.Info().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Msgf("Still querying %v", eventName)
+					log.Debug().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Msgf("Still querying %v", eventName)
 					lastReport = time.Now()
 				}
 			}
