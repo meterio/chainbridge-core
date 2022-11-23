@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/types"
 	"io"
 	"math/big"
 	"net/http"
+
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
@@ -131,7 +132,7 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 		log.Error().Err(err)
 		return &common.Hash{}, err
 	}
-	log.Info().Str("Impl", "sas").Str("nonce", n.String()).Msgf("sent tx hash %v", h.String())
+	log.Info().Str("chain", opts.ChainID.String()).Str("nonce", n.String()).Msgf("sent tx %v", h.String())
 
 	return &h, nil
 }

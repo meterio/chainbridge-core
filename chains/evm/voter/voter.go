@@ -185,7 +185,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 		log.Error().Err(err)
 		return err
 	}
-	log.Debug().Str("msg", m.ID()).Msgf("vote on dest chain %v", chainName)
+	log.Info().Str("msg", m.ID()).Msgf("vote on dest chain %v", chainName)
 	hash := m.GetHash()
 	if _, pending := v.pendingOnDest[hash]; pending {
 		return nil
@@ -215,7 +215,7 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 	}
 
 	relayChainName := util.DomainIdToName[v.id]
-	log.Debug().Str("msg", m.ID()).Msgf("vote on relay chain %v", relayChainName)
+	log.Info().Str("msg", m.ID()).Msgf("vote on relay chain %v", relayChainName)
 
 	if len(signatures) >= int(threshold) {
 		log.Warn().Str("msg", m.ID()).Str("chain", util.DomainIdToName[v.id]).Msgf("len(sigs) %v >= threshold %v, skip vote ...", len(signatures), int(threshold))
@@ -357,7 +357,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	}
 	defer delete(v.pendingOnDest, hash)
 
-	log.Debug().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
+	log.Info().Str("msg", m.ID()).Msgf("submit all sigs to dest chain %v", chainName)
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		v.pendingOnDest[hash] = true
 		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})

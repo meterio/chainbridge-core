@@ -2,6 +2,9 @@ package signatures
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts"
@@ -11,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
-	"math/big"
-	"strings"
 )
 
 type SignaturesContract struct {
@@ -41,13 +42,13 @@ type Signature struct {
 	Signature           []byte
 }
 
-//SubmitSignature
-//uint8 originDomainID,
-//uint8 destinationDomainID,
-//uint64 depositNonce,
-//bytes32 resourceID,
-//bytes calldata data,
-//bytes calldata signature
+// SubmitSignature
+// uint8 originDomainID,
+// uint8 destinationDomainID,
+// uint64 depositNonce,
+// bytes32 resourceID,
+// bytes calldata data,
+// bytes calldata signature
 func (c *SignaturesContract) SubmitSignature(
 	originDomainID uint8,
 	destinationDomainID uint8,
@@ -58,7 +59,7 @@ func (c *SignaturesContract) SubmitSignature(
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {
 	domainId := c.Contract.DomainId()
-	log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, depositNonce %v, resourceID %#x, data %#x",
+	log.Debug().Str("chain", util.DomainIdToName[domainId]).Msgf("SubmitSignature: originDomainID %v, destinationDomainID %v, depositNonce %v, resourceID %#x, data %#x",
 		originDomainID, destinationDomainID, depositNonce, resourceID, data)
 
 	res, err := c.ExecuteTransaction(
@@ -79,11 +80,11 @@ func (c *SignaturesContract) SubmitSignature(
 	return res, err
 }
 
-//GetSignatures
-//uint8 domainID,
-//uint64 depositNonce,
-//bytes32 resourceID,
-//bytes calldata data
+// GetSignatures
+// uint8 domainID,
+// uint64 depositNonce,
+// bytes32 resourceID,
+// bytes calldata data
 func (c *SignaturesContract) GetSignatures(
 	domainID uint8,
 	destinationDomainID uint8,

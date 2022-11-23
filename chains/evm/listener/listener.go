@@ -68,7 +68,8 @@ func (l *EVMListener) ListenToEvents(
 
 	middleChainInited := l.signatureAddress != util.ZeroAddress
 	go func() {
-		log.Info().Msgf("ListenToEvents, startBlock %v, Chain %v", startBlock, util.DomainIdToName[l.id])
+		chainName := util.DomainIdToName[l.id]
+		log.Info().Msgf("Start to listen events on %v from %v", chainName, startBlock)
 
 		for {
 			select {
@@ -127,7 +128,7 @@ func (l *EVMListener) ListenToEvents(
 
 				if startBlock.Int64()%20 == 0 {
 					// Logging process every 20 bocks to exclude spam
-					log.Debug().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg(hint)
+					log.Info().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg(hint)
 				}
 				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
 				//Write to block store. Not a critical operation, no need to retry

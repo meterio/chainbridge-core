@@ -111,7 +111,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 		// scenario #1: SignaturePass event received on relay chain
 		// submit merged signature to destination chain directly
 		if m.Type == message.SignaturePass || m.Type == message.ArtificialPass {
-			log.Debug().Str("relay", "enabled").Msgf("Recv: %v, submit signatures to dest chain %v", m, m.Destination)
+			log.Info().Str("relay", "enabled").Msgf("Recv: %v, submit signatures to dest chain %v", m, m.Destination)
 			sigs, err := middleChain.GetSignatures(m) // getSignatures
 			if err != nil {
 				log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
@@ -127,7 +127,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 		// scenario #2: Deposit event received on source chain, and relay chain is enabled
 		// submit signature to relay chain
-		log.Debug().Str("relay", "enabled").Msgf("Recv: %v, vote on relay chain %v", m, middleId)
+		log.Info().Str("relay", "enabled").Msgf("Recv: %v, vote on relay chain %v", m, middleId)
 		err = middleChain.VoteOnRelay(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
 		if err != nil {
 			if err == util.ErrAlreadyPassed {
@@ -172,7 +172,7 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 	// scenario #3: Deposit event received and middle chain is not enabled
 	// submit signature to dest chain directly
-	log.Debug().Str("relay", "disabled").Msgf("Recv: %v, submit signature to dest chain", m)
+	log.Info().Str("relay", "disabled").Msgf("Recv: %v, submit signature to dest chain", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
 			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error processing: %w ", err))

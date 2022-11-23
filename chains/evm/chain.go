@@ -128,7 +128,7 @@ func NewEVMChain(listener EventListener, writer ProposalVoter, blockstore *store
 // PollEvents is the goroutine that polls blocks and searches Deposit events in them.
 // Events are then sent to eventsChan.
 func (c *EVMChain) PollEvents(stop <-chan struct{}, sysErr chan<- error, eventsChan chan *message.Message) {
-	log.Info().Msg("Polling Blocks...")
+	log.Info().Msg("Polling events started...")
 
 	freshStart := false
 	freshDomain := c.config.GeneralChainConfig.FreshDomain
