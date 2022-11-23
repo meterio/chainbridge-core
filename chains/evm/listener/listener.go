@@ -145,7 +145,7 @@ func (l *EVMListener) ListenToEvents(
 					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, chain %v", util.DomainIdToName[l.id])
 				}
 
-				if time.Since(lastReport) > time.Second*60 {
+				if time.Since(lastReport) > time.Second*60*5 {
 					log.Info().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Msgf("Still querying %v", eventName)
 					lastReport = time.Now()
 				}
