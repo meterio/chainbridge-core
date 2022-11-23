@@ -92,6 +92,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(0),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
+		BlockWindow:        big.NewInt(consts.DefaultBlockWindow),
 		BlockRetryInterval: time.Duration(5) * time.Second,
 	})
 }
@@ -108,6 +109,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"gasLimit":           1000,
 		"startBlock":         1000,
 		"blockConfirmations": 10,
+		"blockWindow":        5,
 		"blockRetryInterval": 10,
 	}
 
@@ -132,6 +134,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		GasMultiplier:      big.NewFloat(1000),
 		StartBlock:         big.NewInt(1000),
 		BlockConfirmations: big.NewInt(10),
+		BlockWindow:        big.NewInt(5),
 		BlockRetryInterval: time.Duration(10) * time.Second,
 	})
 }

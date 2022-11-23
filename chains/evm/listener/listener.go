@@ -57,7 +57,8 @@ func NewEVMListener(chainReader ChainClient, handler EventHandler, bridgeAddress
 }
 
 func (l *EVMListener) ListenToEvents(
-	startBlock, blockDelay *big.Int,
+	startBlock, blockConfirmations *big.Int,
+	blockWindow *big.Int,
 	blockRetryInterval time.Duration,
 	domainID uint8,
 	blockstore *store.BlockStore,
@@ -70,6 +71,11 @@ func (l *EVMListener) ListenToEvents(
 	go func() {
 		chainName := util.DomainIdToName[l.id]
 		log.Info().Msgf("Start to listen events on %v from %v", chainName, startBlock)
+		var (
+			endBlock   = big.NewInt(0)
+			lastReport = time.Now()
+			rpcCount   = 0
+		)
 
 		for {
 			select {
@@ -77,6 +83,7 @@ func (l *EVMListener) ListenToEvents(
 				return
 			default:
 				head, err := l.chainReader.LatestBlock()
+				rpcCount++
 				if err != nil {
 					evmclient.ErrCounterLogic(err.Error(), domainID)
 					log.Warn().Err(err).Msgf("Unable to get latest block, chain %v", util.DomainIdToName[l.id])
@@ -84,38 +91,33 @@ func (l *EVMListener) ListenToEvents(
 					time.Sleep(blockRetryInterval)
 					continue
 				}
+				chainName := util.DomainIdToName[l.id]
 
 				if startBlock == nil {
 					startBlock = head
 				}
+				endBlock.Add(startBlock, blockWindow)
 
 				if l.openTelemetryInst != nil {
 					l.openTelemetryInst.TrackHeadBlock(l.id, head.Int64(), l.fromAddr)
 					l.openTelemetryInst.TrackSyncBlock(l.id, startBlock.Int64(), l.fromAddr)
 				}
 
-				log.Debug().Msgf("ListenToEvents head %v, startBlock %v, blockDelay %v, chain %v", head, startBlock, blockDelay, util.DomainIdToName[l.id])
-
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-				if big.NewInt(0).Sub(head, startBlock).Cmp(blockDelay) == -1 {
+				if new(big.Int).Sub(head, endBlock).Cmp(blockConfirmations) == -1 {
 					time.Sleep(blockRetryInterval)
 					continue
 				}
 
-				logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, startBlock)
-				if err != nil {
-					evmclient.ErrCounterLogic(err.Error(), domainID)
-					// Filtering logs error really can appear only on wrong configuration or temporary network problem
-					// so i do no see any reason to break execution
-					log.Warn().Err(err).Uint8("DomainID", domainID).Str("chain", util.DomainIdToName[domainID]).Msgf("Unable to filter logs")
-					continue
-				}
-				l.trackDeposit(logs, domainID, startBlock, head, ch)
-
-				hint := "Queried block for deposit events"
+				eventName := "Deposit"
 				if middleChainInited {
-					hint = "Queried block for deposit and signaturePass events"
-					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, startBlock)
+					eventName = "SignaturePass"
+				}
+				log.Debug().Str("chain", chainName).Msgf("Query %v in blocks [%v,%v)", eventName, startBlock.Uint64(), endBlock.Uint64())
+
+				if middleChainInited {
+					query := l.buildQuery(l.signatureAddress, string(util.SignaturePass), startBlock, new(big.Int).Sub(endBlock, big.NewInt(1)))
+					rpcCount++
 					spassLogs, err := l.chainReader.FilterLogs(context.TODO(), query)
 					if err != nil {
 						evmclient.ErrCounterLogic(err.Error(), domainID)
@@ -124,20 +126,33 @@ func (l *EVMListener) ListenToEvents(
 					}
 
 					l.trackSignturePass(spassLogs, startBlock, ch)
+				} else {
+					rpcCount++
+					logs, err := l.chainReader.FetchDepositLogs(context.Background(), l.bridgeAddress, startBlock, new(big.Int).Sub(endBlock, big.NewInt(1)))
+					if err != nil {
+						evmclient.ErrCounterLogic(err.Error(), domainID)
+						// Filtering logs error really can appear only on wrong configuration or temporary network problem
+						// so i do no see any reason to break execution
+						log.Warn().Err(err).Uint8("DomainID", domainID).Str("chain", util.DomainIdToName[domainID]).Msgf("Unable to filter logs")
+						continue
+					}
+					l.trackDeposit(logs, domainID, startBlock, head, ch)
 				}
 
-				if startBlock.Int64()%20 == 0 {
-					// Logging process every 20 bocks to exclude spam
-					log.Info().Str("block", startBlock.String()).Uint8("domainID", domainID).Msg(hint)
-				}
 				// TODO: We can store blocks to DB inside listener or make listener send something to channel each block to save it.
 				//Write to block store. Not a critical operation, no need to retry
-				err = blockstore.StoreBlock(startBlock, domainID)
+				err = blockstore.StoreBlock(endBlock, domainID)
 				if err != nil {
 					log.Error().Str("block", startBlock.String()).Err(err).Msgf("Failed to write latest block to blockstore, chain %v", util.DomainIdToName[l.id])
 				}
 				// Goto next block
-				startBlock.Add(startBlock, big.NewInt(1))
+				// startBlock.Add(startBlock, big.NewInt(1))
+				startBlock.Add(startBlock, blockWindow)
+
+				if time.Since(lastReport) > time.Second*15 {
+					log.Info().Str("chain", chainName).Uint64("head", startBlock.Uint64()).Uint64("chainHead", head.Uint64()).Int("rpcCall", rpcCount).Uint64("head", startBlock.Uint64()).Msgf("Still querying %v", eventName)
+					lastReport = time.Now()
+				}
 			}
 		}
 	}()

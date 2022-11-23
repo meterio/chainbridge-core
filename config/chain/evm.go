@@ -22,6 +22,7 @@ type EVMConfig struct {
 	GasLimit           *big.Int
 	StartBlock         *big.Int
 	BlockConfirmations *big.Int
+	BlockWindow        *big.Int
 	BlockRetryInterval time.Duration
 
 	AirDropAmount        *big.Int
@@ -45,6 +46,7 @@ type RawEVMConfig struct {
 	GasLimit           int64   `mapstructure:"gasLimit"`
 	StartBlock         int64   `mapstructure:"startBlock"`
 	BlockConfirmations int64   `mapstructure:"blockConfirmations"`
+	BlockWindow        int64   `mapstructure:"blockWindow"`
 	BlockRetryInterval uint64  `mapstructure:"blockRetryInterval"`
 
 	AirDropAmountOpt        int64  `mapstructure:"airDropAmount"`
@@ -67,6 +69,10 @@ func (c *RawEVMConfig) Validate() error {
 	}
 	if c.BlockConfirmations != 0 && c.BlockConfirmations < 1 {
 		return fmt.Errorf("blockConfirmations has to be >=1")
+	}
+
+	if c.BlockWindow != 0 && c.BlockWindow < 1 {
+		return fmt.Errorf("blockWindow has to be >=1")
 	}
 
 	return nil
@@ -100,6 +106,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GasMultiplier:      big.NewFloat(consts.DefaultGasMultiplier),
 		StartBlock:         big.NewInt(c.StartBlock),
 		BlockConfirmations: big.NewInt(consts.DefaultBlockConfirmations),
+		BlockWindow:        big.NewInt(consts.DefaultBlockWindow),
 
 		AirDropAmount:        big.NewInt(0),
 		AirDropErc20Contract: common.Address{},
@@ -125,6 +132,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 
 	if c.BlockConfirmations != 0 {
 		config.BlockConfirmations = big.NewInt(c.BlockConfirmations)
+	}
+
+	if c.BlockWindow != 0 {
+		config.BlockWindow = big.NewInt(c.BlockWindow)
 	}
 
 	if c.BlockRetryInterval != 0 {
