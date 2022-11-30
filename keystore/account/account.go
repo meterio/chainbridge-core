@@ -5,15 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ChainSafe/chainbridge-core/crypto"
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
-	"github.com/ChainSafe/chainbridge-core/keystore"
+	"github.com/meterio/chainbridge-core/crypto"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/keystore"
 	"github.com/rs/zerolog/log"
 )
 
 const DefaultKeystorePath = "./keys"
 
-//importPrivKey imports a private key into a keypair
+// importPrivKey imports a private key into a keypair
 func ImportPrivKey(datadir, key string, password []byte) (string, error) {
 	if password == nil {
 		password = keystore.GetPassword("Enter password to encrypt keystore file:")

@@ -12,13 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/config/chain"
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
-	"github.com/ChainSafe/chainbridge-core/keystore"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/config/chain"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/keystore"
+	"github.com/meterio/chainbridge-core/util"
 
-	bridgeTypes "github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	bridgeTypes "github.com/meterio/chainbridge-core/types"
 	"github.com/rs/zerolog/log"
 )
 

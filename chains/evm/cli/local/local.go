@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
 
 	"github.com/spf13/cobra"
 )

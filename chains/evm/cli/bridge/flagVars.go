@@ -3,12 +3,12 @@ package bridge
 import (
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
-	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/types"
 )
 
-//flag vars
+// flag vars
 var (
 	Bridge          string
 	DataHash        string
@@ -26,7 +26,7 @@ var (
 	TokenContract   string
 )
 
-//processed flag vars
+// processed flag vars
 var (
 	BridgeAddr         common.Address
 	ResourceIdBytesArr types.ResourceID

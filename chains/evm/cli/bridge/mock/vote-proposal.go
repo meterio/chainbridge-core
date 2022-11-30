@@ -7,8 +7,8 @@ package mock_bridge
 import (
 	reflect "reflect"
 
-	transactor "github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	proposal "github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
+	transactor "github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	proposal "github.com/meterio/chainbridge-core/chains/evm/voter/proposal"
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "github.com/golang/mock/gomock"
 )

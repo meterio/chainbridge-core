@@ -9,11 +9,11 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
-	"github.com/ChainSafe/chainbridge-core/config/chain"
-	"github.com/ChainSafe/chainbridge-core/types"
-	"github.com/ChainSafe/chainbridge-core/util"
 	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/erc20"
+	"github.com/meterio/chainbridge-core/config/chain"
+	"github.com/meterio/chainbridge-core/types"
+	"github.com/meterio/chainbridge-core/util"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -26,15 +26,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/rs/zerolog/log"
 )
 

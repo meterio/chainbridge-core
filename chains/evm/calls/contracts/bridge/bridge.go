@@ -2,24 +2,24 @@ package bridge
 
 import (
 	"bytes"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/util"
 	"math/big"
 	"strconv"
 	"strings"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/deposit"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/deposit"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/meterio/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -90,7 +90,7 @@ func (c *BridgeContract) AdminSetGenericResource(
 	)
 }
 
-//deprecated: AdminSetNativeResource
+// deprecated: AdminSetNativeResource
 func (c *BridgeContract) AdminSetNativeResource(
 	handler common.Address,
 	rID types.ResourceID,
@@ -137,7 +137,7 @@ func (c *BridgeContract) AdminRemoveResource(
 	)
 }
 
-//deprecated: AdminRemoveNativeResourceId
+// deprecated: AdminRemoveNativeResourceId
 func (c *BridgeContract) AdminRemoveNativeResourceId(
 	opts transactor.TransactOptions,
 ) (*common.Hash, error) {

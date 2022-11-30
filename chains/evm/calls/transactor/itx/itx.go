@@ -6,12 +6,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 	"github.com/rs/zerolog/log"
 )
 

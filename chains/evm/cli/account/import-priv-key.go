@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
-	accountutils "github.com/ChainSafe/chainbridge-core/keystore/account"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/flags"
+	accountutils "github.com/meterio/chainbridge-core/keystore/account"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

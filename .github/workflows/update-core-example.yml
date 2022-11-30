@@ -3,7 +3,7 @@ name: Update ChainBridge core-example
 on:
   push:
     branches:
-      - 'main'
+      - "main"
 
 jobs:
   update-core-example:
@@ -14,6 +14,6 @@ jobs:
         with:
           token: ${{ secrets.PUBLIC_REPO_PAM }}
           # Repository to which to dispatch the event
-          repository: ChainSafe/chainbridge-core-example
+          repository: meterio/chainbridge-core-example
           event-type: push-core-to-main-branch
           client-payload: '{"sha": "${{ github.sha }}"}'

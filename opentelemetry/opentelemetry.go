@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/ChainSafe/chainbridge-core/relayer"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/meterio/chainbridge-core/relayer"
+	"github.com/meterio/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/util"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 )

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/meterio/chainbridge-core/util"
 	"time"
 )
 

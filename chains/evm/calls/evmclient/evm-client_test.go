@@ -2,14 +2,14 @@ package evmclient_test
 
 import (
 	"encoding/hex"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
 	"strings"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/golang/mock/gomock"
+	"github.com/meterio/chainbridge-core/types"
 	"github.com/stretchr/testify/suite"
 )
 

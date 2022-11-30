@@ -1,13 +1,13 @@
 package evmtransaction
 
 import (
-	evmgaspricer "github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer/mock"
+	evmgaspricer "github.com/meterio/chainbridge-core/chains/evm/calls/evmgaspricer"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmgaspricer/mock"
 	"math/big"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/keystore"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/meterio/chainbridge-core/keystore"
 
 	"github.com/ethereum/go-ethereum/common"
 

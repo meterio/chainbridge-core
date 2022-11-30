@@ -4,9 +4,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ChainSafe/chainbridge-core/types"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/meterio/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/types"
 	"github.com/rs/zerolog/log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -87,7 +87,7 @@ func Erc20EventHandler(sourceID, destId uint8, nonce uint64, resourceID types.Re
 	// lenRecipientAddress: second 32 bytes of calldata [32:64]
 	// does not need to be derived because it is being calculated
 	// within ERC20MessageHandler
-	// https://github.com/ChainSafe/chainbridge-core/blob/main/chains/evm/voter/message-handler.go#L108
+	// https://github.com/meterio/chainbridge-core/blob/main/chains/evm/voter/message-handler.go#L108
 
 	// recipientAddress: last 20 bytes of calldata
 	recipientAddress := calldata[64:]

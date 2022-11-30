@@ -3,13 +3,13 @@ package erc20
 import (
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 
-	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/types"
 )
 
-//flag vars
+// flag vars
 var (
 	Amount         string
 	Decimals       uint64
@@ -26,7 +26,7 @@ var (
 	Admin          string
 )
 
-//processed flag vars
+// processed flag vars
 var (
 	RecipientAddress   common.Address
 	RealAmount         *big.Int

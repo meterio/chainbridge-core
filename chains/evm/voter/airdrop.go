@@ -1,11 +1,11 @@
 package voter
 
 import (
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/config"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/config"
+	"github.com/meterio/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"math/big"
 )

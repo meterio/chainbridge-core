@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/voter"
-	mock_voter "github.com/ChainSafe/chainbridge-core/chains/evm/voter/mock"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
+	"github.com/meterio/chainbridge-core/chains/evm/voter"
+	mock_voter "github.com/meterio/chainbridge-core/chains/evm/voter/mock"
+	"github.com/meterio/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/stretchr/testify/suite"
 )
 

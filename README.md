@@ -1,11 +1,13 @@
 # Chainbridge Core
+
 <a href="https://discord.gg/ykXsJKfhgq">
   <img alt="discord" src="https://img.shields.io/discord/593655374469660673?label=Discord&logo=discord&style=flat" />
 </a>
 
 Chainbridge-core is the project that was born from the existing version of [Chainbridge](https://github.com/ChainSafe/chainbridge). It was built to improve the maintainability and modularity of the current solution. The fundamental distinction is that chainbridge-core is more of a framework rather than a stand-alone application.
 
-*Project still in deep beta*
+_Project still in deep beta_
+
 - Chat with us on [discord](https://discord.gg/ykXsJKfhgq).
 
 ### Table of Contents
@@ -14,26 +16,29 @@ Chainbridge-core is the project that was born from the existing version of [Chai
 2. [Modules](#modules)
 3. [Usage](#usage)
 4. [Metrics](#metrics)
-4. [EVM-CLI](#evm-cli)
-5. [Celo-CLI](#celo-cli)
-6. [Substrate](#substrate)
-7. [Contributing](#contributing)
-8. [Local Setup](#local-setup)
+5. [EVM-CLI](#evm-cli)
+6. [Celo-CLI](#celo-cli)
+7. [Substrate](#substrate)
+8. [Contributing](#contributing)
+9. [Local Setup](#local-setup)
 
 ## `Installation`
+
 Refer to [installation](https://github.com/ChainSafe/chainbridge-docs/blob/develop/docs/installation.md) guide for assistance in installing.
 
 ## `Modules`
 
 The chainbridge-core-example currently supports two modules:
+
 1. [EVM-CLI](#evm-cli)
 2. [Celo-CLI](#celo-cli)
 3. [Substrate](#substrate)
 
 ## Usage
+
 Since chainbridge-core is the modular framework it will require writing some code to get it running.
 
-You can find some examples [here](https://github.com/ChainSafe/chainbridge-core-example).
+You can find some examples [here](https://github.com/meterio/chainbridge-core-example).
 
 &nbsp;
 
@@ -46,8 +51,8 @@ which is called inside relayer router when a `Deposit` event appears and should 
 
 `chainbridge-core` provides already implemented metrics [provider](./opentelemetry/opentelemetry.go) via [OpenTelemetry](https://opentelemetry.io/) that is vendor-agnostic. It sends metrics to a separate [collector](https://opentelemetry.io/docs/collector/) that then sends metrics via configured [exporters](https://opentelemetry.io/docs/collector/configuration/#exporters) to one or many metrics back-ends.
 
-
 ## `EVM-CLI`
+
 This module provides instruction for communicating with EVM-compatible chains.
 
 ```bash
@@ -80,6 +85,7 @@ Flags:
 &nbsp;
 
 ### `Accounts`
+
 Set of commands for managing accounts.
 
 ```bash
@@ -96,6 +102,7 @@ Flags:
 ```
 
 #### `generate`
+
 The generate subcommand is used to generate the bridge keystore. If no options are specified, a Secp256k1 key will be made.
 
 ```bash
@@ -107,6 +114,7 @@ Flags:
 ```
 
 #### `import`
+
 The import subcommand is used to import a keystore for the bridge.
 
 ```bash
@@ -120,6 +128,7 @@ Flags:
 ```
 
 #### `transfer`
+
 The transfer subcommand is used to transfer the base currency.
 
 ```bash
@@ -136,6 +145,7 @@ Flags:
 &nbsp;
 
 ### `Admin`
+
 Set of commands for executing various admin actions.
 
 ```bash
@@ -161,6 +171,7 @@ Flags:
 ```
 
 #### `add-admin`
+
 The add-admin subcommand sets an address as a bridge admin.
 
 ```bash
@@ -174,6 +185,7 @@ Flags:
 ```
 
 #### `add-relayer`
+
 The add-relayer subcommand sets an address as a bridge relayer.
 
 ```bash
@@ -187,6 +199,7 @@ Flags:
 ```
 
 #### `get-threshold`
+
 The get-threshold subcommand returns the relayer vote threshold.
 
 ```bash
@@ -199,6 +212,7 @@ Flags:
 ```
 
 #### `is-relayer`
+
 The is-relayer subcommand checks if an address is registered as a relayer.
 
 ```bash
@@ -212,6 +226,7 @@ Flags:
 ```
 
 #### `pause`
+
 The pause subcommand pauses deposits and proposals.
 
 ```bash
@@ -225,6 +240,7 @@ Flags:
 ```
 
 #### `remove-admin`
+
 The remove-admin subcommand removes an existing admin.
 
 ```bash
@@ -238,6 +254,7 @@ Flags:
 ```
 
 #### `remove-relayer`
+
 The remove-relayer subcommand removes an existing relayer.
 
 ```bash
@@ -251,6 +268,7 @@ Flags:
 ```
 
 #### `set-deposit-nonce`
+
 The set-deposit-nonce subcommand sets the deposit nonce. This nonce cannot be less than what is currently stored in the contract.
 
 ```bash
@@ -265,6 +283,7 @@ Flags:
 ```
 
 #### `set-fee`
+
 The set-fee subcommand sets a new fee for deposits.
 
 ```bash
@@ -278,6 +297,7 @@ Flags:
 ```
 
 #### `set-threshold`
+
 The set-threshold subcommand sets a new relayer vote threshold.
 
 ```bash
@@ -291,6 +311,7 @@ Flags:
 ```
 
 #### `unpause`
+
 The unpause subcommand unpauses deposits and proposals.
 
 ```bash
@@ -303,6 +324,7 @@ Flags:
 ```
 
 #### `withdraw`
+
 The withdraw subcommand withdrawals tokens from a handler contract.
 
 ```bash
@@ -323,6 +345,7 @@ Flags:
 &nbsp;
 
 ### `Bridge`
+
 Set of commands for interacting with a bridge.
 
 ```bash
@@ -342,6 +365,7 @@ Flags:
 ```
 
 #### `cancel-proposal`
+
 The cancel-proposal subcommand cancels an expired proposal.
 
 ```bash
@@ -357,6 +381,7 @@ Flags:
 ```
 
 #### `query-proposal`
+
 The query-proposal subcommand queries an inbound proposal.
 
 ```bash
@@ -372,6 +397,7 @@ Flags:
 ```
 
 #### `query-resource`
+
 The query-resource subcommand queries the contract address with the provided resource ID for a specific handler contract.
 
 ```bash
@@ -385,6 +411,7 @@ Flags:
 ```
 
 #### `register-generic-resource`
+
 The register-generic-resource subcommand registers a resource ID with a contract address for a generic handler.
 
 ```bash
@@ -403,6 +430,7 @@ Flags:
 ```
 
 #### `register-resource`
+
 The register-resource subcommand registers a resource ID with a contract address for a handler.
 
 ```bash
@@ -418,6 +446,7 @@ Flags:
 ```
 
 #### `set-burn`
+
 The set-burn subcommand sets a token contract as mintable/burnable in a handler.
 
 ```bash
@@ -434,6 +463,7 @@ Flags:
 &nbsp;
 
 ### `Deploy`
+
 The deploy subcommand deploys all or some of the contracts required for bridging. Selection of contracts can be made by either specifying --all or a subset of flags.
 
 ```bash
@@ -464,6 +494,7 @@ Flags:
 &nbsp;
 
 ### `ERC20`
+
 Set of commands for interacting with an ERC20 contract.
 
 ```bash
@@ -483,6 +514,7 @@ Flags:
 ```
 
 #### `add-minter`
+
 The add-minter subcommand adds a minter to an ERC20 mintable contract.
 
 ```bash
@@ -496,6 +528,7 @@ Flags:
 ```
 
 #### `get-allowance`
+
 The get-allowance subcommand returns the allowance of a spender for an address.
 
 ```bash
@@ -510,6 +543,7 @@ Flags:
 ```
 
 #### `approve`
+
 The approve subcommand approves tokens in an ERC20 contract for transfer.
 
 ```bash
@@ -525,6 +559,7 @@ Flags:
 ```
 
 #### `balance`
+
 The balance subcommand queries the balance of an account in an ERC20 contract.
 
 ```bash
@@ -538,6 +573,7 @@ Flags:
 ```
 
 #### `deposit`
+
 The deposit subcommand creates a new ERC20 token deposit on the bridge contract.
 
 ```bash
@@ -555,6 +591,7 @@ Flags:
 ```
 
 #### `mint`
+
 The mint subcommand mints a token on an ERC20 mintable contract.
 
 ```bash
@@ -572,6 +609,7 @@ Flags:
 &nbsp;
 
 ### `ERC721`
+
 ERC721-related instructions.
 
 ```bash
@@ -587,6 +625,7 @@ Available Commands:
 ```
 
 #### `add-minter`
+
 The add-minter subcommand adds a new minter address to an ERC721 mintable contract.
 
 ```bash
@@ -600,6 +639,7 @@ Flags:
 ```
 
 #### `approve`
+
 The approve subcommand approves a token in an ERC721 contract for transfer.
 
 ```bash
@@ -614,6 +654,7 @@ Flags:
 ```
 
 #### `deposit`
+
 The deposit subcommand creates a new ERC721 token deposit on the bridge contract.
 
 ```bash
@@ -631,6 +672,7 @@ Flags:
 ```
 
 #### `mint`
+
 The mint subcommand mints a token on an ERC721 mintable contract.
 
 ```bash
@@ -646,6 +688,7 @@ Flags:
 ```
 
 #### `owner`
+
 The owner subcommand gets a token owner from an ERC721 mintable contract.
 
 ```bash
@@ -659,6 +702,7 @@ Flags:
 ```
 
 ### `Utils`
+
 Set of utility commands.
 
 ```bash
@@ -674,6 +718,7 @@ Flags:
 ```
 
 #### `hash-list`
+
 The hash-list subcommand accepts a starting block to query, loops over N number of blocks past it, then prints this list of blocks to review hashes contained within.
 
 ```bash
@@ -687,6 +732,7 @@ Flags:
 ```
 
 #### `simulate`
+
 The simulate subcommand simulates a transaction result by simulating invocation; not state-altering.
 
 ```bash
@@ -701,6 +747,7 @@ Flags:
 ```
 
 ### `Centrifuge`
+
 Set of commands for interacting with a cetrifuge asset store contract.
 
 ```bash
@@ -713,6 +760,7 @@ Available Commands:
 ```
 
 #### `deploy`
+
 The deploy subcommand deploys a Centrifuge asset store contract that represents bridged Centrifuge assets.
 
 ```bash
@@ -724,7 +772,8 @@ Flags:
 ```
 
 #### `get-hash`
-The get-hash subcommand checks the _assetsStored map on a Centrifuge asset store contract to determine whether the asset hash exists or not.
+
+The get-hash subcommand checks the \_assetsStored map on a Centrifuge asset store contract to determine whether the asset hash exists or not.
 
 ```bash
 Usage:
@@ -735,9 +784,11 @@ Flags:
       --hash string      A hash to lookup
   -h, --help             help for get-hash
 ```
+
 &nbsp;
 
 ## `Celo-CLI`
+
 This module provides instruction for communicating with Celo-compatible chains.
 
 More information can be found about this module within its repository, listed below.
@@ -747,6 +798,7 @@ More information can be found about this module within its repository, listed be
 &nbsp;
 
 ## `Substrate`
+
 This module provides instruction for communicating with Substrate-compatible chains.
 
 Currently there is no CLI for this, though more information can be found about this module within its repository, listed below.
@@ -774,7 +826,6 @@ When implementing a change:
 
 If change entails an update that needs to be documented, please submit a PR to [chainbridge-docs](https://github.com/ChainSafe/chainbridge-docs/tree/develop/docs) repo.
 
-
 ### Submiting a PR
 
 Fork the repository, make changes and open a PR to the `main` branch of the repo. Pull requests must be cleanly rebased on top of `main` and changes require at least 2 PR approvals for them to be merged.
@@ -784,19 +835,21 @@ Fork the repository, make changes and open a PR to the `main` branch of the repo
 A great way to contribute to the project is to send a detailed report when you encounter an issue. We always appreciate a well-written, thorough bug report, and will thank you for it!
 
 When reporting issues, always include:
- - chainbridge-core version
- - modules used
- - logs (don't forget to remove sensitive data)
- - tx hashes related to issue (if applicable)
- - steps required to reproduce the problem
 
- Putting large logs into a [gist](https://gist.github.com) will be appreciated.
+- chainbridge-core version
+- modules used
+- logs (don't forget to remove sensitive data)
+- tx hashes related to issue (if applicable)
+- steps required to reproduce the problem
+
+Putting large logs into a [gist](https://gist.github.com) will be appreciated.
 
 ## `Local Setup`
 
 This section allows developers with a way to quickly and with minimal effort stand-up a local development environment in order to fully test out functionality of the chainbridge.
 
 ### `local`
+
 The local-setup command deploys a bridge, ERC20, ERC721 and generic handler contracts with preconfigured accounts and appropriate handlers.
 
 ```bash
@@ -807,11 +860,14 @@ Flags:
   -h, --help   help for local-setup
 ```
 
-This can be easily run by building the [chainbridge-core-example](https://github.com/ChainSafe/chainbridge-core-example) app, or by issuing a `Makefile` instruction directly from the root of the [chainbridge-core](https://github.com/ChainSafe/chainbridge-core) itself.
+This can be easily run by building the [chainbridge-core-example](https://github.com/meterio/chainbridge-core-example) app, or by issuing a `Makefile` instruction directly from the root of the [chainbridge-core](https://github.com/meterio/chainbridge-core) itself.
+
 ```bash
 make local-setup
 ```
+
 ##### ^ this command will run a shell script that contains instructions for running two EVM chains via [Docker](https://www.docker.com/) (`docker-compose`). Note: this will likely take a few minutes to run.
+
 &nbsp;
 
 You can also review our [Local Setup Guide](https://github.com/ChainSafe/chainbridge-docs/blob/develop/docs/guides/local-setup-guide.md) for a more detailed example of setting up a local development environment manually.

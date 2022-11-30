@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/forwarder"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	signer "github.com/ethereum/go-ethereum/signer/core"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/forwarder"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 	"github.com/rs/zerolog/log"
 )
 

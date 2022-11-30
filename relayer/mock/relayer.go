@@ -9,7 +9,7 @@ import (
 	"math/big"
 	reflect "reflect"
 
-	message "github.com/ChainSafe/chainbridge-core/relayer/message"
+	message "github.com/meterio/chainbridge-core/relayer/message"
 	gomock "github.com/golang/mock/gomock"
 )
 

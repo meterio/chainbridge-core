@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/voter/proposal"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/meterio/chainbridge-core/chains/evm/voter/proposal"
+	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/rs/zerolog/log"
 	"math/big"
 )
@@ -19,7 +19,7 @@ type MessageHandlerFunc func(m *message.Message, handlerAddr, bridgeAddress comm
 // proposal
 func NewEVMMessageHandler(bridgeContract bridge.BridgeContract) *EVMMessageHandler {
 	return &EVMMessageHandler{
-		bridgeContract:       bridgeContract,
+		bridgeContract: bridgeContract,
 	}
 }
 

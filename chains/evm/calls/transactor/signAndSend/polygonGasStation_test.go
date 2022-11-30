@@ -3,7 +3,7 @@ package signAndSend
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
 	"github.com/rs/zerolog/log"
 	"io"
 	"math/big"

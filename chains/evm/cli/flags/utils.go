@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
 
-	"github.com/ChainSafe/chainbridge-core/keystore"
-	"github.com/ChainSafe/chainbridge-core/types"
+	"github.com/meterio/chainbridge-core/keystore"
+	"github.com/meterio/chainbridge-core/types"
 
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

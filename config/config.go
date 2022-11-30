@@ -2,14 +2,14 @@ package config
 
 import (
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/flags"
+	"github.com/meterio/chainbridge-core/flags"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"math/big"
 	"os"
 	"time"
 
-	"github.com/ChainSafe/chainbridge-core/config/relayer"
+	"github.com/meterio/chainbridge-core/config/relayer"
 	"github.com/spf13/viper"
 )
 

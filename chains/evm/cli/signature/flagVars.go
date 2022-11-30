@@ -3,12 +3,12 @@ package signature
 import (
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
-	"github.com/ChainSafe/chainbridge-core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/types"
 )
 
-//flag vars
+// flag vars
 var (
 	Bridge             string
 	Signature          string
@@ -31,7 +31,7 @@ var (
 	ChainID            uint64
 )
 
-//processed flag vars
+// processed flag vars
 var (
 	BridgeAddr         common.Address
 	SignatureAddr      common.Address

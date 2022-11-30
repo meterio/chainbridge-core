@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
-	"github.com/ChainSafe/chainbridge-core/types"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/types"
+	"github.com/meterio/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel/attribute"
 )

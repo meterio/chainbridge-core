@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/local"
-	"github.com/ChainSafe/chainbridge-core/e2e/evm"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/local"
+	"github.com/meterio/chainbridge-core/e2e/evm"
 	"github.com/stretchr/testify/suite"
 )
 

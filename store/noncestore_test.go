@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/store"
-	mock_store "github.com/ChainSafe/chainbridge-core/store/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/meterio/chainbridge-core/store"
+	mock_store "github.com/meterio/chainbridge-core/store/mock"
 	"github.com/stretchr/testify/suite"
 	"github.com/syndtr/goleveldb/leveldb"
 )

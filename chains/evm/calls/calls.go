@@ -3,10 +3,10 @@ package calls
 import (
 	"context"
 	"encoding/hex"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/rs/zerolog/log"
 	"math/big"
 )

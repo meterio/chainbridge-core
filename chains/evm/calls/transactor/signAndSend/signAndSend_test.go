@@ -4,15 +4,15 @@ import (
 	"math/big"
 	"testing"
 
-	erc20 "github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
-	mock_calls "github.com/ChainSafe/chainbridge-core/chains/evm/calls/mock"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	mock_transactor "github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/mock"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/signAndSend"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+	erc20 "github.com/meterio/chainbridge-core/chains/evm/calls/contracts/erc20"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
+	mock_calls "github.com/meterio/chainbridge-core/chains/evm/calls/mock"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	mock_transactor "github.com/meterio/chainbridge-core/chains/evm/calls/transactor/mock"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor/signAndSend"
 	"github.com/stretchr/testify/suite"
 )
 

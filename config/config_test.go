@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/config"
-	"github.com/ChainSafe/chainbridge-core/config/relayer"
+	"github.com/meterio/chainbridge-core/config"
+	"github.com/meterio/chainbridge-core/config/relayer"
 	"github.com/stretchr/testify/suite"
 )
 

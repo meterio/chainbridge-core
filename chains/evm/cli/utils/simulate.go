@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/flags"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/logger"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

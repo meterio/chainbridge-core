@@ -2,17 +2,17 @@ package listener_test
 
 import (
 	"errors"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
 	"math/big"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/listener"
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/chains/evm/listener"
+	"github.com/meterio/chainbridge-core/relayer/message"
 
-	mock_listener "github.com/ChainSafe/chainbridge-core/chains/evm/listener/mock"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/golang/mock/gomock"
+	mock_listener "github.com/meterio/chainbridge-core/chains/evm/listener/mock"
 	"github.com/stretchr/testify/suite"
 )
 

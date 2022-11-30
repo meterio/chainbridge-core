@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/config/chain"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/config/chain"
 	"github.com/stretchr/testify/suite"
 )
 

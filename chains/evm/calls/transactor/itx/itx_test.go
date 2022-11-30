@@ -6,12 +6,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/itx"
-	mock_itx "github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/itx/mock"
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor/itx"
+	mock_itx "github.com/meterio/chainbridge-core/chains/evm/calls/transactor/itx/mock"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 	"github.com/stretchr/testify/suite"
 )
 

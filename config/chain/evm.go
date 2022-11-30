@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
 	"github.com/mitchellh/mapstructure"
 )
 

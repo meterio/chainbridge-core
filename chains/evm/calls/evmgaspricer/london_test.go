@@ -1,7 +1,7 @@
 package evmgaspricer
 
 import (
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer/mock"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmgaspricer/mock"
 	"math/big"
 	"testing"
 

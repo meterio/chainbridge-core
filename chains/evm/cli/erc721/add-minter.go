@@ -3,14 +3,14 @@ package erc721
 import (
 	"fmt"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc721"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
-	"github.com/ChainSafe/chainbridge-core/util"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/erc721"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/meterio/chainbridge-core/util"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/initialize"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/logger"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

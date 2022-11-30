@@ -3,12 +3,12 @@ package admin
 import (
 	"math/big"
 
-	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
+	"github.com/meterio/chainbridge-core/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-//flag vars
+// flag vars
 var (
 	Admin              string
 	Implementation     string
@@ -38,11 +38,11 @@ var (
 	RelayUrl string
 	DestUrl  string
 
-	TxID string
+	TxID   string
 	Submit bool
 )
 
-//processed flag vars
+// processed flag vars
 var (
 	BridgeAddr         common.Address
 	TxHash             common.Hash

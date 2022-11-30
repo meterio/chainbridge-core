@@ -1,7 +1,7 @@
 package opentelemetry
 
 import (
-	"github.com/ChainSafe/chainbridge-core/relayer/message"
+	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/rs/zerolog/log"
 )
 

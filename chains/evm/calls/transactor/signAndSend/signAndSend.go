@@ -10,9 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/calls"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/rs/zerolog/log"
 )
 

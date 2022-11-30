@@ -2,13 +2,13 @@ package signature
 
 import (
 	"fmt"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/signatures"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/signatures"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/flags"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/initialize"
+	"github.com/meterio/chainbridge-core/chains/evm/cli/logger"
+	"github.com/meterio/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

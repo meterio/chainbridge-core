@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 
 	"github.com/ethereum/go-ethereum/common"
 )

@@ -1,8 +1,8 @@
 package util
 
 import (
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/consts"
-	"github.com/ChainSafe/chainbridge-core/crypto"
+	"github.com/meterio/chainbridge-core/chains/evm/calls/consts"
+	"github.com/meterio/chainbridge-core/crypto"
 	"github.com/spf13/cobra"
 	"sync"
 )

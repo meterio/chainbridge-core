@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	reflect "reflect"
 
-	transactor "github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
+	transactor "github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "github.com/golang/mock/gomock"
 )

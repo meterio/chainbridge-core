@@ -1,4 +1,4 @@
-module github.com/ChainSafe/chainbridge-core
+module github.com/meterio/chainbridge-core
 
 go 1.17
 
