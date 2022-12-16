@@ -2,11 +2,12 @@ package bridge
 
 import (
 	"bytes"
-	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
-	"github.com/meterio/chainbridge-core/util"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/meterio/chainbridge-core/chains/evm/calls/evmclient"
+	"github.com/meterio/chainbridge-core/util"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/meterio/chainbridge-core/chains/evm/calls"
@@ -606,7 +607,7 @@ func (c *BridgeContract) GrantRole(
 		"grantRole",
 		opts,
 		role,
-		account,
+		account.String(),
 	)
 }
 
@@ -620,7 +621,7 @@ func (c *BridgeContract) RevokeRole(
 		"revokeRole",
 		opts,
 		role,
-		account,
+		account.String(),
 	)
 }
 
@@ -645,7 +646,7 @@ func (c *BridgeContract) TransferFee(
 	return c.ExecuteTransaction(
 		"transferFee",
 		opts,
-		account,
+		account.String(),
 		amount,
 	)
 }
