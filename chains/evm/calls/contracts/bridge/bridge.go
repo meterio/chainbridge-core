@@ -607,7 +607,7 @@ func (c *BridgeContract) GrantRole(
 		"grantRole",
 		opts,
 		role,
-		account.String(),
+		account,
 	)
 }
 
@@ -621,7 +621,7 @@ func (c *BridgeContract) RevokeRole(
 		"revokeRole",
 		opts,
 		role,
-		account.String(),
+		account,
 	)
 }
 
@@ -646,8 +646,8 @@ func (c *BridgeContract) TransferFee(
 	return c.ExecuteTransaction(
 		"transferFee",
 		opts,
-		account.String(),
-		amount,
+		[]common.Address{account},
+		[]*big.Int{amount},
 	)
 }
 
