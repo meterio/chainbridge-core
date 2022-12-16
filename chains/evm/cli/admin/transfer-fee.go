@@ -54,7 +54,6 @@ func BindTransferFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().StringVar(&Account, "account", "", "Account address")
-	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of chain")
 	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
 }
 
