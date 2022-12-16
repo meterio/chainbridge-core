@@ -2,12 +2,13 @@ package admin
 
 import (
 	"fmt"
+	"math/big"
+
 	callsUtil "github.com/meterio/chainbridge-core/chains/evm/calls"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/meterio/chainbridge-core/chains/evm/cli/initialize"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/meterio/chainbridge-core/chains/evm/cli/flags"
@@ -73,6 +74,7 @@ func ValidateTransferFeeFlags(cmd *cobra.Command, args []string) error {
 
 func ProcessTransferFeeFlags(cmd *cobra.Command, args []string) {
 	AccountAddr = common.HexToAddress(Account)
+	BridgeAddr = common.HexToAddress(Bridge)
 }
 
 func TransferFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
