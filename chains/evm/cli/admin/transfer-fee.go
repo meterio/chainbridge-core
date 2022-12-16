@@ -54,7 +54,9 @@ func BindTransferFeeFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Fee, "fee", "", "New fee (in ether)")
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
 	cmd.Flags().StringVar(&Account, "account", "", "Account address")
-	flags.MarkFlagsAsRequired(cmd, "fee", "bridge")
+	cmd.Flags().Uint64Var(&Decimals, "decimals", 0, "ERC20 token decimals")
+
+	flags.MarkFlagsAsRequired(cmd, "fee", "bridge", "account", "decimals")
 }
 
 func init() {
@@ -80,8 +82,9 @@ func TransferFeeCMD(cmd *cobra.Command, args []string, contract *bridge.BridgeCo
 	log.Debug().Msgf(`
 Transfer fee
 Fee amount: %s
-to account: %s
-Bridge address: %s`, Fee, Account, Bridge)
+Decimals: %d
+To account: %s
+Bridge address: %s`, Fee, Decimals, Account, Bridge)
 
 	decimals := big.NewInt(int64(Decimals))
 	realAmount, err := callsUtil.UserAmountToWei(Fee, decimals)
@@ -89,6 +92,7 @@ Bridge address: %s`, Fee, Account, Bridge)
 		return err
 	}
 
+	log.Info().Msgf(`Real Amount: %s`, realAmount.String())
 	_, err = contract.TransferFee(AccountAddr, realAmount, transactor.TransactOptions{GasLimit: gasLimit})
 	return err
 }
