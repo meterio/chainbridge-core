@@ -67,10 +67,10 @@ func (w *EVMVoter) shouldAirDropNative(m message.Message) (bool, uint8, *common.
 	transferType := m.Type
 
 	// only ERC20 allow to airdrop
-	if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
-		log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
-		return false, 0, nil, nil
-	}
+	// if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
+	// log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
+	// return false, 0, nil, nil
+	// }
 
 	// The default airDropAmount should be configured..
 	if w.cfg.AirDropAmount.Sign() == 0 {
@@ -105,10 +105,10 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 	transferType := m.Type
 
 	// only ERC20 allow to airdrop
-	if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
-		log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
-		return false, 0, nil, nil, nil
-	}
+	// if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
+	// log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
+	// return false, 0, nil, nil, nil
+	// }
 
 	// Check the configuration
 	if (w.cfg.AirDropErc20Amount.Sign() == 0) || (w.cfg.AirDropErc20Contract == util.ZeroAddress) {
