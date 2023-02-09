@@ -1,13 +1,16 @@
 package voter
 
 import (
+	"bytes"
+	"encoding/hex"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/meterio/chainbridge-core/config"
 	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/meterio/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
-	"math/big"
 )
 
 func (w *EVMVoter) CheckAndExecuteAirDropNative(m message.Message) {
@@ -52,6 +55,11 @@ func (w *EVMVoter) CheckAndExecuteAirDrop(m message.Message) {
 	w.CheckAndExecuteAirDropErc20(m)
 }
 
+var (
+	amplRID1, _ = hex.DecodeString("40de9bf51700fdcbdb302cb214a8c0ac44a0769314f9bdf0f59ccc7ac7e14e9c")
+	amplRID2, _ = hex.DecodeString("1f3eb8ee12ce38ffa19fc4c635621ad2c9a0bd609def9ddce77680e33bc2224b")
+)
+
 // airDrop executes the proposal
 func (w *EVMVoter) shouldAirDropNative(m message.Message) (bool, uint8, *common.Address, *big.Int) {
 	// "{Source:1 Destination:2 Type:FungibleTransfer DepositNonce:11 ResourceId:[0 0 0 0 0 0 0 0 0 0 0 34 142 187 238 153 156 106 122 215 74 97 48 232 27 18 249 254 35 123 163 1] Payload:[[248 176 161 14 71 0 0] [2 5 194 216 98 202 5 16 16 105 139 105 181 66 120 203 175 148 92 11]]}"
@@ -59,12 +67,19 @@ func (w *EVMVoter) shouldAirDropNative(m message.Message) (bool, uint8, *common.
 	transferType := m.Type
 
 	// only ERC20 allow to airdrop
-	if transferType != message.FungibleTransfer {
+	if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
+		log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
 		return false, 0, nil, nil
 	}
 
 	// The default airDropAmount should be configured..
 	if w.cfg.AirDropAmount.Sign() == 0 {
+		log.Info().Str("airDropAmount", w.cfg.AirDropAmount.String()).Msg("skip airdrop native due to airDropAmount")
+		return false, 0, nil, nil
+	}
+
+	if bytes.Equal(amplRID1, m.ResourceId[:]) || bytes.Equal(amplRID2, m.ResourceId[:]) {
+		log.Info().Str("resourceID", hex.EncodeToString(m.ResourceId[:])).Msg("skip airdrop native due to resourceID")
 		return false, 0, nil, nil
 	}
 
@@ -90,12 +105,19 @@ func (w *EVMVoter) shouldAirDropErc20(m message.Message) (bool, uint8, *common.A
 	transferType := m.Type
 
 	// only ERC20 allow to airdrop
-	if transferType != message.FungibleTransfer {
+	if transferType != message.FungibleTransfer && transferType != message.SignaturePass {
+		log.Info().Str("transferType", string(transferType)).Msg("skip airdrop native due to transfer type")
 		return false, 0, nil, nil, nil
 	}
 
 	// Check the configuration
 	if (w.cfg.AirDropErc20Amount.Sign() == 0) || (w.cfg.AirDropErc20Contract == util.ZeroAddress) {
+		log.Info().Str("airDropAmount", w.cfg.AirDropAmount.String()).Msg("skip airdrop native due to airDropAmount")
+		return false, 0, nil, nil, nil
+	}
+
+	if bytes.Equal(amplRID1, m.ResourceId[:]) || bytes.Equal(amplRID2, m.ResourceId[:]) {
+		log.Info().Str("resourceID", hex.EncodeToString(m.ResourceId[:])).Msg("skip airdrop native due to resourceID")
 		return false, 0, nil, nil, nil
 	}
 
