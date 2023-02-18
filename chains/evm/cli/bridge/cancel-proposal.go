@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	callsUtil "github.com/meterio/chainbridge-core/chains/evm/calls"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
@@ -68,7 +69,7 @@ func ValidateCancelProposalFlags(cmd *cobra.Command, args []string) error {
 func ProcessCancelProposalFlags(cmd *cobra.Command, args []string) error {
 	DataBytes = common.Hex2Bytes(DataHash)
 	DataHashBytes = callsUtil.SliceTo32Bytes(DataBytes)
-
+	BridgeAddr = common.HexToAddress(Bridge)
 	return nil
 }
 
