@@ -102,7 +102,7 @@ func (l *EVMListener) ListenToEvents(
 				}
 
 				// Sleep if the difference is less than blockDelay; (latest - current) < BlockDelay
-				if new(big.Int).Sub(head, endBlock).Cmp(blockConfirmations) == -1 {
+				if new(big.Int).Sub(head, endBlock).Cmp(blockConfirmations) <= -1 {
 					time.Sleep(blockRetryInterval)
 					continue
 				}
