@@ -3,6 +3,7 @@ package bridge
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	callsUtil "github.com/meterio/chainbridge-core/chains/evm/calls"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
@@ -94,7 +95,10 @@ func ProcessRemoveGenericResourceFlags(cmd *cobra.Command, args []string) error 
 }
 
 func RemoveGenericResource(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
-	log.Info().Msgf("Remove contract %s with resource ID %s", TargetContractAddr, ResourceID)
+	log.Info().Msgf(`Remove generic resource:
+	Bridge: %s
+	ResourceID: %s
+	Contract %s`, contract.ContractAddress(), ResourceID, TargetContractAddr)
 
 	h, err := contract.AdminRemoveGenericResource(
 		ResourceIdBytesArr,
