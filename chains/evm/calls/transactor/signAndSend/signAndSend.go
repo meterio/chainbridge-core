@@ -2,11 +2,7 @@ package signAndSend
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -84,42 +80,42 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 
 	gp := []*big.Int{opts.GasPrice}
 	if opts.GasPrice.Cmp(big.NewInt(0)) == 0 {
-		if t.client.PolygonGasStation() {
-			gp = make([]*big.Int, 2)
+		// if t.client.PolygonGasStation() {
+		// 	gp = make([]*big.Int, 2)
 
-			resp, err := http.Get(gasStationUrl)
-			if err != nil {
-				return &common.Hash{}, err
-			}
-			defer resp.Body.Close()
-			body, err := io.ReadAll(resp.Body)
+		// 	resp, err := http.Get(gasStationUrl)
+		// 	if err != nil {
+		// 		return &common.Hash{}, err
+		// 	}
+		// 	defer resp.Body.Close()
+		// 	body, err := io.ReadAll(resp.Body)
 
-			var res gasStation
-			err = json.Unmarshal(body, &res)
-			if err != nil {
-				return &common.Hash{}, err
-			}
-			decimal := new(big.Int).SetUint64(9)
+		// 	var res gasStation
+		// 	err = json.Unmarshal(body, &res)
+		// 	if err != nil {
+		// 		return &common.Hash{}, err
+		// 	}
+		// 	decimal := new(big.Int).SetUint64(9)
 
-			maxPriorityFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxPriorityFee), decimal)
-			if err != nil {
-				return &common.Hash{}, err
-			}
-			maxFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxFee), decimal)
-			if err != nil {
-				return &common.Hash{}, err
-			}
+		// 	maxPriorityFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxPriorityFee), decimal)
+		// 	if err != nil {
+		// 		return &common.Hash{}, err
+		// 	}
+		// 	maxFee, err := calls.UserAmountToWei(fmt.Sprintf("%f", res.Fast.MaxFee), decimal)
+		// 	if err != nil {
+		// 		return &common.Hash{}, err
+		// 	}
 
-			log.Info().Uint64("maxPriorityFee", maxPriorityFee.Uint64()).Uint64("maxFee", maxFee.Uint64()).Msg("Polygon GasStation")
+		// 	log.Info().Uint64("maxPriorityFee", maxPriorityFee.Uint64()).Uint64("maxFee", maxFee.Uint64()).Msg("Polygon GasStation")
 
-			gp[0] = maxPriorityFee
-			gp[1] = maxFee
-		} else {
-			gp, err = t.gasPriceClient.GasPrice()
-			if err != nil {
-				return &common.Hash{}, err
-			}
+		// 	gp[0] = maxPriorityFee
+		// 	gp[1] = maxFee
+		// } else {
+		gp, err = t.gasPriceClient.GasPrice()
+		if err != nil {
+			return &common.Hash{}, err
 		}
+		// }
 	}
 
 	tx, err := t.TxFabric(n.Uint64(), to, opts.Value, opts.GasLimit, gp, data)
