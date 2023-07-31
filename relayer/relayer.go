@@ -6,6 +6,7 @@ package relayer
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/meterio/chainbridge-core/relayer/message"
@@ -110,9 +111,22 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 		// submit merged signature to destination chain directly
 		if m.Type == message.SignaturePass || m.Type == message.ArtificialPass {
 			if middleChain.SignatureSubmit() {
-				mm, err := destChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
+				var mm *message.Message
+				var err error
+				for i := 0; i < 5; i++ {
+					mm, err = destChain.HandleEvent(m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data, []byte{})
+					if err != nil {
+						log.Error().Msgf("could not handle SigPass: %v", err)
+						// panic("help")
+					} else {
+						break
+					}
+					log.Info().Msgf("Sleep for %d seconds, hopefully it could resolve the handling issue", (i+1)*5)
+					time.Sleep(time.Duration((i+1)*5) * time.Second)
+					log.Info().Msgf("Retry No. %d", i)
+				}
 				if err != nil {
-					log.Error().Msgf("could not handle SigPass: %v", err)
+					log.Error().Msgf("could not handle SigPass after 5 retries: %v", err)
 					panic("help")
 				}
 				mm.Type = m.Type

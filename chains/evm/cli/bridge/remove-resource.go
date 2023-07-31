@@ -85,7 +85,7 @@ Resource ID: %s
 Target address: %s
 Native: %v
 Bridge address: %s
-`, ResourceID, Target, Bridge)
+`, ResourceID, Target, Native, Bridge)
 	h, err := contract.AdminRemoveResource(
 		ResourceIdBytesArr, TargetContractAddr, Native, transactor.TransactOptions{GasLimit: gasLimit},
 	)
