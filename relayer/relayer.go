@@ -127,7 +127,9 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 				}
 				if err != nil {
 					log.Error().Msgf("could not handle SigPass after 5 retries: %v", err)
-					panic("help")
+					log.Error().Msgf("SigPass(Source:%v, Dest:%v, DepositNonce:%v, ResourceId:%v, Data:%v)", m.Source, m.Destination, m.DepositNonce, m.ResourceId, m.Data)
+					// panic("help")
+					return
 				}
 				mm.Type = m.Type
 				sigs, err := middleChain.GetSignatures(m) // getSignatures
