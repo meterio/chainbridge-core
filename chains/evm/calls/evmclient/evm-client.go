@@ -243,9 +243,13 @@ func (h *headerNumber) UnmarshalJSON(input []byte) error {
 func (c *EVMClient) WaitAndReturnTxReceipt(h common.Hash) (*types.Receipt, error) {
 	retry := 50
 	for retry > 0 {
+		if retry < 50 {
+			fmt.Printf("retry #%d to fetch receipt for %v", retry, h)
+		}
 		receipt, err := c.Client.TransactionReceipt(context.Background(), h)
 		if err != nil {
 			retry--
+			fmt.Println("sleep 5s for tx receipt")
 			time.Sleep(5 * time.Second)
 			continue
 		}
