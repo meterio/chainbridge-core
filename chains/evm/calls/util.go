@@ -2,6 +2,7 @@ package calls
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	gomath "math"
 	"math/big"
@@ -50,26 +51,35 @@ func ToCallArg(msg ethereum.CallMsg) map[string]interface{} {
 // UserAmountToWei converts decimal user friendly representation of token amount to 'Wei' representation with provided amount of decimal places
 // eg UserAmountToWei(1, 5) => 100000
 func UserAmountToWei(amount string, decimal *big.Int) (*big.Int, error) {
-	amountFloat, ok := big.NewFloat(0).SetString(amount)
-	if !ok {
+	fmt.Println("amount: ", amount)
+	amountFloat, _, err := big.ParseFloat(amount, 10, 256, big.ToNearestEven)
+	fmt.Println("amount float: ", amountFloat.String())
+	if err != nil {
 		return nil, errors.New("wrong amount format")
 	}
 	ethValueFloat := new(big.Float).Mul(amountFloat, big.NewFloat(math.Pow10(int(decimal.Int64()))))
+	fmt.Println("ethValueFloat", ethValueFloat)
 	ethValueFloatString := strings.Split(ethValueFloat.Text('f', int(decimal.Int64())), ".")
+	fmt.Println("ethValueFloatString", ethValueFloatString)
 
-	ii, ok := big.NewInt(0).SetString(ethValueFloatString[0], 10)
+	i, ok := big.NewInt(0).SetString(ethValueFloatString[0], 10)
 	if !ok {
 		return nil, errors.New(ethValueFloat.Text('f', int(decimal.Int64())))
 	}
-	_ = ii
+	fmt.Println("ii", i)
+	_ = i
 
-	flt, _, err := big.ParseFloat(ethValueFloat.String(), 10, 0, big.ToZero)
-	if err != nil {
-		return nil, err
-	}
+	// comment out for handling of float with long tail
+	// flt, _, err := big.ParseFloat(ethValueFloat.String(), 10, 1024, big.ToZero)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// fmt.Println("flt", flt)
 
-	var i = new(big.Int)
-	i, _ = flt.Int(i)
+	// var i = new(big.Int)
+	// i, _ = flt.Int(i)
+
+	fmt.Println("i", i)
 
 	return i, nil
 }
