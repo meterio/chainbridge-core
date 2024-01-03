@@ -118,31 +118,26 @@ func ProcessProcessProposalFlags(cmd *cobra.Command, args []string) {
 
 func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.EVMClient, _ *bridge.BridgeContract, relayContract *signatures.SignaturesContract, destContract *bridge.BridgeContract) error {
 	//client := srcContract.Client()
-	log.Info().Msg("hello")
 	receipt, err := srcClient.WaitAndReturnTxReceipt(TxHash)
 	if err != nil {
 		log.Error().Err(err)
-		log.Info().Msg("2222222222222")
 		return err
 	}
 
 	tx, _, err := srcClient.TransactionByHash(context.Background(), receipt.TxHash)
 	if err != nil {
-		log.Info().Msg("3333333333")
 		log.Error().Err(err)
 		return err
 	}
 
 	toAddr := tx.To()
 	if strings.ToLower(toAddr.String()) != strings.ToLower(SrcBridge) {
-		log.Info().Msg("4444")
 		log.Warn().Err(errors.New("src-bridge not match tx to addr"))
 		return nil
 	}
 
 	abiInst, err := abi.JSON(strings.NewReader(consts.BridgeABI))
 	if err != nil {
-		log.Info().Msg("555555555555555")
 		log.Error().Err(err)
 		return err
 	}
@@ -150,7 +145,6 @@ func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.
 	for _, l := range receipt.Logs {
 		dl, err := UnpackDepositEventLog(abiInst, l.Data)
 		if err != nil {
-			log.Info().Msg("6666666666")
 			log.Error().Err(err)
 
 			continue
@@ -164,7 +158,6 @@ func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.
 
 		signaturesArr, err := relayContract.GetSignatures(DomainID, DestDomainID, DepositNonce, ResourceIdBytesArr, DataBytes)
 		if err != nil {
-			log.Info().Msg("777777777777")
 			log.Error().Err(err)
 			return err
 		}
@@ -176,7 +169,6 @@ func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.
 		threshold, err := relayContract.GetThreshold(DestDomainID)
 		if err != nil {
 			log.Error().Err(err)
-			log.Info().Msg("8888888888")
 			return err
 		}
 		log.Info().Msgf("Threshold: %v", threshold)
@@ -195,7 +187,7 @@ func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.
 					continue
 				}
 
-				h, err := destContract.VoteProposals(DomainID, DepositNonce, ResourceIdBytesArr, DataBytes, signaturesArr, transactor.TransactOptions{})
+				h, err := destContract.VoteProposals(DomainID, DepositNonce, ResourceIdBytesArr, DataBytes, signaturesArr, transactor.TransactOptions{GasLimit: gasLimit})
 				if err != nil {
 					log.Error().Err(err)
 					return err

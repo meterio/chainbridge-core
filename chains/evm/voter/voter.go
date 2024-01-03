@@ -365,7 +365,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		v.pendingOnDest[hash] = true
 		var opts transactor.TransactOptions
-		if v.cfg.GasLimit.Uint64 > 0 {
+		if v.cfg.GasLimit.Uint64() > 0 {
 			opts.GasLimit = v.cfg.GasLimit.Uint64()
 		}
 		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, opts)
