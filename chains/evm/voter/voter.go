@@ -196,6 +196,7 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	if v.cfg.GasLimit.Uint64() > 0 {
 		opts.GasLimit = v.cfg.GasLimit.Uint64()
 	}
+	log.Info().Uint64("gasLimit", opts.GasLimit).Msgf("voteProposal with gas limit")
 	txhash, err := v.bridgeContract.VoteProposal(prop, opts)
 	if err != nil {
 		return fmt.Errorf("voting failed. Err: %w", err)
@@ -368,6 +369,7 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 		if v.cfg.GasLimit.Uint64() > 0 {
 			opts.GasLimit = v.cfg.GasLimit.Uint64()
 		}
+		log.Info().Uint64("gasLimit", opts.GasLimit).Msgf("voteProposals with gas limit")
 		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, opts)
 		if err != nil {
 			if strings.Contains(err.Error(), consts.TxFailedOnChain) {

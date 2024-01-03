@@ -53,8 +53,8 @@ var cancelProposalCmd = &cobra.Command{
 
 func BindCancelProposalFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().StringVar(&Data, "data", "", "Data of proposal metadata")
-	cmd.Flags().StringVar(&ResourceID, "resource-id", "", "ResourceID")
+	cmd.Flags().StringVar(&Data, "data", "", "Data of proposal ")
+	cmd.Flags().StringVar(&ResourceID, "resource-id", "", "ResourceID of proposal")
 	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Source Domain ID of proposal to cancel")
 	cmd.Flags().Uint64Var(&DepositNonce, "deposit-nonce", 0, "Deposit nonce of proposal to cancel")
 	flags.MarkFlagsAsRequired(cmd, "bridge", "resource-id", "data", "domain", "deposit-nonce")
@@ -116,6 +116,7 @@ Data: %s
 	copy(DataHashBytes[:], dataHashBytes)
 
 	// fmt.Println("data Hash", hexutil.Encode(DataHashBytes[:]))
+	fmt.Println("Gas Limit: ", gasLimit)
 
 	h, err := contract.CancelProposal(DomainID, DepositNonce, DataHashBytes, transactor.TransactOptions{GasLimit: gasLimit})
 	if err != nil {
