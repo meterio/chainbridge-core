@@ -192,7 +192,11 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 	}
 	defer delete(v.pendingOnDest, hash)
 	v.pendingOnDest[hash] = true
-	txhash, err := v.bridgeContract.VoteProposal(prop, transactor.TransactOptions{})
+	var opts transactor.TransactOptions
+	if v.cfg.GasLimit.Uint64() > 0 {
+		opts.GasLimit = v.cfg.GasLimit.Uint64()
+	}
+	txhash, err := v.bridgeContract.VoteProposal(prop, opts)
 	if err != nil {
 		return fmt.Errorf("voting failed. Err: %w", err)
 	}
@@ -360,7 +364,11 @@ func (v *EVMVoter) VoteProposals(m *message.Message, signatures [][]byte, flag *
 	log.Info().Str("msg", m.ID()).Str("chain", chainName).Msgf("prepare to exec on dest chain")
 	for i := 0; i < consts.TxRetryLimit; i++ {
 		v.pendingOnDest[hash] = true
-		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, transactor.TransactOptions{})
+		var opts transactor.TransactOptions
+		if v.cfg.GasLimit.Uint64 > 0 {
+			opts.GasLimit = v.cfg.GasLimit.Uint64()
+		}
+		txhash, err := v.bridgeContract.VoteProposals(m.Source, m.DepositNonce, m.ResourceId, m.Data, signatures, opts)
 		if err != nil {
 			if strings.Contains(err.Error(), consts.TxFailedOnChain) {
 				break
