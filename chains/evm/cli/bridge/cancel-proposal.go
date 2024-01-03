@@ -1,9 +1,11 @@
 package bridge
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	callsUtil "github.com/meterio/chainbridge-core/chains/evm/calls"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/contracts/bridge"
 	"github.com/meterio/chainbridge-core/chains/evm/calls/evmtransaction"
@@ -14,6 +16,7 @@ import (
 	"github.com/meterio/chainbridge-core/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/sha3"
 )
 
 var cancelProposalCmd = &cobra.Command{
@@ -35,6 +38,7 @@ var cancelProposalCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		fmt.Println("Bridge Addr:", BridgeAddr)
 		return cancelProposal(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -49,10 +53,11 @@ var cancelProposalCmd = &cobra.Command{
 
 func BindCancelProposalFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&Bridge, "bridge", "", "Bridge contract address")
-	cmd.Flags().StringVar(&DataHash, "data-hash", "", "Hash of proposal metadata")
-	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Domain ID of proposal to cancel")
+	cmd.Flags().StringVar(&Data, "data", "", "Data of proposal metadata")
+	cmd.Flags().StringVar(&ResourceID, "resource-id", "", "ResourceID")
+	cmd.Flags().Uint8Var(&DomainID, "domain", 0, "Source Domain ID of proposal to cancel")
 	cmd.Flags().Uint64Var(&DepositNonce, "deposit-nonce", 0, "Deposit nonce of proposal to cancel")
-	flags.MarkFlagsAsRequired(cmd, "bridge", "data-hash", "domain", "deposit-nonce")
+	flags.MarkFlagsAsRequired(cmd, "bridge", "resource-id", "data", "domain", "deposit-nonce")
 }
 
 func init() {
@@ -67,10 +72,26 @@ func ValidateCancelProposalFlags(cmd *cobra.Command, args []string) error {
 }
 
 func ProcessCancelProposalFlags(cmd *cobra.Command, args []string) error {
-	DataBytes = common.Hex2Bytes(DataHash)
-	DataHashBytes = callsUtil.SliceTo32Bytes(DataBytes)
+	dataBytes, err := hexutil.Decode(Data)
+	if err != nil {
+		fmt.Println("ERO", err)
+		return err
+	}
+	DataBytes = dataBytes
 	BridgeAddr = common.HexToAddress(Bridge)
+	resourceIdBytes, err := hexutil.Decode(ResourceID)
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+		return err
+	}
+
+	ResourceIdBytesArr = callsUtil.SliceTo32Bytes(resourceIdBytes)
+
 	return nil
+}
+
+func encodePacked(input ...[]byte) []byte {
+	return bytes.Join(input, nil)
 }
 
 func cancelProposal(cmd *cobra.Command, args []string, contract *bridge.BridgeContract) error {
@@ -79,8 +100,23 @@ Cancel Proposal
 Bridge address: %s
 Domain ID: %d
 Deposit nonce: %d
-DataHash: %s
-`, Bridge, DomainID, DepositNonce, DataHash)
+Data: %s
+`, Bridge, DomainID, DepositNonce, Data)
+	handler, err := contract.GetHandlerAddressForResourceID(ResourceIdBytesArr)
+	if err != nil {
+		log.Error().Err(err)
+		return err
+	}
+
+	dataHashBeforeHash := encodePacked(ResourceIdBytesArr[:], handler.Bytes(), DataBytes)
+	var buf []byte
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(dataHashBeforeHash)
+	dataHashBytes := hash.Sum(buf)
+	copy(DataHashBytes[:], dataHashBytes)
+
+	// fmt.Println("data Hash", hexutil.Encode(DataHashBytes[:]))
+
 	h, err := contract.CancelProposal(DomainID, DepositNonce, DataHashBytes, transactor.TransactOptions{GasLimit: gasLimit})
 	if err != nil {
 		log.Error().Err(err)
