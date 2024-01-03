@@ -195,7 +195,7 @@ func ProcessProposalCMD(cmd *cobra.Command, args []string, srcClient *evmclient.
 					continue
 				}
 
-				h, err := destContract.VoteProposals(DomainID, DepositNonce, ResourceIdBytesArr, DataBytes, signaturesArr, transactor.TransactOptions{})
+				h, err := destContract.VoteProposals(DomainID, DepositNonce, ResourceIdBytesArr, DataBytes, signaturesArr, transactor.TransactOptions{GasLimit: gasLimit})
 				if err != nil {
 					log.Error().Err(err)
 					return err
