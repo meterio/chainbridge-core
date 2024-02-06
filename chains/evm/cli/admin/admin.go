@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+
 	"github.com/meterio/chainbridge-core/chains/evm/cli/flags"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,7 @@ func init() {
 	AdminCmd.AddCommand(getThresholdCmd)
 	AdminCmd.AddCommand(unpauseCmd)
 	AdminCmd.AddCommand(withdrawCmd)
+	AdminCmd.AddCommand(withdrawETHCmd)
 	AdminCmd.AddCommand(setDepositNonceCmd)
 	AdminCmd.AddCommand(getDestChainIdCmd)
 	AdminCmd.AddCommand(setDomainCmd)

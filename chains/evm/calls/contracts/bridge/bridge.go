@@ -428,6 +428,23 @@ func (c *BridgeContract) Withdraw(
 	return c.ExecuteTransaction("adminWithdraw", opts, handlerAddress, data.Bytes())
 }
 
+func (c *BridgeContract) WithdrawETH(
+	handlerAddress,
+	recipientAddress common.Address,
+	amountOrTokenId *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	// @dev withdrawal data should include:
+	// tokenAddress
+	// recipientAddress
+	// realAmount
+	data := bytes.Buffer{}
+	data.Write(common.LeftPadBytes(recipientAddress.Bytes(), 32))
+	data.Write(common.LeftPadBytes(amountOrTokenId.Bytes(), 32))
+
+	return c.ExecuteTransaction("adminWithdrawETH", opts, handlerAddress, data.Bytes())
+}
+
 func (c *BridgeContract) GetThreshold() (uint8, error) {
 	log.Debug().Msg("Getting threshold")
 	res, err := c.CallContract("_relayerThreshold")
