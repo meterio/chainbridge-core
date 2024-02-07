@@ -41,12 +41,12 @@ var withdrawETHCmd = &cobra.Command{
 		return WithdrawETHCmd(cmd, args, bridge.NewBridgeContract(c, BridgeAddr, t))
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
-		err := ValidateWithdrawFlags(cmd, args)
+		err := ValidateWithdrawETHFlags(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		err = ProcessWithdrawFlags(cmd, args)
+		err = ProcessWithdrawETHFlags(cmd, args)
 		if err != nil {
 			return err
 		}
