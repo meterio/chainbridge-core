@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -76,9 +75,6 @@ func ValidateWithdrawETHFlags(cmd *cobra.Command, args []string) error {
 	}
 	if !common.IsHexAddress(Recipient) {
 		return fmt.Errorf("invalid recipient address: %s", Recipient)
-	}
-	if Amount != "" {
-		return errors.New("only amount should be set")
 	}
 	return nil
 }
