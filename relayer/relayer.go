@@ -99,11 +99,6 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 		log.Error().Msgf("no resolver for destID %v to send message registered", m.Destination)
 		return
 	}
-	destChainID, err := destChain.ChainID()
-	if err != nil {
-		log.Error().Err(fmt.Errorf("error getting chainId: %w on dest chain %v", err, m.Destination))
-	}
-
 	if middleChain != nil {
 		// relay chain enabled
 
@@ -152,8 +147,24 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 
 		// scenario #2: Deposit event received on source chain, and relay chain is enabled
 		// submit signature to relay chain
+		destChainID, err := destChain.ChainID()
+		if err != nil {
+			log.Error().Str("msg", m.ID()).Uint8("destination", m.Destination).Err(err).Msg("unable to get destination chain ID")
+			return
+		}
+		if destChainID == nil {
+			log.Error().Str("msg", m.ID()).Uint8("destination", m.Destination).Msg("destination chain returned a nil chain ID")
+			return
+		}
+
+		destBridgeAddress := destChain.BridgeContractAddress()
+		if destBridgeAddress == nil {
+			log.Error().Str("msg", m.ID()).Uint8("destination", m.Destination).Msg("destination bridge address is nil")
+			return
+		}
+
 		log.Info().Str("relay", "enabled").Str("call", "voteOnRelay").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
-		err = middleChain.VoteOnRelay(m, destChainID, destChain.BridgeContractAddress()) // submitSignature
+		err = middleChain.VoteOnRelay(m, destChainID, destBridgeAddress) // submitSignature
 		if err != nil {
 			if err == util.ErrAlreadyPassed {
 				m.Type = message.ArtificialPass

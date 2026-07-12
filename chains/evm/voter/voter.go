@@ -209,6 +209,13 @@ func (v *EVMVoter) VoteProposal(m *message.Message) error {
 }
 
 func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, destBridgeAddress *common.Address) error {
+	if destChainId == nil {
+		return fmt.Errorf("destination chain ID is nil")
+	}
+	if destBridgeAddress == nil {
+		return fmt.Errorf("destination bridge address is nil")
+	}
+
 	signatures, err := v.GetSignatures(m)
 	if err != nil {
 		return err
@@ -281,6 +288,12 @@ func (v *EVMVoter) SubmitSignature(m *message.Message, destChainId *big.Int, des
 
 	// log.Debug().Msgf("rawData: %x sighash: %x", rawData, sighash)
 	sig, err := v.client.Sign(sighash)
+	if err != nil {
+		return fmt.Errorf("signing relay vote: %w", err)
+	}
+	if len(sig) != crypto.SignatureLength {
+		return fmt.Errorf("invalid signature length: got %d, want %d", len(sig), crypto.SignatureLength)
+	}
 	sig[64] += 27
 
 	// log.Debug().Msgf("SIGNATURE: %v", hex.EncodeToString(sig))
