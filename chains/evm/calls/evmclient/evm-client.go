@@ -38,11 +38,49 @@ type EVMClient struct {
 	rpClient   *rpc.Client
 	nonce      *big.Int
 	nonceLock  sync.Mutex
+	endpointMu sync.RWMutex
 
 	moonbeamFinality  bool
 	polygonGasStation bool
 	endpoint          string
 	replica           string
+}
+
+const (
+	endpointDialTimeout = 10 * time.Second
+	defaultRPCTimeout   = 30 * time.Second
+)
+
+func rpcTimeoutContext(parent context.Context) (context.Context, context.CancelFunc) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	if _, ok := parent.Deadline(); ok {
+		return context.WithCancel(parent)
+	}
+	return context.WithTimeout(parent, defaultRPCTimeout)
+}
+
+func (c *EVMClient) endpointURL() string {
+	c.endpointMu.RLock()
+	defer c.endpointMu.RUnlock()
+
+	if c.endpoint == "" {
+		return "<unknown>"
+	}
+	return c.endpoint
+}
+
+func (c *EVMClient) rpcError(method string, err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		endpoint := c.endpointURL()
+		log.Warn().Str("rpc", method).Str("endpoint", endpoint).Err(err).Msg("RPC request timed out")
+		return fmt.Errorf("RPC %s timed out endpoint=%s: %w", method, endpoint, err)
+	}
+	return err
 }
 
 // DepositLogs struct holds event data with all necessary parameters and a handler response
@@ -99,8 +137,14 @@ type CommonTransaction interface {
 // NewEVMClientFromParams creates a client for EVMChain with provided
 // private key.
 func NewEVMClientFromParams(url string, privateKey *ecdsa.PrivateKey) (*EVMClient, error) {
-	rpcClient, err := rpc.DialContext(context.TODO(), url)
+	ctx, cancel := context.WithTimeout(context.Background(), endpointDialTimeout)
+	defer cancel()
+
+	rpcClient, err := rpc.DialContext(ctx, url)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("RPC dial timed out after %s endpoint=%s: %w", endpointDialTimeout, url, err)
+		}
 		return nil, err
 	}
 	c := &EVMClient{}
@@ -108,6 +152,7 @@ func NewEVMClientFromParams(url string, privateKey *ecdsa.PrivateKey) (*EVMClien
 	c.gethClient = gethclient.New(rpcClient)
 	c.rpClient = rpcClient
 	c.kp = secp256k1.NewKeypair(*privateKey)
+	c.endpoint = url
 	return c, nil
 }
 
@@ -124,8 +169,14 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 	krp := kp.(*secp256k1.Keypair)
 	c.kp = krp
 
-	rpcClient, err := rpc.DialContext(context.TODO(), generalConfig.Endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), endpointDialTimeout)
+	defer cancel()
+
+	rpcClient, err := rpc.DialContext(ctx, generalConfig.Endpoint)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return c, fmt.Errorf("RPC dial timed out after %s endpoint=%s: %w", endpointDialTimeout, generalConfig.Endpoint, err)
+		}
 		return c, err
 	}
 	c.Client = ethclient.NewClient(rpcClient)
@@ -140,6 +191,9 @@ func NewEVMClient(cfg *chain.EVMConfig) (*EVMClient, error) {
 }
 
 func (c *EVMClient) UpdateEndpoint() (string, error) {
+	c.endpointMu.Lock()
+	defer c.endpointMu.Unlock()
+
 	if c.replica == "" {
 		return c.endpoint, errors.New("replica no configuration")
 	}
@@ -147,8 +201,14 @@ func (c *EVMClient) UpdateEndpoint() (string, error) {
 	endpoint := c.replica
 	replica := c.endpoint
 
-	rpcClient, err := rpc.DialContext(context.TODO(), endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), endpointDialTimeout)
+	defer cancel()
+
+	rpcClient, err := rpc.DialContext(ctx, endpoint)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return replica, fmt.Errorf("RPC dial timed out after %s endpoint=%s: %w", endpointDialTimeout, endpoint, err)
+		}
 		return replica, err
 	}
 	c.Client = ethclient.NewClient(rpcClient)
@@ -172,30 +232,36 @@ func (c *EVMClient) LatestBlock() (*big.Int, error) {
 	}
 
 	var head *headerNumber
-	err := c.rpClient.CallContext(context.Background(), &head, "eth_getBlockByNumber", toBlockNumArg(nil), false)
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	err := c.rpClient.CallContext(ctx, &head, "eth_getBlockByNumber", toBlockNumArg(nil), false)
 	if err == nil && head == nil {
 		err = ethereum.NotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("eth_getBlockByNumber", err)
 	}
 	return head.Number, nil
 }
 
 func (c *EVMClient) LatestFinalizedBlock() (*big.Int, error) {
 	var raw json.RawMessage
-	err := c.rpClient.CallContext(context.Background(), &raw, "chain_getFinalizedHead")
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	err := c.rpClient.CallContext(ctx, &raw, "chain_getFinalizedHead")
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("chain_getFinalizedHead", err)
 	}
 
 	// The hash is with double quote "", should remove
 	var blockHash string = string(raw)
 	blockHash = blockHash[1 : len(blockHash)-1]
 	//fmt.Println(blockHash)
-	err = c.rpClient.CallContext(context.Background(), &raw, "chain_getHeader", blockHash)
+	err = c.rpClient.CallContext(ctx, &raw, "chain_getHeader", blockHash)
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("chain_getHeader", err)
 	}
 
 	var m map[string]interface{}
@@ -247,8 +313,11 @@ func (c *EVMClient) WaitAndReturnTxReceipt(h common.Hash) (*types.Receipt, error
 			fmt.Printf(`retry #%d to fetch tx receipt: %v
 `, 50-retry, h)
 		}
-		receipt, err := c.Client.TransactionReceipt(context.Background(), h)
+		ctx, cancel := rpcTimeoutContext(context.Background())
+		receipt, err := c.Client.TransactionReceipt(ctx, h)
+		cancel()
 		if err != nil {
+			err = c.rpcError("eth_getTransactionReceipt", err)
 			retry--
 			fmt.Printf(`error fetching tx receipt: %v, %v, sleep for 5s
 `, h, err)
@@ -267,8 +336,12 @@ func (c *EVMClient) UpdateNonce() {
 	c.LockNonce()
 	defer c.UnlockNonce()
 
-	nonce, err := c.PendingNonceAt(context.Background(), c.kp.CommonAddress())
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	nonce, err := c.PendingNonceAt(ctx, c.kp.CommonAddress())
 	if err != nil {
+		log.Warn().Err(c.rpcError("eth_getTransactionCount", err)).Msg("Unable to update nonce")
 		return
 	}
 
@@ -276,13 +349,20 @@ func (c *EVMClient) UpdateNonce() {
 }
 
 func (c *EVMClient) GetTransactionByHash(h common.Hash) (tx *types.Transaction, isPending bool, err error) {
-	return c.Client.TransactionByHash(context.Background(), h)
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	tx, isPending, err = c.Client.TransactionByHash(ctx, h)
+	return tx, isPending, c.rpcError("eth_getTransactionByHash", err)
 }
 
 func (c *EVMClient) FetchDepositLogs(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) ([]*DepositLogs, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
 	logs, err := c.FilterLogs(ctx, buildQuery(contractAddress, string(util.Deposit), startBlock, endBlock))
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("eth_getLogs", err)
 	}
 	depositLogs := make([]*DepositLogs, 0)
 
@@ -319,38 +399,79 @@ func (c *EVMClient) UnpackDepositEventLog(abi abi.ABI, data []byte) (*DepositLog
 }
 
 func (c *EVMClient) FetchEventLogs(ctx context.Context, contractAddress common.Address, event string, startBlock *big.Int, endBlock *big.Int) ([]types.Log, error) {
-	return c.FilterLogs(ctx, buildQuery(contractAddress, event, startBlock, endBlock))
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
+	logs, err := c.FilterLogs(ctx, buildQuery(contractAddress, event, startBlock, endBlock))
+	return logs, c.rpcError("eth_getLogs", err)
 }
 
 // SendRawTransaction accepts rlp-encode of signed transaction and sends it via RPC call
 func (c *EVMClient) SendRawTransaction(ctx context.Context, tx []byte) error {
-	return c.rpClient.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(tx))
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
+	err := c.rpClient.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(tx))
+	return c.rpcError("eth_sendRawTransaction", err)
 }
 
 func (c *EVMClient) CallContract(ctx context.Context, callArgs map[string]interface{}, blockNumber *big.Int) ([]byte, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
 	var hex hexutil.Bytes
 	err := c.rpClient.CallContext(ctx, &hex, "eth_call", callArgs, toBlockNumArg(blockNumber))
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("eth_call", err)
 	}
 	return hex, nil
 }
 
 func (c *EVMClient) CallContext(ctx context.Context, target interface{}, rpcMethod string, args ...interface{}) error {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
 	err := c.rpClient.CallContext(ctx, target, rpcMethod, args...)
 	if err != nil {
-		return err
+		return c.rpcError(rpcMethod, err)
 	}
 	return nil
 }
 
 func (c *EVMClient) PendingCallContract(ctx context.Context, callArgs map[string]interface{}) ([]byte, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
 	var hex hexutil.Bytes
 	err := c.rpClient.CallContext(ctx, &hex, "eth_call", callArgs, "pending")
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("eth_call", err)
 	}
 	return hex, nil
+}
+
+func (c *EVMClient) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
+	price, err := c.Client.SuggestGasPrice(ctx)
+	return price, c.rpcError("eth_gasPrice", err)
+}
+
+func (c *EVMClient) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
+	tipCap, err := c.Client.SuggestGasTipCap(ctx)
+	return tipCap, c.rpcError("eth_maxPriorityFeePerGas", err)
+}
+
+func (c *EVMClient) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
+	code, err := c.Client.CodeAt(ctx, account, blockNumber)
+	return code, c.rpcError("eth_getCode", err)
 }
 
 func (c *EVMClient) From() common.Address {
@@ -358,8 +479,14 @@ func (c *EVMClient) From() common.Address {
 }
 
 func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransaction) (common.Hash, error) {
+	ctx, cancel := rpcTimeoutContext(ctx)
+	defer cancel()
+
 	id, err := c.ChainID(ctx)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return common.Hash{}, c.rpcError("eth_chainId", err)
+		}
 		//panic(err)
 		// Probably chain does not support chainID eg. CELO
 		id = nil
@@ -368,7 +495,11 @@ func (c *EVMClient) SignAndSendTransaction(ctx context.Context, tx CommonTransac
 	if err != nil {
 		return common.Hash{}, err
 	}
-	log.Debug().Str("chain", id.String()).Str("signer", c.kp.Address()).Msgf("build tx hash %v", tx.Hash())
+	chainID := "<nil>"
+	if id != nil {
+		chainID = id.String()
+	}
+	log.Debug().Str("chain", chainID).Str("signer", c.kp.Address()).Msgf("build tx hash %v", tx.Hash())
 
 	err = c.SendRawTransaction(ctx, rawTx)
 	if err != nil {
@@ -398,8 +529,11 @@ func (c *EVMClient) UnsafeNonce() (*big.Int, error) {
 	var err error
 	for i := 0; i <= 10; i++ {
 		//if c.nonce == nil {
-		nonce, err := c.PendingNonceAt(context.Background(), c.kp.CommonAddress())
+		ctx, cancel := rpcTimeoutContext(context.Background())
+		nonce, err := c.PendingNonceAt(ctx, c.kp.CommonAddress())
+		cancel()
 		if err != nil {
+			err = c.rpcError("eth_getTransactionCount", err)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -421,9 +555,12 @@ func (c *EVMClient) UnsafeIncreaseNonce() error {
 }
 
 func (c *EVMClient) BaseFee() (*big.Int, error) {
-	head, err := c.HeaderByNumber(context.TODO(), nil)
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	head, err := c.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, c.rpcError("eth_getBlockByNumber", err)
 	}
 	return head.BaseFee, nil
 }
@@ -454,7 +591,10 @@ func buildQuery(contract common.Address, sig string, startBlock *big.Int, endBlo
 
 // EnsureHasBytecode asserts if contract code exists at the specified address
 func (c *EVMClient) EnsureHasBytecode(addr common.Address) error {
-	code, err := c.CodeAt(context.Background(), addr, nil)
+	ctx, cancel := rpcTimeoutContext(context.Background())
+	defer cancel()
+
+	code, err := c.CodeAt(ctx, addr, nil)
 	if err != nil {
 		return err
 	}
@@ -465,7 +605,17 @@ func (c *EVMClient) EnsureHasBytecode(addr common.Address) error {
 	return nil
 }
 
-var DomainIdMappingEVMClient = make(map[uint8]*EVMClient)
+var (
+	DomainIdMappingEVMClient = make(map[uint8]*EVMClient)
+	errCounterMu             sync.Mutex
+)
+
+func RegisterEVMClient(domainID uint8, client *EVMClient) {
+	errCounterMu.Lock()
+	defer errCounterMu.Unlock()
+
+	DomainIdMappingEVMClient[domainID] = client
+}
 
 func (c *EVMClient) PrivateKey() *ecdsa.PrivateKey {
 	return c.kp.PrivateKey()
@@ -478,6 +628,10 @@ func ErrCounterLogic(errStr string, domainId uint8) {
 
 	timeNow := time.Now().Unix()
 	var newErrCounterArr [consts.DefaultEndpointTries]int64
+	var evmClient *EVMClient
+	shouldSwitch := false
+
+	errCounterMu.Lock()
 
 	if errCounterArr, ok := util.DomainIdMappingErrCounter[domainId]; ok {
 		errCounterSlice := append(errCounterArr[1:], timeNow)
@@ -487,17 +641,27 @@ func ErrCounterLogic(errStr string, domainId uint8) {
 
 		fiveMinutesAgo := timeNow - 5*60
 		if newErrCounterArr[0] >= fiveMinutesAgo {
-			evmClient := DomainIdMappingEVMClient[domainId]
-			if endpoint, err := evmClient.UpdateEndpoint(); err != nil {
-				log.Warn().Str("chain", util.DomainIdToName[domainId]).Str("endpoint", endpoint).Err(err).Msg("Switch replica")
-			} else {
-				util.DomainIdMappingErrCounter[domainId] = [consts.DefaultEndpointTries]int64{}
-				log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("Switch endpoint to %v", endpoint)
-				return
-			}
+			evmClient = DomainIdMappingEVMClient[domainId]
+			util.DomainIdMappingErrCounter[domainId] = [consts.DefaultEndpointTries]int64{}
+			shouldSwitch = true
 		}
 	} else {
 		newErrCounterArr[consts.DefaultEndpointTries-1] = timeNow
 		util.DomainIdMappingErrCounter[domainId] = newErrCounterArr
+	}
+	errCounterMu.Unlock()
+
+	if !shouldSwitch {
+		return
+	}
+	if evmClient == nil {
+		log.Warn().Str("chain", util.DomainIdToName[domainId]).Uint8("domainID", domainId).Msg("Unable to switch endpoint: EVM client is not registered")
+		return
+	}
+
+	if endpoint, err := evmClient.UpdateEndpoint(); err != nil {
+		log.Warn().Str("chain", util.DomainIdToName[domainId]).Str("endpoint", endpoint).Err(err).Msg("Switch replica")
+	} else {
+		log.Info().Str("chain", util.DomainIdToName[domainId]).Msgf("Switch endpoint to %v", endpoint)
 	}
 }

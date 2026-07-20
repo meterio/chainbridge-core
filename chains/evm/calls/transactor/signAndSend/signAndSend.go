@@ -3,6 +3,7 @@ package signAndSend
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -27,6 +28,7 @@ type signAndSendTransactor struct {
 }
 
 const gasStationUrl = "https://gasstation-mainnet.matic.network/v2"
+const defaultRPCTimeout = 30 * time.Second
 
 type gasOption struct {
 	MaxPriorityFee float64 `json:"maxPriorityFee"`
@@ -123,7 +125,10 @@ func (t *signAndSendTransactor) transact(to *common.Address, data []byte, opts t
 		return &common.Hash{}, err
 	}
 
-	h, err := t.client.SignAndSendTransaction(context.TODO(), tx)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
+	defer cancel()
+
+	h, err := t.client.SignAndSendTransaction(ctx, tx)
 	if err != nil {
 		log.Error().Err(err)
 		return &common.Hash{}, err

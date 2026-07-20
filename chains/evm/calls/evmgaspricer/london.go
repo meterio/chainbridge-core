@@ -3,7 +3,10 @@ package evmgaspricer
 import (
 	"context"
 	"math/big"
+	"time"
 )
+
+const defaultRPCTimeout = 30 * time.Second
 
 type LondonGasPriceDeterminant struct {
 	client LondonGasClient
@@ -58,7 +61,10 @@ func (gasPricer *LondonGasPriceDeterminant) estimateGasLondon(baseFee *big.Int) 
 		return maxPriorityFeePerGas, maxFeePerGas, nil
 	}
 
-	maxPriorityFeePerGas, err := gasPricer.client.SuggestGasTipCap(context.TODO())
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
+	defer cancel()
+
+	maxPriorityFeePerGas, err := gasPricer.client.SuggestGasTipCap(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

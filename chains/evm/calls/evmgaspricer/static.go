@@ -32,11 +32,14 @@ func (gasPricer *StaticGasPriceDeterminant) SetOpts(opts *GasPricerOpts) {
 }
 
 func (gasPricer *StaticGasPriceDeterminant) GasPrice() ([]*big.Int, error) {
-	gp, err := gasPricer.client.SuggestGasPrice(context.TODO())
-	log.Debug().Msgf("Suggested GP %s", gp.String())
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
+	defer cancel()
+
+	gp, err := gasPricer.client.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, err
 	}
+	log.Debug().Msgf("Suggested GP %s", gp.String())
 	if gasPricer.opts != nil {
 		if gasPricer.opts.GasPriceFactor != nil {
 			gp = multiplyGasPrice(gp, gasPricer.opts.GasPriceFactor)

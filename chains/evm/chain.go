@@ -70,7 +70,7 @@ func SetupDefaultEVMChain(openTelemetryInst *opentelemetry.OpenTelemetry, rawCon
 		return nil, err
 	}
 
-	evmclient.DomainIdMappingEVMClient[*domainId] = client
+	evmclient.RegisterEVMClient(*domainId, client)
 
 	gasPricer := evmgaspricer.NewLondonGasPriceClient(client, nil)
 	t := signAndSend.NewSignAndSendTransactor(txFabric, gasPricer, client, *domainId)

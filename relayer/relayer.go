@@ -4,7 +4,6 @@
 package relayer
 
 import (
-	"fmt"
 	"math/big"
 	"time"
 
@@ -129,13 +128,13 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 				mm.Type = m.Type
 				sigs, err := middleChain.GetSignatures(m) // getSignatures
 				if err != nil {
-					log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error getting signatures: %w", err))
+					log.Error().Str("msg", m.ID()).Err(err).Msg("error getting signatures")
 				}
 				log.Info().Str("relay", "enabled").Str("call", "execOnDest").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 
 				err = destChain.ExecOnDest(mm, sigs, big.NewInt(1)) // voteProposals
 				if err != nil {
-					log.Error().Str("msg", mm.ID()).Err(fmt.Errorf("error exec on dest chain: %w", err))
+					log.Error().Str("msg", mm.ID()).Err(err).Msg("error executing on destination chain")
 				}
 
 				return
@@ -166,12 +165,16 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 		log.Info().Str("relay", "enabled").Str("call", "voteOnRelay").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 		err = middleChain.VoteOnRelay(m, destChainID, destBridgeAddress) // submitSignature
 		if err != nil {
-			if err == util.ErrAlreadyPassed {
+			switch err {
+			case util.ErrAlreadyPassed:
 				m.Type = message.ArtificialPass
 				log.Info().Str("msg", m.ID()).Msgf("generate an ArtificialPass")
 				msgCh <- m
+			case util.ErrAlreadyVoted:
+				log.Info().Str("msg", m.ID()).Str("chain", util.DomainIdToName[middleChain.DomainID()]).Msg("relay vote already submitted; skipping transaction")
+			default:
+				log.Error().Str("msg", m.ID()).Err(err).Msg("error voting on relay chain")
 			}
-			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error vote on relay chain: %w", err))
 		}
 		return
 	}
@@ -212,13 +215,13 @@ func (r *Relayer) route(m *message.Message, msgCh chan *message.Message) {
 	log.Debug().Str("relay", "disabled").Str("call", "voteOnDest").Uint64("block", m.BlockNumber).Msgf("Recv: %v", m)
 	for _, mp := range r.messageProcessors {
 		if err := mp(m); err != nil {
-			log.Error().Str("msg", m.ID()).Err(fmt.Errorf("error processing: %w ", err))
+			log.Error().Str("msg", m.ID()).Err(err).Msg("error processing message")
 			return
 		}
 	}
 
 	if err := destChain.VoteOnDest(m); err != nil { // voteProposal
-		log.Error().Str("msg", m.ID()).Err(err).Msgf("error vote on dest chain: %w", err)
+		log.Error().Str("msg", m.ID()).Err(err).Msg("error voting on destination chain")
 		return
 	}
 }

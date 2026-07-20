@@ -3,6 +3,8 @@ package contracts
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +19,8 @@ import (
 )
 
 var ZeroHash = common.Hash{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+const defaultRPCTimeout = 30 * time.Second
 
 type Contract struct {
 	contractAddress common.Address
@@ -99,7 +103,10 @@ func (c *Contract) CallContract(method string, args ...interface{}) ([]interface
 		return nil, err
 	}
 	msg := ethereum.CallMsg{From: c.client.From(), To: &c.contractAddress, Data: input}
-	out, err := c.client.CallContract(context.TODO(), calls.ToCallArg(msg), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
+	defer cancel()
+
+	out, err := c.client.CallContract(ctx, calls.ToCallArg(msg), nil)
 	if err != nil {
 		log.Error().
 			Str("contract", c.contractAddress.String()).
@@ -109,7 +116,7 @@ func (c *Contract) CallContract(method string, args ...interface{}) ([]interface
 	}
 	if len(out) == 0 {
 		// Make sure we have a contract to operate on, and bail out otherwise.
-		if code, err := c.client.CodeAt(context.Background(), c.contractAddress, nil); err != nil {
+		if code, err := c.client.CodeAt(ctx, c.contractAddress, nil); err != nil {
 			return nil, err
 		} else if len(code) == 0 {
 			return nil, fmt.Errorf("no code at provided address %s", c.contractAddress.String())

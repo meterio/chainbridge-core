@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"testing"
@@ -8,6 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/meterio/chainbridge-core/relayer/message"
 	"github.com/meterio/chainbridge-core/types"
+	"github.com/meterio/chainbridge-core/util"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -19,6 +23,7 @@ type chainIDTestChain struct {
 	chainIDErr      error
 	bridgeAddress   *common.Address
 	voteOnRelayCall int
+	voteOnRelayErr  error
 }
 
 func (c *chainIDTestChain) PollEvents(<-chan struct{}, chan<- error, chan *message.Message) {}
@@ -38,7 +43,25 @@ func (c *chainIDTestChain) Get(*message.Message) (bool, error) { return false, n
 func (c *chainIDTestChain) VoteOnDest(*message.Message) error  { return nil }
 func (c *chainIDTestChain) VoteOnRelay(*message.Message, *big.Int, *common.Address) error {
 	c.voteOnRelayCall++
-	return nil
+	return c.voteOnRelayErr
+}
+
+func TestRouteLogsAlreadySubmittedRelayVote(t *testing.T) {
+	originalLogger := log.Logger
+	var logs bytes.Buffer
+	log.Logger = zerolog.New(&logs)
+	t.Cleanup(func() { log.Logger = originalLogger })
+
+	bridgeAddress := common.Address{1}
+	source := &chainIDTestChain{domainID: 6, relayID: 100}
+	destination := &chainIDTestChain{domainID: 3, chainID: big.NewInt(82), bridgeAddress: &bridgeAddress}
+	middle := &chainIDTestChain{domainID: 100, voteOnRelayErr: util.ErrAlreadyVoted}
+	r := &Relayer{registry: map[uint8]RelayedChain{6: source, 3: destination, 100: middle}}
+
+	r.route(&message.Message{Source: 6, Destination: 3, DepositNonce: 1151}, make(chan *message.Message))
+
+	require.Equal(t, 1, middle.voteOnRelayCall)
+	require.Contains(t, logs.String(), "relay vote already submitted; skipping transaction")
 }
 func (c *chainIDTestChain) ExecOnDest(*message.Message, [][]byte, *big.Int) error { return nil }
 func (c *chainIDTestChain) SignatureSubmit() bool                                 { return false }
